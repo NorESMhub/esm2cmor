@@ -1,0 +1,70 @@
+# Targets 
+TARGET=esm2cmor_mpi
+
+# Objects
+OBJ=m_namelists.o m_utilities.o m_modelsice.o m_modelslnd.o m_modelsatm.o m_modelsocn.o esm2cmor.o
+
+# Paths 
+SRCDIR=../source
+BINDIR=../bin
+
+# Fortran compiler
+FC=mpiifort
+
+# Linker
+LD=$(FC)
+
+# Libraries
+CMOR=/diagnostics/CMOR/cmorlib/3.13.0/intel
+JSONF=/diagnostics/CMOR/json-fortran/jsonfortran-intelllvm-9.2.1
+NETCDFF=$(EBROOTNETCDFMINFORTRAN)
+#NETCDF=$(EBROOTNETCDF)
+#UDUNITS=$(EBROOTUDUNITS)
+#JSONC=$(EBROOTJSONMINC)
+#HDF5=$(EBROOTHDF5)
+
+# Directory list to search for library files
+LIBS=-L$(CMOR)/lib -L$(JSONF)/lib -Wl,-rpath=$(JSONF)/lib -lcmor -lnetcdff -lnetcdf -luuid -ludunits2 -ljson-c -ljsonfortran
+
+# Compiler flags
+FFLAGS=-O2 -r8 -I$(SRCDIR) -I$(CMOR)/include -I$(NETCDFF)/include -I$(JSONF)/include -DCMOR3 -DDEFLATE -DMPI
+# for debug
+#FFLAGS:=$(FFLAGS) -g -warn all -check all -traceback -fpe0
+
+# Linker flags
+LDFLAGS=$(LIBS)
+
+.PHONY: all clean
+
+all: $(TARGET)
+
+clean:
+	rm -f *.o *.f *.h *.inc *.mod
+
+$(TARGET): $(OBJ)
+	$(LD) -o $(TARGET) $(OBJ) $(LDFLAGS)
+	mkdir -p $(BINDIR) 
+	mv $(TARGET) $(BINDIR)
+	rm -f *.o *.h *.inc m_*.mod
+
+esm2cmor.o: $(SRCDIR)/esm2cmor.F
+	$(FC) $(FFLAGS) -c $(SRCDIR)/esm2cmor.F
+
+m_modelsatm.o: $(SRCDIR)/m_modelsatm.F
+	$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelsatm.F
+
+m_modelsice.o: $(SRCDIR)/m_modelsice.F
+	$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelsice.F
+
+m_modelslnd.o: $(SRCDIR)/m_modelslnd.F
+	$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelslnd.F
+
+m_modelsocn.o: $(SRCDIR)/m_modelsocn.F
+	$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelsocn.F
+
+m_namelists.o: $(SRCDIR)/m_namelists.F
+	$(FC) $(FFLAGS) -c $(SRCDIR)/m_namelists.F
+
+m_utilities.o: $(SRCDIR)/m_utilities.F
+	$(FC) $(FFLAGS) -c $(SRCDIR)/m_utilities.F
+

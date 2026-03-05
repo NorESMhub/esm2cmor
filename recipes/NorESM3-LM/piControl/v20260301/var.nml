@@ -1,0 +1,33 @@
+! d* - do table true/false
+! t* - path to table file (guessed if omitted)
+! p* - alternative path to data file (path created if omitted)
+! r* - ?
+! v* - list of varibles: <NorESM name>,<cmor name>,<special operation>
+
+&table_amon
+ damon         = .true.
+ tamon         = 'CMIP7_atmos.json',
+ ramon         = 1000000,
+ vamon         =
+                 'tas_tavg-h2m-hxy-u        ','TREFHT               ','          ',
+                 'ta_tavg-al-hxy-u          ','T                    ','          ',
+/
+
+&table_omon
+ domon         = .true.,
+ romon         = 100000,
+ tomon         = 'CMIP7_ocean.json',
+ vomon         =
+                 'thetao_tavg-ol-hxy-sea    ','temp             ','           ',
+                 'tos_tavg-u-hxy-sea        ','sst              ','           ',
+/
+&table_oimon
+ doimon        = .true.,
+ roimon        = 100000,
+ toimon        = 'CMIP7_seaIce.json',
+ voimon        =
+!                'siconc_tavg-u-hxy-u        ','aice          ','               ',
+                 'sithick_tavg-u-hxy-si      ','hi            ','               ',
+                 'sidmasstranx_tavg-u-hxy-u  ','sidmasstranx  ','               ',
+                
+/
