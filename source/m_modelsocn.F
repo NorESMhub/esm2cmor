@@ -29,9 +29,7 @@ c --- Grid dimensions and variables
      .  region1,section1
       CHARACTER, ALLOCATABLE, SAVE, DIMENSION(:,:) :: region,section
       CHARACTER(LEN=slenmax), SAVE :: tcoord,zcoord,s1
-#ifdef CMOR3 
       CHARACTER(LEN=slenmax), SAVE :: grid, grid_label 
-#endif 
 c
 c --- Gravity
       REAL(KIND=8), PARAMETER :: g=9.80665,ginv=1.d0/g
@@ -135,7 +133,6 @@ c
       ENDDO 
 c
 c
-#ifdef CMOR3 
 c --- Process table Ofx 
       WRITE(*,*) 'Process table Ofx'
       fnm=TRIM(griddata)//TRIM(ocngridfile)
@@ -183,7 +180,6 @@ c
       ENDDO
 c
 c 
-#endif 
 c --- Process table Oyr
       WRITE(*,*) 'Process table Oyr'
       fnm=poyr
@@ -721,7 +717,6 @@ c
       ENDDO
 c
 c
-#ifdef CMOR3
 c --- Process table Oday
       WRITE(*,*) 'Process table Oday'
       fnm=pOday
@@ -913,7 +908,6 @@ c --- - Close output file if still open
         IF (MOD(m,rEday).GT.0) CALL close_ofile
 c
       ENDDO
-#endif 
 c
 c           exception for fill day 
 c           IF (year.EQ.year1.AND.month.EQ.month1.AND.add_fill_day) THEN
@@ -2213,18 +2207,7 @@ c
       CALL handle_ncerror(status)
 c
 c --- Derive path of CMOR table 
-c      IF (TRIM(vtype).EQ.'layer'.AND..NOT.
-c     .  (lsumz.OR.INDEX(special,'glbave').GT.0
-c     .  .OR.INDEX(special,'2zos').GT.0
-c     .  .OR.INDEX(special,'level1').GT.0)) THEN
-c#ifdef CMOR3
         tablepath=TRIM(tabledir)//TRIM(table)
-c#else 
-c        tablepath=TRIM(tabledir)//TRIM(table)//TRIM(rhotablesuff)
-c#endif
-c      ELSE
-c        tablepath=TRIM(tabledir)//TRIM(table)
-c       ENDIF
 c
 c --- Inquire time dimension of output variable 
         write(*,*) 'tablepath:',trim(tablepath)
@@ -2257,21 +2240,9 @@ c --- Call CMOR setup
       IF (error_flag.NE.0) STOP 'Problem setting up CMOR'
 c
 c --- Derive path to CMOR table 
-      IF (TRIM(vtype).EQ.'layer'.AND..NOT.
-     .  (lsumz.OR.INDEX(special,'glbave').GT.0
-     .  .OR.INDEX(special,'2zos').GT.0 
-     .  .OR.INDEX(special,'level1').GT.0)) THEN
-#ifdef CMOR3
-        tablepath=TRIM(tabledir)//TRIM(table)
-#else 
-        tablepath=TRIM(tabledir)//TRIM(table)//TRIM(rhotablesuff)
-#endif 
-      ELSE
-        tablepath=TRIM(tabledir)//TRIM(table)
-      ENDIF
+      tablepath=TRIM(tabledir)//TRIM(table)
 c
 c --- Define output dataset 
-#ifdef CMOR3
       grid_label=ocngrid_label
       grid=TRIM(ocngrid) 
       IF (TRIM(vtype).EQ.'layer'.AND..NOT.
@@ -2297,27 +2268,6 @@ c --- Define output dataset
       CALL write_namelist_json(grid,grid_label,ocngrid_resolution,ovnm)
       error_flag=cmor_dataset_json(namelist_file_json)
       CALL SYSTEM('rm '//TRIM(namelist_file_json))
-#else
-      error_flag=cmor_dataset(
-     .  outpath         = obasedir,
-     .  experiment_id   = experiment_id,
-     .  institute_id    = institute_id,
-     .  institution     = institution1,
-     .  source          = source1,
-     .  calendar        = calendar,
-     .  realization     = realization,
-     .  physics_version = physics_version,
-     .  initialization_method = initialization_method,
-     .  contact         = contact1,
-     .  history         = history1,
-     .  comment         = comment1,
-     .  references      = references1,
-     .  model_id        = model_id,
-     .  forcing         = forcing1,
-     .  branch_time     = branch_time,
-     .  parent_experiment_id = parent_experiment_id, 
-     .  parent_experiment_rip = parent_experiment_rip)
-#endif
 c
 c --- Define horizontal axes 
       write(*,*) 'Define horizontal axes'
@@ -2383,7 +2333,6 @@ c --- Define vertical axis
      .  .OR.INDEX(special,'2zos').GT.0
      .  .OR.INDEX(special,'level1').GT.0)) THEN 
         IF (INDEX(special,'half').GT.0) THEN 
-c#ifdef CMOR3
           kaxid=cmor_axis(
      .      table           = TRIM(tablepath),
      .      table_entry     = 'rho',
@@ -2391,16 +2340,7 @@ c#ifdef CMOR3
      .      length          = kdm+1,
      .      coord_vals      = 1000.+sigmahalf,
      .      cell_bounds     = 1000.+sigmahalf_bnds)
-c#else 
-c          kaxid=cmor_axis(
-c     .      table           = TRIM(tablepath),
-c     .      table_entry     = 'olev',
-c     .      units           = '1',
-c     .      length          = kdm+1,
-c     .      coord_vals      = kvechalf)
-c#endif 
         ELSE
-c#ifdef CMOR3
           write(*,*) "line 2451"
           kaxid=cmor_axis(
      .      table           = TRIM(tablepath),
@@ -2410,14 +2350,6 @@ c#ifdef CMOR3
      .      coord_vals      = 1000.+sigma,
      .      cell_bounds     = 1000.+sigma_bnds)
           write(*,*) "line 2459"
-c#else 
-c          kaxid=cmor_axis(
-c     .      table           = TRIM(tablepath),
-c     .      table_entry     = 'olev',
-c     .      units           = '1',
-c     .      length          = kdm,
-c     .      coord_vals      = kvec(1:kdm))
-c#endif 
         ENDIF
       ELSEIF (INDEX(special,'level1').GT.0) THEN 
         kaxid=cmor_axis(

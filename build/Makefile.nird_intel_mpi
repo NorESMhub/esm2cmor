@@ -27,7 +27,7 @@ NETCDFF=$(EBROOTNETCDFMINFORTRAN)
 LIBS=-L$(CMOR)/lib -L$(JSONF)/lib -Wl,-rpath=$(JSONF)/lib -lcmor -lnetcdff -lnetcdf -luuid -ludunits2 -ljson-c -ljsonfortran
 
 # Compiler flags
-FFLAGS=-O2 -r8 -I$(SRCDIR) -I$(CMOR)/include -I$(NETCDFF)/include -I$(JSONF)/include -DCMOR3 -DDEFLATE -DMPI
+FFLAGS=-O2 -r8 -I$(SRCDIR) -I$(CMOR)/include -I$(NETCDFF)/include -I$(JSONF)/include -DDEFLATE -DMPI
 # for debug
 #FFLAGS:=$(FFLAGS) -g -warn all -check all -traceback -fpe0
 

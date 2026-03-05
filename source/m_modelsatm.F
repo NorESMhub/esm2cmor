@@ -268,7 +268,6 @@ c --- - Close output file if still open
 c
       ENDDO    
 c 
-#ifdef CMOR3
 c --- Process table Emon
       WRITE(*,*) 'Process table Emon'
       fnm=pEmon
@@ -482,7 +481,6 @@ c --- - Close output file if still open
         IF (MOD(m,rEmonZ).GT.0) CALL close_ofile
 c
       ENDDO
-#endif
 c 
 c --- Process table aero
       WRITE(*,*) 'Process table aero'
@@ -2171,9 +2169,7 @@ c
 
       SUBROUTINE read_gridinfo_plev(str)
 c  
-c#ifdef CMOR3
       USE json_module
-c#endif 
 c
       IMPLICIT NONE
 c
@@ -2182,14 +2178,11 @@ c
       REAL(KIND=8) :: kvec(kmax)
       CHARACTER(LEN=200) :: c200
       LOGICAL :: fexists
-c#ifdef CMOR3
       TYPE(json_file) :: json
       LOGICAL :: found
       INTEGER :: k 
       CHARACTER(len=10), DIMENSION(:), ALLOCATABLE :: cval
-c#endif 
 c
-c#ifdef CMOR3
       INQUIRE(FILE=TRIM(tabledir)//TRIM(coordtable),
      .  EXIST=fexists) 
       IF (.NOT.fexists) THEN
@@ -2208,33 +2201,6 @@ c#ifdef CMOR3
         READ(cval(k)(1:10),*) kvec(k)
       ENDDO
       DEALLOCATE(cval)
-c#else
-c      INQUIRE(FILE=TRIM(tabledir)//TRIM(table),EXIST=fexists) 
-c      IF (.NOT.fexists) THEN
-c        WRITE(*,*) 'Table ',TRIM(table), ' does not exist' 
-c        STOP
-c      ENDIF  
-c      pdm=0
-c      OPEN(funit,FILE=TRIM(tabledir)//TRIM(table),STATUS='OLD')
-c      DO
-c        READ(funit,'(a200)') c200
-c        IF (INDEX(c200,'axis_entry: '//TRIM(str)).LE.0) CYCLE
-c        DO
-c          READ(funit,'(a200)') c200
-c          IF (INDEX(c200,'requested:').LE.0) CYCLE
-c          c200=ADJUSTL(TRIM(c200(11:)))
-c          DO
-c            IF (c200(1:1).EQ.'!'.OR.c200(1:1).EQ.' ') EXIT
-c            pdm=pdm+1
-c            READ(c200(1:INDEX(c200,' ')-1),*) kvec(pdm)
-c            c200=c200(INDEX(c200,' ')+1:)
-c          ENDDO
-c          EXIT
-c        ENDDO
-c        EXIT
-c      ENDDO
-c      CLOSE(funit)
-c#endif 
 c
       IF (ALLOCATED(plevs)) DEALLOCATE(plevs) 
       ALLOCATE(plevs(pdm)) 
@@ -2418,7 +2384,6 @@ c --- Call CMOR setup
       IF (error_flag.NE.0) STOP 'Problem setting up CMOR'
 c
 c --- Define output dataset 
-#ifdef CMOR3
       IF (ndims.EQ.1) THEN 
         CALL write_namelist_json('global mean or integral','gm',
      .    atmgrid_resolution,ovnm) 
@@ -2428,27 +2393,6 @@ c --- Define output dataset
       ENDIF
       error_flag=cmor_dataset_json(namelist_file_json)
 c     CALL SYSTEM('rm '//TRIM(namelist_file_json))
-#else
-      error_flag=cmor_dataset(
-     .  outpath         = obasedir,
-     .  experiment_id   = experiment_id,
-     .  institute_id    = institute_id,
-     .  institution     = institution1,
-     .  source          = source1,
-     .  calendar        = calendar,
-     .  realization     = realization,
-     .  physics_version = physics_version,
-     .  initialization_method = initialization_method,
-     .  contact         = contact1,
-     .  history         = history1,
-     .  comment         = comment1,
-     .  references      = references1,
-     .  model_id        = model_id,
-     .  forcing         = forcing1,
-     .  branch_time     = branch_time,
-     .  parent_experiment_id = parent_experiment_id, 
-     .  parent_experiment_rip = parent_experiment_rip)
-#endif
 c
 c --- Define horizontal axes 
       WRITE(*,*) 'define horizontal axes'
@@ -2489,9 +2433,7 @@ c
 c --- Define vertical axis 
       WRITE(*,*) 'define vertical axes'
       str='ps'
-c#ifdef CMOR3 
       IF (tcoord(1:5).EQ.'time1') str='ps1'
-c#endif
       IF (zcoord(1:4).EQ.'plev') THEN
         kaxid=cmor_axis(
      .    table         = TRIM(tabledir)//TRIM(table),
@@ -2577,11 +2519,7 @@ c#endif
         tmp1d_2(:) = iilev(:)*1.d-3 
         kaxid=cmor_axis(
      .    table         = TRIM(tabledir)//TRIM(table),
-#ifdef CMOR3
      .    table_entry   = 'standard_hybrid_sigma_half',
-#else
-     .    table_entry   = 'standard_hybrid_sigma',
-#endif 
      .    units         = '1',
      .    length        = ldm+1,
      .    coord_vals    = tmp1d) !ilev*1d-3,
@@ -2594,21 +2532,13 @@ c     .    cell_bounds   = tmp1d_2)! (iilev*1d-3)
      .    zfactor_values= p0)
         error_flag=cmor_zfactor(
      .    zaxis_id      = kaxid,
-#ifdef CMOR3
      .    zfactor_name  = 'b_half',
-#else
-     .    zfactor_name  = 'b',
-#endif 
      .    axis_ids      = (/kaxid/),
      .    zfactor_values= hybi)
 c     .    zfactor_bounds= hybii )
         error_flag=cmor_zfactor(
      .    zaxis_id      = kaxid,
-#ifdef CMOR3
      .    zfactor_name  = 'a_half',
-#else
-     .    zfactor_name  = 'a',
-#endif 
      .    axis_ids      = (/kaxid/),
      .    zfactor_values= hyai)
 c     .    zfactor_bounds= hyaii )

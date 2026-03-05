@@ -34,22 +34,18 @@ c --- Model namelist
      .  secindexfile,ocngridfile,ocninitfile,ocnmertfile,rhotablesuff,
      .  atmgridfile,ocnregnfile
       LOGICAL, SAVE :: linebreaks
-c#ifdef CMOR3
       CHARACTER(LEN=slenmax), SAVE :: 
      .  parent_source_id,coordtable,namelist_file_json,
      .  atmgrid,atmgrid_label,atmgrid_resolution,
      .  ocngrid,ocngrid_label,ocngrid_resolution,
      .  icegrid,icegrid_label,icegrid_resolution,
-     .  lndgrid,lndgrid_label,lndgrid_resolution
-c#endif 
+     .  lndgrid,lndgrid_label,lndgrid_resolution 
       NAMELIST /model/
-c#ifdef CMOR3
      .  parent_source_id, 
      .  atmgrid,atmgrid_label,atmgrid_resolution,
      .  ocngrid,ocngrid_label,ocngrid_resolution,
      .  icegrid,icegrid_label,icegrid_resolution,
      .  lndgrid,lndgrid_label,lndgrid_resolution,
-c#endif 
      .  model_id,
      .  source,              
      .  institution,
@@ -76,9 +72,7 @@ c#endif
      .  tagl3hr,
      .  tagl3hri,
      .  rhotablesuff, ! hidden
-c#ifdef CMOR3
      .  coordtable, ! hidden
-c#endif 
      .  secindexfile,
      .  atmgridfile,
      .  ocngridfile,
@@ -105,7 +99,6 @@ c --- Experiment namelist
      .  newcolumnorder,scanallfiles
       INTEGER, SAVE :: 
      .  physics_version=1,initialization_method=1,ivnmpos=1,ovnmpos=2
-c#ifdef CMOR3 
       LOGICAL, SAVE :: do_ofx,do_6hrPlevPt,do_AERday,do_AERhr,
      .  do_AERmonZ,do_CF3hr,do_CFday,do_CFmon,do_CFsubhr,do_E1hrClimMon,
      .  do_E1hr,do_E3hr,do_E3hrPt,do_E6hrZ,do_Eday,do_EdayZ,do_Efx,
@@ -118,11 +111,8 @@ c#ifdef CMOR3
      .  source_type
       REAL(KIND=8), SAVE :: branch_time_in_child,branch_time_in_parent
       CHARACTER(LEN=slenmax), SAVE :: forcing_index,physics_index,
-     .  realization_index,initialization_index
-
-c#endif 
+     .  realization_index,initialization_index 
       NAMELIST /experiment/ 
-c#ifdef CMOR3 
      .  activity_id, 
      .  variant_label,
      .  parent_variant_label,
@@ -141,7 +131,6 @@ c#ifdef CMOR3
      .  realization_index, 
      .  forcing_index,
      .  source_type,
-c#endif 
      .  casename, 
      .  experiment_id,    
      .  history,
@@ -178,7 +167,6 @@ c#endif
      .  do_3d, ! hidden
      .  do_xd, ! hidden
      .  do_bgc, ! hidden
-c#ifdef CMOR3 
      .  do_ofx, ! hidden
      .  do_6hrPlevPt, ! hidden
      .  do_AERday, ! hidden
@@ -207,7 +195,6 @@ c#ifdef CMOR3
      .  do_Odec, ! hidden
      .  do_COfx, ! hidden
      .  do_SIday, ! hidden
-c#endif 
      .  dry_run, ! hidden
      .  plevdummy, ! hidden
      .  readdummy, ! hidden
@@ -258,7 +245,6 @@ c --- Tables
      .                         v6hrplev
       NAMELIST /table_3hr/     d3hr,p3hr,t3hr,r3hr,v3hr
       NAMELIST /table_3hri/    d3hri,p3hri,t3hri,r3hri,v3hri
-c#ifdef CMOR3 
       LOGICAL, SAVE :: 
      .  dofx,d6hrPlevPt,dAERday,dAERhr,dAERmonZ,dCF3hr,dCFday,dCFmon,
      .  dCFsubhr,dE1hrClimMon,dE1hr,dE3hr,dE3hrPt,dE6hrZ,dEday,dEdayZ,
@@ -324,7 +310,6 @@ c#ifdef CMOR3
       NAMELIST /table_COfx/      dCOfx,pCOfx,tCOfx,vCOfx,rCOfx
       NAMELIST /table_SIday/     dSIday,pSIday,tSIday,rSIday,vSIday,
      .                           rSIday
-c#endif
 c
 c --- Misc 
       INTEGER :: istatus,funit 
@@ -385,9 +370,7 @@ c --- Initialise namelist variables
       ocnregnfile   = ' '
       secindexfile  = ' '
       rhotablesuff  = 'OnRho'
-c#ifdef CMOR3
       coordtable  = 'CMIP7_coordinate.json'
-c#endif
       year1         = 0 
       month1        = 1
       yearn         = 0
@@ -415,7 +398,6 @@ c#endif
       do_3d         = .TRUE.
       do_xd         = .TRUE.
       do_bgc        = .TRUE.
-c#ifdef CMOR3
       do_ofx        = .TRUE.
       do_6hrPlevPt  = .TRUE.
       do_AERday     = .TRUE.
@@ -486,7 +468,6 @@ c
       d6hrplev      = .FALSE. 
       d3hr          = .FALSE. 
       d3hri         = .FALSE.
-c#ifdef CMOR3 
       dofx          = .FALSE. 
       d6hrPlevPt    = .FALSE.
       dAERday       = .FALSE.
@@ -514,7 +495,6 @@ c#ifdef CMOR3
       dOdec         = .FALSE.
       dCOfx         = .FALSE.
       dSIday        = .FALSE.
-c#endif 
 c
       vfx           = ' ' 
       voyr          = ' '
@@ -532,7 +512,6 @@ c
       v6hrplev      = ' ' 
       v3hr          = ' ' 
       v3hri         = ' ' 
-c#ifdef CMOR3 
       vofx          = ' ' 
       v6hrPlevPt    = ' '
       vAERday       = ' ' 
@@ -560,7 +539,6 @@ c#ifdef CMOR3
       vOdec         = ' ' 
       vCOfx         = ' ' 
       vSIday        = ' ' 
-c#endif 
 c
       pfx           = ' '
       poyr          = ' '
@@ -578,7 +556,6 @@ c
       p6hrplev      = ' '
       p3hr          = ' '
       p3hri         = ' '
-c#ifdef CMOR3 
       pofx          = ' ' 
       p6hrPlevPt    = ' '
       pAERday       = ' '
@@ -606,7 +583,6 @@ c#ifdef CMOR3
       pOdec         = ' ' 
       pCOfx         = ' ' 
       pSIday        = ' ' 
-c#endif 
 c
       royr          = 1000000
       royrbgc       = 1000000
@@ -623,7 +599,6 @@ c
       r6hrplev      = 1000000
       r3hr          = 1000000
       r3hri         = 1000000
-c#ifdef CMOR3 
       rofx          = 1000000
       r6hrPlevPt    = 1000000
       rAERday       = 1000000 
@@ -651,27 +626,7 @@ c#ifdef CMOR3
       rOdec         = 1000000  
       rCOfx         = 1000000  
       rSIday        = 1000000  
-c#endif 
 c
-c#ifndef CMOR3 
-c      tgrids        = 'CMIP5_grids'
-c      tfx           = 'CMIP5_fx'
-c      toyr          = 'CMIP5_Oyr'
-c      toyrbgc       = 'CMIP5_Oyr'
-c      tomon         = 'CMIP5_Omon'
-c      tomonbgc      = 'CMIP5_Omon'
-c      toimon        = 'CMIP5_OImon'
-c      tamon         = 'CMIP5_Amon'
-c      taero         = 'CMIP5_aero'
-c      tlmon         = 'CMIP5_Lmon'
-c      tlimon        = 'CMIP5_LImon'
-c      tday          = 'CMIP5_da' 
-c      t6hrlev       = 'CMIP5_6hrLev' 
-c      t6hrlevi      = 'CMIP5_6hrLev' 
-c      t6hrplev      = 'CMIP5_6hrPlev' 
-c      t3hr          = 'CMIP5_3hr' 
-c      t3hri         = 'CMIP5_3hr' 
-c#else 
       tgrids        = 'CMIP7_grids.json'
       tfx           = 'CMIP6_fx.json'
       toyr          = 'CMIP6_Oyr.json'
@@ -717,7 +672,6 @@ c
       tOdec         = 'CMIP6_Odec.json'
       tCOfx         = 'CMIP6_COfx.json'
       tSIday        = 'CMIP6_SIday.json'
-c#endif 
 c
 c --- Read namelists 
       IF (iargc().NE.1.AND.iargc().NE.2.AND.iargc().NE.4
@@ -885,7 +839,6 @@ c
       REWIND(funit)
       IF (istatus.NE.0) WRITE(*,*) 
      .  'WARNING: Table 3hri not in namelist file. Skipping table...'
-c#ifdef CMOR3
       READ(funit,nml=table_ofx,IOSTAT=istatus)
       IF (istatus.NE.0) WRITE(*,*) 
      .  'WARNING: Table Ofx not in namelist file. Skipping table...'
@@ -1019,7 +972,6 @@ c#ifdef CMOR3
      .  'WARNING: Table SIday not in namelist file. Skipping table...'
       REWIND(funit,IOSTAT=istatus)
       IF (istatus.NE.0) WRITE(*,*) 'cannot rewind namelist file'
-c#endif
 c
       CLOSE(funit)
 c
@@ -1098,7 +1050,6 @@ c --- Count number of table entries
           IF (TRIM(vsingle).NE.TRIM(v3hri(po,n))) v3hri(pi,n)='SKIP'
         ENDDO 
       ENDIF 
-c#ifdef CMOR3
       nofx          = 0
       n6hrPlevPt    = 0
       nAERday       = 0
@@ -1194,7 +1145,6 @@ c#ifdef CMOR3
           IF (TRIM(vsingle).NE.TRIM(vSIday(po,n))) vSIday(pi,n)='SKIP'
         ENDDO
       ENDIF 
-c#endif
 c     
 c --- Skip deselected namelists 
       if (.not.do_fx)      nfx=0   
@@ -1213,7 +1163,6 @@ c --- Skip deselected namelists
       if (.not.do_6hrplev) n6hrplev=0   
       if (.not.do_3hr)     n3hr=0   
       if (.not.do_3hri)    n3hri=0   
-c#ifdef CMOR3
       if (.not.do_ofx)         nofx=0   
       if (.not.do_6hrPlevPt)   n6hrPlevPt=0   
       if (.not.do_AERday)      nAERday=0   
@@ -1241,20 +1190,7 @@ c#ifdef CMOR3
       if (.not.do_Odec)        nOdec=0   
       if (.not.do_COfx)        nCOfx=0   
       if (.not.do_SIday)       nSIday=0   
-c#endif 
 c
-c#ifndef CMOR3
-cc --- Derive physics_version and initialization_method from
-cc --- parent_experiment_rip
-c      IF (TRIM(parent_experiment_rip).NE.'r1i1p1'.AND.
-c     .    TRIM(parent_experiment_rip).NE.'N/A' .AND.
-c     .    TRIM(parent_experiment_rip).NE.'no parent' ) THEN
-c        READ(parent_experiment_rip(INDEX(parent_experiment_rip,'i')+1:
-c     .    INDEX(parent_experiment_rip,'p')-1),*) initialization_method
-c        READ(parent_experiment_rip(INDEX(parent_experiment_rip,'p')+1:),
-c     .    *) physics_version
-c      ENDIF
-c#endif 
 c
 c --- Extend input path if necessary 
       IF (LEN_TRIM(isubdir).GT.0)
@@ -1431,7 +1367,6 @@ c
         WRITE(*,'(1X,A20,A20,A20)') v3hri(:,n)
       ENDDO
 c
-c#ifdef CMOR3
       WRITE(*,*) 
       WRITE(*,*) 'Table ofx:'
       DO n=1,nofx
@@ -1593,7 +1528,6 @@ c
       DO n=1,nSIday
         WRITE(*,'(1X,A20,A20,A20)') vSIday(:,n)
       ENDDO
-c#endif 
       END SUBROUTINE print_namelists
 
 
@@ -1657,7 +1591,6 @@ c
 
 
 
-c#ifdef CMOR3
       SUBROUTINE write_namelist_json(grid,grid_label,grid_resolution,
      .                               varname)
 c
@@ -1780,6 +1713,5 @@ c
 c      CALL SYSTEM('cat '//TRIM(namelist_file_json))
 c
       END SUBROUTINE write_namelist_json 
-c#endif 
 
       END MODULE m_namelists       

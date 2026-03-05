@@ -388,7 +388,6 @@ c
       ENDDO
 c
 c
-#ifdef CMOR3 
 c --- Process table SIday
       WRITE(*,*) 'Process table SIday'
       fnm=pSIday
@@ -453,7 +452,6 @@ c --- - Close output file if still open
         IF (MOD(m,rSIday).GT.0) CALL close_ofile
 c
       ENDDO
-#endif
 c
       END SUBROUTINE ice2cmor 
 
@@ -1039,32 +1037,10 @@ c --- parent_experiment_rip
       ENDIF
 c
 c --- Define output dataset 
-#ifdef CMOR3
       CALL write_namelist_json(icegrid,icegrid_label,icegrid_resolution,
      .  ovnm)
       error_flag=cmor_dataset_json(namelist_file_json)
       CALL SYSTEM('rm '//TRIM(namelist_file_json))
-#else
-      error_flag=cmor_dataset(
-     .  outpath         = obasedir,
-     .  experiment_id   = experiment_id,
-     .  institute_id    = institute_id,
-     .  institution     = institution1,
-     .  source          = source1,
-     .  calendar        = calendar,
-     .  realization     = realization,
-     .  physics_version = physics_version,
-     .  initialization_method = initialization_method,
-     .  contact         = contact1,
-     .  history         = history1,
-     .  comment         = comment1,
-     .  references      = references1,
-     .  model_id        = model_id,
-     .  forcing         = forcing1,
-     .  branch_time     = branch_time,
-     .  parent_experiment_id = parent_experiment_id, 
-     .  parent_experiment_rip = parent_experiment_rip)
-#endif 
 c
 c --- Define horizontal axes 
 c      IF (TRIM(ovnm).NE.'transifs') THEN

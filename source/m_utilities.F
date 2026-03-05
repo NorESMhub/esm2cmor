@@ -598,26 +598,21 @@ c
 
       SUBROUTINE get_timecoord(tnm,vnm,cnm)
 c  
-c#ifdef CMOR3
-      USE json_module
-c#endif 
+      USE json_module 
       IMPLICIT NONE
 c
       CHARACTER(LEN=*)  :: tnm,vnm,cnm
 c
 c      CHARACTER(LEN=80) :: c80
       INTEGER   :: k, pdm
-c#ifdef CMOR3
       TYPE(json_file) :: json
       LOGICAL :: found
       CHARACTER(len=10), DIMENSION(:), ALLOCATABLE :: cval
-c      CHARACTER(len=:), ALLOCATABLE :: cval
-c#endif 
+c      CHARACTER(len=:), ALLOCATABLE :: cval 
 c
 c      CALL json%initialize()
 c      CALL json%load_file(filename=TRIM(tnm))
 c
-c#ifdef CMOR3
       write(*,*) 'l643, vnm:',trim(vnm)
       write(*,*) 'l643, tnm:',trim(tnm)
       CALL json%initialize()
@@ -637,44 +632,7 @@ c        write(*,*) 'cval(k):',trim(cval(k))
         ENDIF
       ENDDO
 c      DEALLOCATE(cval)
-c#else 
-c      OPEN(funit,FILE=TRIM(tnm))
-c      DO
-c        READ(funit,'(a80)') c80
-c        IF (INDEX(c80,'variable_entry:').LE.0) CYCLE
-c        c80=ADJUSTL(TRIM(c80(16:)))
-c        IF (c80(1:lenmax).NE.vnm(1:lenmax)) CYCLE
-c        DO
-c          READ(funit,'(a80)') c80
-c          IF (INDEX(c80,'dimensions:').LE.0) CYCLE
-c          c80=ADJUSTL(TRIM(c80(12:)))
-c#endif 
-c         heyc: this part of code is to skip the first two coordinates
-c               with exceptions of global mean/sum field
-c               are there better way to get time coordinates?
-c         IF (TRIM(VNM).NE.'mfo'.AND.TRIM(VNM).NE.'thetaoga'
-c    .      .AND.TRIM(VNM).NE.'soga'.AND.TRIM(VNM).NE.'zosga'
-c    .      .AND.TRIM(VNM).NE.'zossga'.AND.TRIM(VNM).NE.'zostoga'
-c    .      .AND.TRIM(VNM).NE.'masso'.AND.TRIM(VNM).NE.'volo'
-c    .      .AND.TRIM(VNM).NE.'transifs'
-c    .      .AND.TRIM(VNM).NE.'sosga'.AND.TRIM(VNM).NE.'tosga'
-c    .      .AND.TRIM(VNM).NE.'sivoln'.AND.TRIM(VNM).NE.'sivols'
-c    .      .AND.TRIM(VNM(1:6)).NE.'siarea'
-c    .      .AND.TRIM(VNM(1:8)).NE.'siextent') THEN
-c           c80=c80((INDEX(c80,' ')+1):)
-c           c80=c80((INDEX(c80,' ')+1):)
-c         ENDIF
-c          DO WHILE (LEN_TRIM(c80).NE.0.AND.c80(1:4).NE.'time')
-c            c80=c80((INDEX(c80,' ')+1):)
-c          END DO
-c          cnm=TRIM(c80(1:5))
-c#ifndef CMOR3
-c          EXIT
-c        END DO
-c        EXIT
-c      END DO
-c      CLOSE(funit)
-c#endif 
+ 
 c
       END SUBROUTINE get_timecoord
 
