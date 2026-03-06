@@ -1,3094 +1,3010 @@
-      MODULE m_modelsocn
-c
-      USE netcdf 
-      USE cmor_users_functions
-      USE m_utilities
-      USE m_namelists
-c
-      IMPLICIT NONE 
-c
-c --- Netcdf variables
-      INTEGER, SAVE :: ii,jj,kk,ncid,rhid,dimid,status
-c
-c --- Grid dimensions and variables 
-      REAL(KIND=8), SAVE :: voglb,aoglb
-      INTEGER, SAVE :: idm,jdm,kdm=0,ddm=0,ldm=0,rdm=0,secdm=0,slenmax2
-      INTEGER, PARAMETER :: ncrns=4
-      INTEGER, ALLOCATABLE, SAVE, DIMENSION(:,:) :: basin
-      REAL(KIND=8), ALLOCATABLE, SAVE, DIMENSION(:) :: xvec,yvec,kvec,
-     .  kvechalf,sigma,sigmahalf,depth,slat 
-      REAL(KIND=8), ALLOCATABLE, SAVE, DIMENSION(:,:) :: parea,pmask,
-     .  pdepth,plon,plat,ulon,ulat,vlon,vlat,slat_bnds,sigma_bnds,
-     .  sigmahalf_bnds,depth_bnds,bpini,bpinit,uscaley,vscalex,udepth,
-     .  vdepth
-      REAL(KIND=8), ALLOCATABLE, SAVE, DIMENSION(:,:,:) :: 
-     .  plon_crns,plat_crns,ulon_crns,ulat_crns,vlon_crns,vlat_crns,
-     .  plon_crnsp,plat_crnsp,ulon_crnsp,ulat_crnsp,vlon_crnsp,
-     .  vlat_crnsp,dzini,sini,tini
-      CHARACTER(LEN=slenmax), ALLOCATABLE, SAVE, DIMENSION(:) :: 
-     .  region1,section1
-      CHARACTER, ALLOCATABLE, SAVE, DIMENSION(:,:) :: region,section
-      CHARACTER(LEN=slenmax), SAVE :: tcoord,zcoord,s1
-      CHARACTER(LEN=slenmax), SAVE :: grid, grid_label 
-c
-c --- Gravity
-      REAL(KIND=8), PARAMETER :: g=9.80665,ginv=1.d0/g
-c 
-c --- Dataset related variables 
-      CHARACTER(LEN=slenmax), SAVE :: ivnm,ovnm,vunits,vpositive,vtype
-      CHARACTER(LEN=slenmax*10), SAVE :: vcomment  
-      LOGICAL, SAVE :: lsumz 
-c
-c --- Table related variables 
-      CHARACTER(LEN=slenmax), SAVE :: table,tablepath
-c
-c --- Cmor parameters 
-      CHARACTER(LEN=1024) :: fnmo  
-      INTEGER, SAVE :: iaxid,jaxid,kaxid,laxid,raxid,saxid,taxid,grdid,
-     .  varid,table_id,table_id_grid,error_flag
-c
-c --- String for module special 
-      CHARACTER(LEN=slenmax), SAVE :: special
-c
-c --- Data fields
-      REAL(KIND=8), ALLOCATABLE, SAVE, DIMENSION(:,:,:) :: fld,fld2,
-     .  fldtmp,fldacc,fldhalf,dp
-      REAL(KIND=8), ALLOCATABLE, SAVE, DIMENSION(:,:) :: sealv,pbot
-      REAL(KIND=8) :: sfac,offs,fill 
-c
-c --- Auxillary variables for special operations 
-      CHARACTER(LEN=slenmax), SAVE :: str1,str2
+module m_modelsocn
 
+  use netcdf
+  use cmor_users_functions
+  use m_utilities
+  use m_namelists
 
+  implicit none
 
-c --- -----------------------------------------------------------------
-      CONTAINS 
-c --- -----------------------------------------------------------------
+  ! Netcdf variables
+  integer, save :: ii, jj, kk, ncid, rhid, dimid, status
 
+  ! Grid dimensions and variables
+  real(kind=8), save :: voglb, aoglb
+  integer, save :: idm, jdm, kdm = 0, ddm = 0, ldm = 0, rdm = 0, secdm = 0, slenmax2
+  integer, parameter :: ncrns = 4
+  integer, allocatable, save, dimension(:, :) :: basin
+  real(kind=8), allocatable, save, dimension(:) :: xvec, yvec, kvec, &
+    kvechalf, sigma, sigmahalf, depth, slat
+  real(kind=8), allocatable, save, dimension(:, :) :: parea, pmask, &
+    pdepth, plon, plat, ulon, ulat, vlon, vlat, slat_bnds, sigma_bnds, &
+    sigmahalf_bnds, depth_bnds, bpini, bpinit, uscaley, vscalex, udepth, &
+    vdepth
+  real(kind=8), allocatable, save, dimension(:, :, :) :: &
+    plon_crns, plat_crns, ulon_crns, ulat_crns, vlon_crns, vlat_crns, &
+    plon_crnsp, plat_crnsp, ulon_crnsp, ulat_crnsp, vlon_crnsp, &
+    vlat_crnsp, dzini, sini, tini
+  character(len=slenmax), allocatable, save, dimension(:) :: &
+    region1, section1
+  character, allocatable, save, dimension(:, :) :: region, section
+  character(len=slenmax), save :: tcoord, zcoord, s1
+  character(len=slenmax), save :: grid, grid_label
 
-      SUBROUTINE ocn2cmor
-c
-      IMPLICIT NONE
-c
-      LOGICAL :: badrec,last,first
-      INTEGER :: k,m,n,nrec
-c
-      badrec=.FALSE.
-c --- Skip if monthly ocean table deactivated
-c     IF (.NOT.(domon.OR.dday)) RETURN
-c
-c --- Print start information
-      IF (verbose) THEN
-        WRITE(*,*)
-        WRITE(*,*) '----------------------------'
-        WRITE(*,*) '--- Process ocean output ---'
-        WRITE(*,*) '----------------------------'
-        WRITE(*,*)
-      ENDIF
-c
-c --- Read grid information from input files
-      WRITE(*,*) 'Read grid information from input files'
-      itag=tagomon
-      CALL scan_files(reset=.TRUE.)
-      IF (LEN_TRIM(fnm).EQ.0) RETURN 
-      CALL read_gridinfo_ifile
-c
-c --- Process table fx 
-      WRITE(*,*) 'Process table fx'
-      fnm=TRIM(griddata)//TRIM(ocngridfile)
-      table=tfx 
-      DO n=1,nfx 
-        IF (skip_variable(n,nfx,dfx)) CYCLE
-c
-c --- - Map namelist variables 
-        ovnm=vfx(ovnmpos,n) 
-        ivnm=vfx(ivnmpos,n) 
-        special=vfx(3,n)
-        vunits=' ' 
-        vpositive=' ' 
-        vcomment=' ' 
-c
-c --- - Check if input variable is present 
-        IF (.NOT.var_in_file(fnm,ivnm)) CYCLE 
-c
-c --- - Check if vertical coordinate required        
-        CALL get_vertcoord(TRIM(tabledir)//TRIM(table),ovnm,zcoord)
-c
-c --- - Prepare output file 
-        CALL special_pre     
-        CALL open_ofile(fx=.TRUE.)
-c
-c --- - Read field 
-        CALL read_field
-c
-c --- - Post Processing 
-        CALL special_post 
-c         
-c --- - Write field 
-        CALL write_field 
-c
-c --- - Close output file 
-        CALL close_ofile
-c
-      ENDDO 
-c
-c
-c --- Process table Ofx 
-      WRITE(*,*) 'Process table Ofx'
-      fnm=TRIM(griddata)//TRIM(ocngridfile)
-      table=tofx
-      DO n=1,nofx
-        IF (skip_variable(n,nofx,dofx)) CYCLE
-c
-c --- - Map namelist variables 
-        ovnm=vofx(ovnmpos,n)
-        ivnm=vofx(ivnmpos,n)
-        special=vofx(3,n)
-        vunits=' '
-        vpositive=' '
-        vcomment=' '
+  ! Gravity
+  real(kind=8), parameter :: g = 9.80665, ginv = 1.d0 / g
 
-c --- - Use oceanregnfile for region
-        IF (ovnm.EQ.'basin') THEN
-          fnm=TRIM(griddata)//TRIM(ocnregnfile)
-        ELSE
-          fnm=TRIM(griddata)//TRIM(ocngridfile)
-        ENDIF
-c
-c --- - Check if input variable is present 
-        IF (.NOT.var_in_file(fnm,ivnm)) CYCLE
-c
-c --- - Check if vertical coordinate required        
-        CALL get_vertcoord(TRIM(tabledir)//TRIM(table),ovnm,zcoord)
-c
-c --- - Prepare output file 
-        CALL special_pre
-        CALL open_ofile(fx=.TRUE.)
-c
-c --- - Read field 
-        CALL read_field
-c
-c --- - Post Processing 
-        CALL special_post
-c         
-c --- - Write field 
-        CALL write_field
-c
-c --- - Close output file 
-        CALL close_ofile
-c
-      ENDDO
-c
-c 
-c --- Process table Oyr
-      WRITE(*,*) 'Process table Oyr'
-      fnm=poyr
-      table=toyr
-      DO n=1,noyr
-        IF (skip_variable(n,noyr,doyr)) CYCLE
-c
-c --- - Map namelist variables 
-        ovnm=voyr(ovnmpos,n)
-        ivnm=voyr(ivnmpos,n)
-        special=voyr(3,n)
-        vunits=' '
-        vpositive=' '
-        vcomment=' ' 
-c
-c --- - Check if vertical coordinate required        
-        CALL get_vertcoord(TRIM(tabledir)//TRIM(table),ovnm,zcoord)
-c 
-c --- - Choose history file 
-        IF (INDEX(special,'mon2yr').GT.0) THEN
-          itag=tagomon
-        ELSE
-          itag=tagoyr
-        ENDIF 
-c
-c --- - Check if input variable is present  
-        IF (LEN_TRIM(poyr).eq.0) CALL scan_files(reset=.TRUE.)
-        IF (.NOT.var_in_file(fnm,ivnm)) CYCLE
-c
-c --- - Prepare output file 
-        CALL special_pre
-c
-c --- - Loop over input files 
-        m=0
-        DO
-          m=m+1
-c
-c --- --- Open output file
-          IF (MOD(m-1,royr).EQ.0) CALL open_ofile
-c 
-c --- --- Read variable into buffer (average if necessary)
-          rec=0
-          nrec=0
-          fldacc=0.
-          last=.FALSE.
-          first=.TRUE.
-          DO
-            IF (LEN_TRIM(poyr).eq.0) CALL scan_files(reset=.FALSE.)
-            IF (rec.EQ.0) then
-              last=.TRUE.
-              EXIT
-            ENDIF
-            nrec=nrec+1
-cdiag       write(*,*) 'DEBUG: ',trim(fnm),rec,nrec,tbnd,mbnd,year,month
-            CALL read_tslice(rec,badrec,fnm)
-            fldacc=fldacc+fld
-            IF (INDEX(special,'mon2yr').GT.0) THEN 
-              IF (first) tbnds(1,1)=mbnd(1) 
-              tbnds(2,1)=mbnd(2) 
-            ELSE 
-              tbnds(1,1)=tval(1)-365./2. 
-              tbnds(2,1)=tval(1)+365./2. 
-              EXIT
-            ENDIF
-            first=.FALSE. 
-            IF (month.EQ.12) EXIT
-          ENDDO
-          IF (last) EXIT
-          fld=fldacc/FLOAT(nrec)
-          tval=0.5*(tbnds(1,1)+tbnds(2,1))
-c 
-c --- --- Post processing 
-          CALL special_post
-c
-c --- --- Write time slice to output file 
-          CALL write_tslice
-c
-c --- --- Close output file if max rec has been reached 
-          IF (MOD(m,royr).EQ.0) CALL close_ofile
-c
-c --- - End loop over files and records
-        ENDDO
-c
-c --- - Close output file if still open 
-        IF (MOD(m,royr).GT.0) CALL close_ofile
-c
-      ENDDO
-c
-c 
-c --- Process table oyr (bgc)
-      WRITE(*,*) 'Process table oyr (bgc)'
-      fnm=poyrbgc
-      table=toyrbgc
-      DO n=1,noyrbgc
-        IF (skip_variable(n,noyrbgc,doyrbgc)) CYCLE
-c
-c --- - Map namelist variables 
-        ovnm=voyrbgc(ovnmpos,n)
-        ivnm=voyrbgc(ivnmpos,n)
-        special=voyrbgc(3,n)
-        vunits=' '
-        vpositive=' '
-        vcomment=' ' 
-c 
-c --- - Choose history file 
-        IF (INDEX(special,'mon2yr').GT.0) THEN
-          itag=tagomonbgc
-        ELSE
-          itag=tagoyrbgc
-        ENDIF
-c
-c --- - Check if input variable is present  
-        IF (LEN_TRIM(poyrbgc).eq.0) CALL scan_files(reset=.TRUE.)
-        IF (.NOT.var_in_file(fnm,ivnm)) CYCLE
-c
-c --- - Check if vertical coordinate required        
-        CALL get_vertcoord(TRIM(tabledir)//TRIM(table),ovnm,zcoord)
-c
-c --- - Prepare output file 
-        CALL special_pre
-c
-c --- - Loop over input files 
-        m=0
-        DO
-          m=m+1
-c
-c --- --- Open output file
-          IF (MOD(m-1,royrbgc).EQ.0) CALL open_ofile
-c 
-c --- --- Read variable into buffer (average if necessary)
-          rec=0
-          nrec=0
-          fldacc=0.
-          last=.FALSE.
-          first=.TRUE.
-          DO
-            IF (LEN_TRIM(poyrbgc).eq.0) CALL scan_files(reset=.FALSE.)
-            IF (rec.EQ.0) then
-              last=.TRUE.
-              EXIT
-            ENDIF
-            nrec=nrec+1
-cdiag       write(*,*) 'DEBUG: ',trim(fnm),rec,nrec,tbnd,mbnd,year,month
-            CALL read_tslice(rec,badrec,fnm)
-            fldacc=fldacc+fld
-            IF (INDEX(special,'mon2yr').GT.0) THEN
-              IF (first) tbnds(1,1)=mbnd(1)
-              tbnds(2,1)=mbnd(2)
-            ELSE
-              tbnds(1,1)=tval(1)-365./2.
-              tbnds(2,1)=tval(1)+365./2.
-              EXIT
-            ENDIF
-            first=.FALSE.
-            IF (month.EQ.12) EXIT
-          ENDDO
-          IF (last) EXIT
-          fld=fldacc/FLOAT(nrec)
-          tval=0.5*(tbnds(1,1)+tbnds(2,1))
-c 
-c --- --- Post processing 
-          CALL special_post
-c
-c --- --- Write time slice to output file 
-          CALL write_tslice
-c
-c --- --- Close output file if max rec has been reached 
-          IF (MOD(m,royrbgc).EQ.0) CALL close_ofile
-c
-c --- - End loop over files and records
-        ENDDO
-c
-c --- - Close output file if still open 
-        IF (MOD(m,royrbgc).GT.0) CALL close_ofile
-c
-      ENDDO
-c
-c 
-c --- Process table Omon
-      WRITE(*,*) 'Process table Omon'
-      fnm=pomon
-      table=tomon 
-      DO n=1,nomon 
-        IF (skip_variable(n,nomon,domon)) CYCLE
-c
-c --- - Map namelist variables 
-        ovnm=vomon(ovnmpos,n) 
-        ivnm=vomon(ivnmpos,n) 
-        special=vomon(3,n)
-        vunits=' ' 
-        vpositive=' ' 
-        vcomment=' ' 
-c
-c --- - Check if vertical coordinate required        
-        write(*,*) 'l381,tabledir/table:',TRIM(tabledir)//TRIM(table)
-        write(*,*) 'ovnm:',trim(ovnm)
-        CALL get_vertcoord(TRIM(tabledir)//TRIM(table),ovnm,zcoord)
-        write(*,*) 'l382,zcoord:',trim(zcoord)
-c
-c --- - Check if we should skip variable 
-        WRITE(*,*) TRIM(ovnm),TRIM(zcoord),do_3d,do_xd
-        IF (.NOT.do_3d.AND.do_xd) THEN
-          IF (zcoord(1:6).EQ.'olevel'.AND.ovnm(1:5).NE.'mmflx'
-     .      .AND.ovnm(1:8).NE.'ficeberg'.AND.
-     .      ovnm(1:11).NE.'hfsithermds') CYCLE
-        ELSEIF (do_3d.AND..NOT.do_xd) THEN 
-          IF (zcoord(1:6).NE.'olevel'.OR.ovnm(1:5).EQ.'mmflx'
-     .      .OR.ovnm(1:8).EQ.'ficeberg'.OR.
-     .      ovnm(1:11).EQ.'hfsithermds') CYCLE
-        ELSEIF (.NOT.do_3d.AND..NOT.do_xd) THEN 
-          CYCLE
-        ENDIF
-c 
-c --- - Choose history file 
-        IF (INDEX(special,'day2mon').GT.0) THEN
-          itag=tagoday 
-        ELSE
-          itag=tagomon
-        ENDIF 
-c
-c --- - Check if input variable is present  
-        IF (LEN_TRIM(pomon).eq.0) CALL scan_files(reset=.TRUE.)
-        IF (.NOT.var_in_file(fnm,ivnm)) CYCLE 
-c
-c --- - Prepare output file 
-        CALL special_pre     
-c
-c --- - Loop over input files 
-        m=0
-        DO
-          m=m+1
-c
-c --- --- Open output file
-          IF (MOD(m-1,romon).EQ.0) CALL open_ofile
-c 
-c --- --- Read variable into buffer (average if necessary)
-          rec=0
-          nrec=0
-          fldacc=0.
-          last=.FALSE.
-          DO
-            IF (LEN_TRIM(pomon).eq.0) CALL scan_files(reset=.FALSE.)
-            IF (rec.EQ.0) then
-              last=.TRUE.
-              EXIT
-            ENDIF
-            nrec=nrec+1
-cdiag       write(*,*) 'DEBUG: ',trim(fnm),rec,nrec,tbnd,mbnd,year,month
-            CALL read_tslice(rec,badrec,fnm)
-            fldacc=fldacc+fld
-            IF (INDEX(special,'day2mon').GT.0) THEN
-              IF (tbnd(2)+0.5.GE.mbnd(2)) EXIT 
-            ELSE
-              EXIT
-            ENDIF
-          ENDDO
-          IF (last) EXIT
-          fld=fldacc/FLOAT(nrec)
-          tbnds(:,1)=mbnd
-          tval=0.5*(tbnds(1,1)+tbnds(2,1))
-c 
-c --- --- Post processing 
-          CALL special_post
-c
-c --- --- Write time slice to output file 
-          CALL write_tslice
-c
-c --- --- Close output file if max rec has been reached 
-          IF (MOD(m,romon).EQ.0) CALL close_ofile
-c
-c --- - End loop over files and records
-        ENDDO
-c
-c --- - Close output file if still open 
-        IF (MOD(m,romon).GT.0) CALL close_ofile
-c
-      ENDDO
-c
-c 
-c --- Process table Emon
-      WRITE(*,*) 'Process table Emon'
-      fnm=pEmon
-      table=tEmon
-      DO n=1,nEmon
-        IF (skip_variable(n,nEmon,dEmon)) CYCLE
-c
-c --- - Map namelist variables 
-        ovnm=vEmon(ovnmpos,n)
-        ivnm=vEmon(ivnmpos,n)
-        special=vEmon(3,n)
-        vunits=' '
-        vpositive=' '
-        vcomment=' '
-c
-c --- - Check if vertical coordinate required        
-        CALL get_vertcoord(TRIM(tabledir)//TRIM(table),ovnm,zcoord)
-c
-c --- - Check if we should skip variable 
-        WRITE(*,*) TRIM(ovnm),TRIM(zcoord),do_3d,do_xd
-        IF (.NOT.do_3d.AND.do_xd) THEN
-          IF (zcoord(1:6).EQ.'olevel'.AND.ovnm(1:5).NE.'mmflx'
-     .      .AND.ovnm(1:8).NE.'ficeberg'.AND.
-     .      ovnm(1:11).NE.'hfsithermds') CYCLE
-        ELSEIF (do_3d.AND..NOT.do_xd) THEN
-          IF (zcoord(1:6).NE.'olevel'.OR.ovnm(1:5).EQ.'mmflx'
-     .      .OR.ovnm(1:8).EQ.'ficeberg'.OR.
-     .      ovnm(1:11).EQ.'hfsithermds') CYCLE
-        ELSEIF (.NOT.do_3d.AND..NOT.do_xd) THEN
-          CYCLE
-        ENDIF
-c 
-c --- - Choose history file 
-        IF (INDEX(special,'day2mon').GT.0) THEN
-          itag=tagoday
-        ELSE
-          itag=tagomon
-        ENDIF
-c
-c --- - Check if input variable is present  
-        IF (LEN_TRIM(pEmon).eq.0) CALL scan_files(reset=.TRUE.)
-        IF (.NOT.var_in_file(fnm,ivnm)) CYCLE
-c
-c --- - Prepare output file 
-        CALL special_pre
-c
-c --- - Loop over input files 
-        m=0
-        DO
-          m=m+1
-c
-c --- --- Open output file
-          IF (MOD(m-1,rEmon).EQ.0) CALL open_ofile
-c 
-c --- --- Read variable into buffer (average if necessary)
-          rec=0
-          nrec=0
-          fldacc=0.
-          last=.FALSE.
-          DO
-            IF (LEN_TRIM(pEmon).eq.0) CALL scan_files(reset=.FALSE.)
-            IF (rec.EQ.0) then
-              last=.TRUE.
-              EXIT
-            ENDIF
-            nrec=nrec+1
-cdiag       write(*,*) 'DEBUG: ',trim(fnm),rec,nrec,tbnd,mbnd,year,month
-            CALL read_tslice(rec,badrec,fnm)
-            fldacc=fldacc+fld
-            IF (INDEX(special,'day2mon').GT.0) THEN
-              IF (tbnd(2)+0.5.GE.mbnd(2)) EXIT
-            ELSE
-              EXIT
-            ENDIF
-          ENDDO
-          IF (last) EXIT
-          fld=fldacc/FLOAT(nrec)
-          tbnds(:,1)=mbnd
-          tval=0.5*(tbnds(1,1)+tbnds(2,1))
-c 
-c --- --- Post processing 
-          CALL special_post
-c
-c --- --- Write time slice to output file 
-          CALL write_tslice
-c
-c --- --- Close output file if max rec has been reached 
-          IF (MOD(m,rEmon).EQ.0) CALL close_ofile
-c
-c --- - End loop over files and records
-        ENDDO
-c
-c --- - Close output file if still open 
-        IF (MOD(m,rEmon).GT.0) CALL close_ofile
-c
-      ENDDO
-c
-c
-c --- Process table omon (bgc)
-      WRITE(*,*) 'Process table omon (bgc)'
-      fnm=pomonbgc
-      table=tomonbgc
-      DO n=1,nomonbgc
-        IF (skip_variable(n,nomonbgc,domonbgc)) CYCLE
-c
-c --- - Map namelist variables 
-        ovnm=vomonbgc(ovnmpos,n)
-        ivnm=vomonbgc(ivnmpos,n)
-        special=vomonbgc(3,n)
-        vunits=' '
-        vpositive=' '
-        vcomment=' ' 
-c
-c --- - Check if vertical coordinate required     
-        write(*,*) trim(ovnm)   
-        CALL get_vertcoord(TRIM(tabledir)//TRIM(table),ovnm,zcoord)
-c
-c --- - Check if we should skip variable 
-        WRITE(*,*) TRIM(ovnm),TRIM(zcoord),do_3d,do_xd
-        IF (.NOT.do_3d.AND.do_xd) THEN
-          IF (zcoord(1:6).EQ.'olevel') CYCLE
-        ELSEIF (do_3d.AND..NOT.do_xd) THEN
-          IF (zcoord(1:6).NE.'olevel') CYCLE
-        ELSEIF (.NOT.do_3d.AND..NOT.do_xd) THEN
-          CYCLE
-        ENDIF
-c 
-c --- - Choose history file 
-        IF (INDEX(special,'day2mon').GT.0) THEN
-          itag=tagodaybgc
-        ELSE
-          itag=tagomonbgc
-        ENDIF
-c
-c --- - Check if input variable is present  
-        IF (LEN_TRIM(pomonbgc).eq.0) CALL scan_files(reset=.TRUE.)
-        IF (.NOT.var_in_file(fnm,ivnm)) CYCLE
-c
-c --- - Prepare output file 
-        CALL special_pre
-c
-c --- - Loop over input files 
-        m=0
-        DO
-          m=m+1
-c
-c --- --- Open output file
-          IF (MOD(m-1,romonbgc).EQ.0) CALL open_ofile
-c 
-c --- --- Read variable into buffer (average if necessary)
-          rec=0
-          nrec=0
-          fldacc=0.
-          last=.FALSE.
-          DO
-            IF (LEN_TRIM(pomonbgc).eq.0) CALL scan_files(reset=.FALSE.)
-            IF (rec.EQ.0) then
-              last=.TRUE.
-              EXIT
-            ENDIF
-            nrec=nrec+1
-cdiag       write(*,*) 'DEBUG: ',trim(fnm),rec,nrec,tbnd,mbnd,year,month
-            CALL read_tslice(rec,badrec,fnm)
-            fldacc=fldacc+fld
-            IF (INDEX(special,'day2mon').GT.0) THEN
-              IF (tbnd(2)+0.5.GE.mbnd(2)) EXIT
-            ELSE
-              EXIT
-            ENDIF
-          ENDDO
-          IF (last) EXIT
-          fld=fldacc/FLOAT(nrec)
-          tbnds(:,1)=mbnd
-          tval=0.5*(tbnds(1,1)+tbnds(2,1))
-c 
-c --- --- Post processing 
-          CALL special_post
-c
-c --- --- Write time slice to output file 
-          CALL write_tslice
-c
-c --- --- Close output file if max rec has been reached 
-          IF (MOD(m,romonbgc).EQ.0) CALL close_ofile
-c
-c --- - End loop over files and records
-        ENDDO
-c
-c --- - Close output file if still open 
-        IF (MOD(m,romonbgc).GT.0) CALL close_ofile
-c
-      ENDDO
-c
-c
-c --- Process table day
-      WRITE(*,*) 'Process table day'
-      fnm=pday
-      table=tday
-      DO n=1,nday
-        IF (skip_variable(n,nday,dday)) CYCLE
-c
-c --- - Map namelist variables 
-        ovnm=vday(ovnmpos,n)
-        ivnm=vday(ivnmpos,n)
-        special=vday(3,n)
-        vunits=' '
-        vpositive=' '
-        vcomment=' '
-c
-c --- - Check if vertical coordinate required        
-        CALL get_vertcoord(TRIM(tabledir)//TRIM(table),ovnm,zcoord)
-c 
-c --- - Choose history file 
-        itag=tagoday
-c
-c --- - Check if input variable is present  
-        IF (LEN_TRIM(pday).eq.0) CALL scan_files(reset=.TRUE.)
-        IF (.NOT.var_in_file(fnm,ivnm)) CYCLE
-c
-c --- - Prepare output file 
-        CALL special_pre
-c --- - Loop over input files 
-        m=0
-        DO
-          m=m+1
-c
-c --- --- Open output file
-          IF (MOD(m-1,rday).EQ.0) CALL open_ofile
-c
-c --- --- Read variable into buffer 
-          rec=0
-          IF (LEN_TRIM(pday).eq.0) CALL scan_files(reset=.false.)
-          IF (rec.EQ.0) EXIT
-          tbnds(1,1)=tval(1)-0.5
-          tbnds(2,1)=tval(1)+0.5
-          tval=0.5*(tbnds(1,1)+tbnds(2,1))
-c
-c --- --- Read data 
-          CALL read_tslice(rec,badrec,fnm)
-c 
-c --- --- Post processing 
-          CALL special_post
-c
-c --- --- Write time slice to output file 
-          IF (badrec) fld=1e20
-          CALL write_tslice
-c
-c --- --- Close output file if max rec has been reached 
-          IF (MOD(m,rday).EQ.0) CALL close_ofile
-c
-c --- - End loop over files and records
-        ENDDO
-c
-c --- - Close output file if still open 
-        IF (MOD(m,rday).GT.0) CALL close_ofile
-c
-      ENDDO
-c
-c
-c --- Process table Oday
-      WRITE(*,*) 'Process table Oday'
-      fnm=pOday
-      table=tOday
-      DO n=1,nOday
-        IF (skip_variable(n,nOday,dOday)) CYCLE
-c
-c --- - Map namelist variables 
-        ovnm=vOday(ovnmpos,n)
-        ivnm=vOday(ivnmpos,n)
-        special=vOday(3,n)
-        vunits=' '
-        vpositive=' '
-        vcomment=' '
-c
-c --- - Check if vertical coordinate required        
-        CALL get_vertcoord(TRIM(tabledir)//TRIM(table),ovnm,zcoord)
-c 
-c --- - Choose history file 
-        itag=tagoday
-c
-c --- - Check if input variable is present  
-        IF (LEN_TRIM(pOday).eq.0) CALL scan_files(reset=.TRUE.)
-        IF (.NOT.var_in_file(fnm,ivnm)) CYCLE
-c
-c --- - Prepare output file 
-        CALL special_pre
-c --- - Loop over input files 
-        m=0
-        DO
-          m=m+1
-c
-c --- --- Open output file
-          IF (MOD(m-1,rOday).EQ.0) CALL open_ofile
-c
-c --- --- Read variable into buffer 
-          rec=0
-          IF (LEN_TRIM(pOday).eq.0) CALL scan_files(reset=.false.)
-          IF (rec.EQ.0) EXIT
-          tbnds(1,1)=tval(1)-0.5
-          tbnds(2,1)=tval(1)+0.5
-          tval=0.5*(tbnds(1,1)+tbnds(2,1))
-c
-c --- --- Read data 
-          CALL read_tslice(rec,badrec,fnm)
-c 
-c --- --- Post processing 
-          CALL special_post
-c
-c --- --- Write time slice to output file 
-          IF (badrec) fld=1e20
-          CALL write_tslice
-c
-c --- --- Close output file if max rec has been reached 
-          IF (MOD(m,rOday).EQ.0) CALL close_ofile
-c
-c --- - End loop over files and records
-        ENDDO
-c
-c --- - Close output file if still open 
-        IF (MOD(m,rOday).GT.0) CALL close_ofile
-c
-      ENDDO
+  ! Dataset related variables
+  character(len=slenmax), save :: ivnm, ovnm, vunits, vpositive, vtype
+  character(len=slenmax * 10), save :: vcomment
+  logical, save :: lsumz
 
-c --- Process table Odaybgc
-      WRITE(*,*) 'Process table Odaybgc'
-      fnm=pOdaybgc
-      table=tOdaybgc
-      DO n=1,nOdaybgc
-        IF (skip_variable(n,nOdaybgc,dOdaybgc)) CYCLE
-c
-c --- - Map namelist variables 
-        ovnm=vOdaybgc(ovnmpos,n)
-        ivnm=vOdaybgc(ivnmpos,n)
-        special=vOdaybgc(3,n)
-        vunits=' '
-        vpositive=' '
-        vcomment=' '
-c
-c --- - Check if vertical coordinate required        
-        CALL get_vertcoord(TRIM(tabledir)//TRIM(table),ovnm,zcoord)
-c 
-c --- - Choose history file 
-        itag=tagodaybgc
-c
-c --- - Check if input variable is present  
-        IF (LEN_TRIM(pOdaybgc).eq.0) CALL scan_files(reset=.TRUE.)
-        IF (.NOT.var_in_file(fnm,ivnm)) CYCLE
-c
-c --- - Prepare output file 
-        CALL special_pre
-c --- - Loop over input files 
-        m=0
-        DO
-          m=m+1
-c
-c --- --- Open output file
-          IF (MOD(m-1,rOdaybgc).EQ.0) CALL open_ofile
-c
-c --- --- Read variable into buffer 
-          rec=0
-          IF (LEN_TRIM(pOdaybgc).eq.0) CALL scan_files(reset=.false.)
-          IF (rec.EQ.0) EXIT
-          tbnds(1,1)=tval(1)-0.5
-          tbnds(2,1)=tval(1)+0.5
-          tval=0.5*(tbnds(1,1)+tbnds(2,1))
-c
-c --- --- Read data 
-          CALL read_tslice(rec,badrec,fnm)
-c 
-c --- --- Post processing 
-          CALL special_post
-c
-c --- --- Write time slice to output file 
-          IF (badrec) fld=1e20
-          CALL write_tslice
-c
-c --- --- Close output file if max rec has been reached 
-          IF (MOD(m,rOdaybgc).EQ.0) CALL close_ofile
-c
-c --- - End loop over files and records
-        ENDDO
-c
-c --- - Close output file if still open 
-        IF (MOD(m,rOdaybgc).GT.0) CALL close_ofile
-c
-      ENDDO
-c
-c --- Process table Eday
-      WRITE(*,*) 'Process table Eday'
-      fnm=pEday
-      table=tEday
-      DO n=1,nEday
-        IF (skip_variable(n,nEday,dEday)) CYCLE
-c
-c --- - Map namelist variables 
-        ovnm=vEday(ovnmpos,n)
-        ivnm=vEday(ivnmpos,n)
-        special=vEday(3,n)
-        vunits=' '
-        vpositive=' '
-        vcomment=' '
-c
-c --- - Check if vertical coordinate required        
-        CALL get_vertcoord(TRIM(tabledir)//TRIM(table),ovnm,zcoord)
-c 
-c --- - Choose history file 
-        itag=tagoday
-c
-c --- - Check if input variable is present  
-        IF (LEN_TRIM(pEday).eq.0) CALL scan_files(reset=.TRUE.)
-        IF (.NOT.var_in_file(fnm,ivnm)) CYCLE
-c
-c --- - Prepare output file 
-        CALL special_pre
-c --- - Loop over input files 
-        m=0
-        DO
-          m=m+1
-c
-c --- --- Open output file
-          IF (MOD(m-1,rEday).EQ.0) CALL open_ofile
-c
-c --- --- Read variable into buffer 
-          rec=0
-          IF (LEN_TRIM(pEday).eq.0) CALL scan_files(reset=.false.)
-          IF (rec.EQ.0) EXIT
-          tbnds(1,1)=tval(1)-0.5
-          tbnds(2,1)=tval(1)+0.5
-          tval=0.5*(tbnds(1,1)+tbnds(2,1))
-c
-c --- --- Read data 
-          CALL read_tslice(rec,badrec,fnm)
-c 
-c --- --- Post processing 
-          CALL special_post
-c
-c --- --- Write time slice to output file 
-          IF (badrec) fld=1e20
-          CALL write_tslice
-c
-c --- --- Close output file if max rec has been reached 
-          IF (MOD(m,rEday).EQ.0) CALL close_ofile
-c
-c --- - End loop over files and records
-        ENDDO
-c
-c --- - Close output file if still open 
-        IF (MOD(m,rEday).GT.0) CALL close_ofile
-c
-      ENDDO
-c
-c           exception for fill day 
-c           IF (year.EQ.year1.AND.month.EQ.month1.AND.add_fill_day) THEN
-c             day1=0
-c           ELSE
-c             day1=1
-c           ENDIF
-c --- --- --- Set fill value for dummy day 
-c             IF (rec.EQ.0) fld=1e20
-c
-c
-      END SUBROUTINE ocn2cmor 
+  ! Table related variables
+  character(len=slenmax), save :: table, tablepath
 
+  ! Cmor parameters
+  character(len=1024) :: fnmo
+  integer, save :: iaxid, jaxid, kaxid, laxid, raxid, saxid, taxid, grdid, &
+    varid, table_id, table_id_grid, error_flag
 
+  ! String for module special
+  character(len=slenmax), save :: special
 
-      SUBROUTINE special_pre
-c
-      IMPLICIT NONE
-c
-      INTEGER :: i,j,k 
-c
-      lsumz=.FALSE.
-      str2=special
-      DO
-        IF (INDEX(str2,';').GT.0) THEN
-          str1=str2(1:INDEX(str2,';')-1)
-          str2=str2(INDEX(str2,';')+1:)
-        ELSE
-          str1=str2
-        ENDIF
-        SELECT CASE (str1)
-c
-c --- - atm to Pa
-        CASE ('atm2Pa')
-          vunits='Pa'
-c
-c --- - uatm to Pa
-        CASE ('uatm2Pa')
-          vunits='Pa'
-c 
-c --- - Unit transformation: mol cfcXX m-3 -> mol cfcXX kg-1
-        CASE ('cfcunits')
-          vunits='mol kg-1'
-c
-c --- - CFC11 comment
-        CASE ('cfc11comment')
-          vcomment='In this simulation, annual means of reconstructed'//
-     .' Northern Hemisphere CFC-11 are applied globally to the ocean.'//
-     .' Reference: Walker S.J., Weiss R.F., Salameh P.K. (2000)'//
-     .' Reconstructed histories of the annual mean atmospheric mole'//
-     .' fractions for the halocarbons CFC-11, CFC-12, CFC-113 and'//
-     .' carbon tetrachloride. J. Geophys. Res. 105(C6): 14285-14296.'//
-     .' CFC-11 data in ppt (1910.5-2008.5):'//
-     .' 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,'//
-     .' 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,'//
-     .' 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,'//
-     .' 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1, 0.2, 0.4, 0.7, 1.0,'//
-     .' 1.5, 2.2, 3.0, 4.1, 5.4, 6.8, 8.1, 9.4, 11.1, 13.3, 16.1,'//
-     .' 19.6, 23.8, 28.4, 33.6, 39.5, 46.1, 53.7, 62.5, 72.0, 82.7,'//
-     .' 94.9, 108.4, 121.4, 133.9, 145.9, 156.6, 168.3, 176.7, 184.3,'//
-     .' 191.4, 199.4, 208.1, 218.1, 229.5, 241.7, 253.0, 259.5,'//
-     .' 266.0, 268.4, 268.3, 269.7, 269.8, 268.5, 267.3, 265.9,'//
-     .' 264.4, 262.9, 262.0, 260.3, 258.1, 256.0, 254.1, 252.0,'//
-     .' 248.9, 246.9, 245.3'
-c
-c --- - CFC12 comment
-        CASE ('cfc12comment')
-          vcomment='In this simulation, annual means of reconstructed'//
-     .' Northern Hemisphere CFC-12 are applied globally to the ocean.'//
-     .' Reference: Walker S.J., Weiss R.F., Salameh P.K. (2000)'//
-     .' Reconstructed histories of the annual mean atmospheric mole'//
-     .' fractions for the halocarbons CFC-11, CFC-12, CFC-113 and'//
-     .' carbon tetrachloride. J. Geophys. Res. 105(C6): 14285-14296.'//
-     .' CFC-12 data in ppt (1910.5-2008.5):'//
-     .' 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,'//
-     .' 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,'//
-     .' 0.0, 0.0, 0.1, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.9, 1.2, 1.7,'//
-     .' 2.3, 3.4, 4.8, 6.1, 7.6, 9.2, 11.0, 12.8, 15.0, 17.4, 20.2,'//
-     .' 23.4, 26.8, 30.5, 35.0, 40.0, 45.8, 52.5, 60.4, 69.3, 79.2,'//
-     .' 90.3, 102.8, 116.7, 132.0, 148.3, 166.1, 185.7, 207.1, 228.1,'//
-     .' 248.0, 266.9, 284.2, 305.9, 323.0, 339.6, 353.3, 369.0,'//
-     .' 385.7, 403.4, 424.3, 444.0, 465.4, 483.6, 497.7, 506.0,'//
-     .' 516.4, 523.2, 528.9, 533.9, 537.6, 540.5, 542.5, 544.1,'//
-     .' 546.4, 546.9, 546.8, 546.5, 547.2, 546.5, 544.5, 541.8, 540.6'
-c
-c --- - mol m-3 
-        CASE ('mol m-3')
-          vunits='mol m-3'
-c
-c --- - mol m-2 s-1
-        CASE ('mol m-2 s-1')
-          vunits='mol m-2 s-1'
-c
-c --- - mol m-3 s-1
-        CASE ('mol m-3 s-1')
-          vunits='mol m-3 s-1'
-c
-c --- - Salinity has to be in practical salinity units 
-        CASE ('psu')
-          vunits='psu'
-c
-c --- - Fix unitless units 
-        CASE ('unitless')
-          vunits='1'
-c
-c --- - Set correct units for percentage
-        CASE ('percent')
-          vunits='%'
-c
-c --- - Set correct units for fraction
-        CASE ('fraction')
-          vunits='1'
-c
-c --- - Unit transformation: kg m-2  
-        CASE ('kg m-2')
-          vunits='kg m-2'
-c 
-c --- - Unit transformation: mm s-1 -> kg m-2 s-1 
-        CASE ('kg m-2 s-1')
-          vunits='kg m-2 s-1'
-c 
-c --- - Fix micrometers units 
-        CASE ('micrometer')
-          vunits='micrometers'
-c
-c --- - Fix m-2 units 
-        CASE ('m-2')
-          vunits='m-2'
-c
-c --- - Fix wo units 
-        CASE ('wflx2wo')
-          vunits='m s-1'
-c
-c --- - Set units to kg 
-        CASE ('kg')
-          vunits='kg'
-c
-c --- - Set units to m^3 
-        CASE ('m3')
-          vunits='m3'
-c        
-c --- - Convert units from radians2 to m2    
-        CASE ('rad2m')
-          vunits='m2'
-c        
-c --- - Set units for streamfunction    
-        CASE ('strmf')
-          vunits='kg s-1'
-          lsumz=.TRUE.
-c
-c --- - Set positive attribute  
-        CASE ('positiveup')
-          vpositive='up'
-        CASE ('positivedo')
-          vpositive='down'
-c
-c --- - Compute vertical sum 
-        CASE ('sumz')
-          lsumz=.TRUE.
-c
-c --- - Compute density 
-        CASE ('ts2rho0')
-          vunits='kg m-3'
-c
-c --- - Compute steric sea level change from density 
-        CASE ('ts2zossga','t2zostoga')
-          vunits='m'
-c
-c --- - Compute fixed cell volume of interpolated grid
-        CASE ('volcello')
-          vunits='m3'
+  ! Data fields
+  real(kind=8), allocatable, save, dimension(:, :, :) :: fld, fld2, &
+    fldtmp, fldacc, fldhalf, dp
+  real(kind=8), allocatable, save, dimension(:, :) :: sealv, pbot
+  real(kind=8) :: sfac, offs, fill
 
-c --- - Compute fixed cell thickness
-        CASE ('thkcello')
-          vunits='m'
+  ! Auxillary variables for special operations
+  character(len=slenmax), save :: str1, str2
 
-c --- - Compute depth of local mimina
-        CASE ('locminz')
-          vunits='m'
+contains
 
-c --- - Compute depth of local mimina
-        CASE ('omega2z')
-          vunits='m'
+  ! -----------------------------------------------------------------
 
-c --- - Convert units from [mol P/m3] to [kg Chl/m3] using [60 gC/gChl]
-        CASE ('kg m-3')
-          vunits='kg m-3'
-c
-c --- - Convert units from [m3] to [1e3 km3]
-        CASE ('1e3 km3')
-          vunits='1e3 km3'
-c
-c --- - Convert units from [s-1] to [s-2], fix bug for the units of bfsq in micom
-        CASE ('s-2')
-          vunits='s-2'
-c
-c --- - Set unit g m-2
-        CASE ('g m-2')
-          vunits='g m-2'
-c
-c --- - Set unit degC kg m-2
-        CASE ('degC kg m-2')
-          vunits='degC kg m-2'
-c
-        END SELECT
-        IF (str1.EQ.str2) exit
-      END DO
-c
-      END SUBROUTINE special_pre
+  subroutine ocn2cmor
 
+    implicit none
 
+    logical :: badrec, last, first
+    integer :: k, m, n, nrec
 
-      SUBROUTINE special_post
-c
-      IMPLICIT NONE
-c
-      INTEGER :: i,j,k
-      REAL(KIND=8) :: r,rd,p,ptoptmp,pbottmp,sref=35.
-c
-      str2=special
-      DO
-        IF (INDEX(str2,';').GT.0) THEN
-          str1=str2(1:INDEX(str2,';')-1)
-          str2=str2(INDEX(str2,';')+1:)
-        ELSE
-          str1=str2
-        ENDIF
-        SELECT CASE (str1)
-c
-c --- - Compute depth below geoid from dz or pddpo 
-        CASE ('dz2zfull')
-          fldacc(:,:,1)=fld(:,:,1)*0.5-sealv
-          DO k=2,kdm
-            fldacc(:,:,k)=fldacc(:,:,k-1)+(fld(:,:,k-1)+fld(:,:,k))*0.5
-          ENDDO
-          fld=fldacc
-c
-c --- - Compute depth below geoid at interfaces from dz      
-        CASE ('dz2zhalf')
-          fldacc(:,:,1)=-sealv
-          DO k=2,kdm
-            fldacc(:,:,k)=fldacc(:,:,k-1)+fld(:,:,k-1)
-          ENDDO
-          fld=fldacc
-c
-c --- - Convert units from radians2 to m2    
-        CASE ('rad2m')
-          DO k=1,kk
-            DO j=1,jj 
-              DO i=1,ii    
-                IF (fld(i,j,k).LT.1e20) 
-     .              fld(i,j,k)=fld(i,j,k)*6.37122e6**2
-              ENDDO  
-            ENDDO 
-          ENDDO
-c
-c --- - Unit transformation: cm day-1 -> kg m-2 s-1 
-c       CASE ('kg m-2 s-1')
-c         fld=fld/(10.*24.*3600.) 
-c
-c --- - Set ice free points to missing value
-        CASE ('zero2missing')       
-          DO k=1,kk 
-            DO j=1,jj 
-              DO i=1,ii    
-                IF (ABS(fld(i,j,k)).LT.1e-6) fld(i,j,k)=1e20
-              ENDDO  
-            ENDDO 
-          ENDDO 
-c
-c --- - Set ice free points to missing value
-        CASE ('pmask')
-          DO k=1,kk
-            DO j=1,jj 
-              DO i=1,ii    
-                IF (pmask(i,j).LT.0.5) fld(i,j,k)=1e20
-              ENDDO  
-            ENDDO 
-          ENDDO
-c
-c --- - Compute vertical sum 
-        CASE ('sumz')
-          DO k=2,kk
-            DO j=1,jj 
-              DO i=1,ii    
-                IF (ABS(fld(i,j,k)).LT.1e20) 
-     .            fld(i,j,1)=fld(i,j,1)+fld(i,j,k)
-              ENDDO  
-            ENDDO 
-          ENDDO
-c
-c --- - Compute local minima
-        CASE ('locmin')
-          DO j=1,jj 
-            DO i=1,ii    
-              DO k=2,kk
-                IF (fld(i,j,1).GT.fld(i,j,k)) THEN
-                  fld(i,j,1)=fld(i,j,k)
-                ELSE
-                  EXIT
-                END IF
-              ENDDO  
-            ENDDO 
-          ENDDO
-c
-c --- - Compute local minima depth
-        CASE ('locminz')
-          fld2=fld
-          DO j=1,jj 
-            DO i=1,ii    
-              fld2(i,j,1)=depth(1)
-              DO k=2,kk
-                IF (fld(i,j,1).GT.fld(i,j,k)) THEN
-                  fld(i,j,1)=fld(i,j,k)
-                  fld2(i,j,1)=depth(k)
-                ELSE
-                  EXIT
-                END IF
-              ENDDO  
-            ENDDO 
-          ENDDO
-          fld=fld2
-c
-c --- - Compute Aragonite Saturation Depth
-        CASE ('omega2z')
-          fldtmp=1e20
-          DO j=1,jj 
-            DO i=1,ii    
-              DO k=1,kk
-                IF (fld(i,j,k).LT.1.0) THEN
-                  IF (k.EQ.1) THEN
-                    fldtmp(i,j,1)=0.0
-                  ELSE
-                    fldtmp(i,j,1)=depth(k)
-                  END IF
-                END IF
-              ENDDO  
-            ENDDO 
-          ENDDO
-          fld=fldtmp
-c
-c --- - Multiply with global ocean area 
-        CASE ('xglbarea')
-          fld=fld*aoglb
-c
-c --- - Multiply gravity constant 
-        CASE ('xg')
-          DO k=1,kk
-            DO j=1,jj 
-              DO i=1,ii    
-                IF (fld(i,j,k).LT.1e20) fld(i,j,k)=fld(i,j,k)*9.806
-              ENDDO  
-            ENDDO 
-          ENDDO
-c
-c --- - Devide by gravity constant 
-        CASE ('xginv')
-          DO k=1,kk
-            DO j=1,jj 
-              DO i=1,ii    
-                IF (fld(i,j,k).LT.1e20) fld(i,j,k)=fld(i,j,k)/9.806
-              ENDDO  
-            ENDDO 
-          ENDDO
-c
-c --- - Flip sign 
-        CASE ('flipsign')
-          DO k=1,kk
-            DO j=1,jj 
-              DO i=1,ii    
-                IF (fld(i,j,k).LT.1e20) fld(i,j,k)=-fld(i,j,k)
-              ENDDO  
-            ENDDO 
-          ENDDO
-c
-c --- - Compute global 2d average 
-        CASE ('glbave2d')
-          fld(1,1,1)=SUM(fld(:,:,1)*parea)/SUM(parea)
-c
-c --- - Compute global 3d average 
-        CASE ('glbave3d')
-          r=0.
-          rd=0.
-          DO k=1,kk
-            r=r+SUM(fld(:,:,k)*dp(:,:,k)*parea)
-            rd=rd+SUM(dp(:,:,k)*parea)
-          ENDDO
-          fld(1,1,1)=r/MAX(1e-10,rd)
-c
-c --- - Compute potential density 
-        CASE ('ts2rho0')
-c         WRITE(*,*) 'rho_ref(0Pa,15degC,35psu)=',rho(0.,15.,35.)*1e3 
-          DO k=1,kk
-            DO j=1,jj
-              DO i=1,ii
-                IF (fld(i,j,k).NE.1e20)
-     .            fld(i,j,k)=1e3*rho(0.,fld(i,j,k),fld2(i,j,k))
-              ENDDO
-            ENDDO
-          ENDDO
-c
-c --- - Compute steric sea level
-        CASE ('ts2zossga')
-          IF (vtype.EQ.'layer') THEN
-            r=0.
-            DO j=1,jj
-              DO i=1,ii
-                pbottmp=0.
-                DO k=1,kk
-                  ptoptmp=pbottmp
-                  pbottmp=ptoptmp+dp(i,j,k)
-                  IF (fld(i,j,k).NE.1e20) THEN
-                    r=r+1e-2*(1e-2*ginv)*parea(i,j)*
-     .                p_alpha(ptoptmp,pbottmp,fld(i,j,k),fld2(i,j,k))
-                  ENDIF
-                ENDDO
-              ENDDO
-            ENDDO
-            fld(1,1,1)=(r-voglb)/aoglb
-            WRITE(*,*) 'zossga=',fld(1,1,1)
-          ELSE
-            STOP 'input variables for zossga must be of type layer'
-          ENDIF
-c
-c --- - Compute thermo-steric sea level
-        CASE ('t2zostoga')
-          IF (vtype.EQ.'layer') THEN
-            r=0.
-            DO j=1,jj
-              DO i=1,ii
-                pbottmp=0.
-                DO k=1,kk
-                  ptoptmp=pbottmp
-                  pbottmp=ptoptmp+dp(i,j,k)
-                  IF (fld(i,j,k).NE.1e20)
-     .              r=r+1e-2*(1e-2*ginv)*parea(i,j)*
-     .                p_alpha(ptoptmp,pbottmp,fld(i,j,k),sref)
-                ENDDO
-              ENDDO
-            ENDDO
-            fld(1,1,1)=(r-voglb)/aoglb
-            WRITE(*,*) 'zostoga',fld(1,1,1)
-          ELSE
-            STOP 'input variable for zostoga must be of type layer'
-          ENDIF
-c 
-c --- - Set land mask of streamfunction 
-        CASE ('strmf')
-          DO j=1,jj
-            DO i=1,ii    
-              if (pmask(i,j).EQ.0) fld(i,j,1)=1e20
-            ENDDO
-          ENDDO
-c
-c --- - Compute fixed cell volume of interpolated grid
-        CASE ('volcello')
-          DO j=1,jj
-            DO i=1,ii
-              DO k=ddm,1,-1
-                IF (fld(i,j,1).EQ.0.) THEN
-                  fld(i,j,k)=1e20
-                ELSE
-                  ptoptmp=MIN(depth_bnds(1,k),fld(i,j,1))
-                  pbottmp=MIN(depth_bnds(2,k),fld(i,j,1))
-                  fld(i,j,k)=(pbottmp-ptoptmp)*fld2(i,j,1)
-                ENDIF
-              ENDDO
-            ENDDO
-          ENDDO
-c
-c --- - Compute vertical velocity form vertical mass flux
-        CASE ('wflx2wo')
-          DO j=1,jj
-            DO i=1,ii
-              DO k=1,kk
-                IF (fld(i,j,k).NE.1e20) THEN
-                  fld(i,j,k)=fld(i,j,k)/(1035.*parea(i,j))
-                ENDIF
-              ENDDO
-            ENDDO
-          ENDDO
+    badrec = .false.
 
-c
-c --- - Compute fixed cell thickness
-        CASE ('thkcello')
-          DO j=1,jj
-            DO i=1,ii
-              DO k=ddm,1,-1
-                IF (fld(i,j,1).EQ.0.) THEN
-                  fld(i,j,k)=1e20
-                ELSE
-                  fld(i,j,k)=MIN(fld(i,j,1),depth_bnds(2,k))-
-     .                       MIN(fld(i,j,1),depth_bnds(1,k)) 
-                ENDIF
-              ENDDO
-            ENDDO
-          ENDDO
+    ! Print start information
+    if (verbose) then
+      write(*, *)
+      write(*, *) '----------------------------'
+      write(*, *) '--- Process ocean output ---'
+      write(*, *) '----------------------------'
+      write(*, *)
+    end if
 
-c 
-c --- - Compute basin index
-        CASE ('basin')
-          OPEN(10,FILE=TRIM(griddata)//TRIM(ocnmertfile))
-          READ(10,'(2i6)') i,j
-          IF (i.NE.idm.OR.j.NE.jdm)
-     .      STOP 'mertraocean: incorrect indexes in mertraoceans.dat!'
-          str1=' '
-          WRITE(str1,*) '(',jdm,'i1)'
-          READ(10,str1) ((basin(i,j),j=1,jdm),i=1,idm)
-          CLOSE(10)
-          fld=0
-          DO j=1,jdm
-            DO i=1,idm
-c --- --- --- Southern Ocean 
-              IF (plat(i,j).LT.0.AND.basin(i,j).EQ.1) fld(i,j,1)=1
-c --- --- --- Pacific Ocean 
-              IF (basin(i,j).EQ.3) fld(i,j,1)=3
-c --- --- --- Arctic Ocean
-              IF (plat(i,j).GT.60.AND.basin(i,j).EQ.1) fld(i,j,1)=4
-c --- --- --- Indian Ocean 
-              IF (basin(i,j).EQ.4) fld(i,j,1)=5
-c --- --- --- Mediterranean Sea
-              IF (basin(i,j).EQ.2.AND.plat(i,j).GT.30.5.AND.
-     .          plat(i,j).LT.40.5.AND.(plon(i,j).GT.354.5.OR.
-     .          plon(i,j).LT.37)) fld(i,j,1)=6
-              IF (basin(i,j).EQ.2.AND.plat(i,j).GT.40.5.AND.
-     .          plat(i,j).LT.46.AND.(plon(i,j).GT.359.OR.
-     .          plon(i,j).LT.27.5)) fld(i,j,1)=6
-c --- --- --- Black Sea  
-              IF (basin(i,j).EQ.1.AND.plat(i,j).GT.40.5.AND.
-     .          plat(i,j).LT.48.AND.plon(i,j).GT.27.5.AND.
-     .          plon(i,j).LT.45) fld(i,j,1)=7
-c --- --- --- Hudson Bay   
-              IF (basin(i,j).EQ.2.AND.plat(i,j).GT.50.AND.
-     .          plat(i,j).LT.70.AND.plon(i,j).GT.265.AND.
-     .          plon(i,j).LT.295) fld(i,j,1)=8
-c --- --- --- Baltic Sea  
-              IF (basin(i,j).EQ.2.AND.plat(i,j).GT.53.AND.
-     .          plat(i,j).LT.62.AND.plon(i,j).GT.10.AND.
-     .          plon(i,j).LT.30) fld(i,j,1)=9
-              IF (basin(i,j).EQ.2.AND.plat(i,j).GT.62.AND.
-     .          plat(i,j).LT.66.5.AND.plon(i,j).GT.17.AND.
-     .          plon(i,j).LT.30) fld(i,j,1)=9
-c --- --- --- Red Sea  
-              IF (basin(i,j).EQ.4.AND.plat(i,j).GT.13.AND.
-     .          plat(i,j).LT.30.AND.plon(i,j).GT.31.AND.
-     .          plon(i,j).LT.44) fld(i,j,1)=10
-c --- --- --- Atlantic ocean        
-              IF (basin(i,j).EQ.2.AND.fld(i,j,1).EQ.0) fld(i,j,1)=2
-            ENDDO
-          ENDDO
-c 
-c --- - Multiple a second field
-        CASE ('Xfield2')
-          DO k=1,kk
-            DO j=1,jj
-              DO i=1,ii
-                IF (fld(i,j,k).NE.1e20)
-     .            fld(i,j,k)=fld(i,j,k)*fld2(i,j,k)
-              ENDDO
-            ENDDO
-          ENDDO
-c
-c --- - Divide a second field
-        CASE ('Dfield2')
-          DO k=1,kk
-            DO j=1,jj
-              DO i=1,ii
-                IF (fld(i,j,k).NE.1e20)
-     .            fld(i,j,k)=fld(i,j,k)/fld2(i,j,k)
-              ENDDO
-            ENDDO
-          ENDDO
-c
-c --- - Integratal with respect to depth
-        CASE ('dpint')
-          DO j=1,jj
-            DO i=1,ii
-              IF (fld(i,j,1).NE.1e20)
-     .          fld(i,j,1)=fld(i,j,1)*fld2(i,j,1)/9.806
-              DO k=2,kk
-                IF (fld(i,j,k).NE.1e20)
-     .            fld(i,j,k)=fld(i,j,k-1)+fld(i,j,k)*fld2(i,j,k)/9.806
-              ENDDO
-            ENDDO
-          ENDDO
-c
-c --- - Average with respect to pressure
-        CASE ('dpavg')
-          DO j=1,jj
-            DO i=1,ii
-              IF (fld(i,j,1).NE.1e20)
-     .          fld(i,j,1)=fld(i,j,1)*fld2(i,j,1)
-              DO k=2,kk
-                IF (fld(i,j,k).NE.1e20) THEN
-                  fld(i,j,k)=fld(i,j,k-1)+fld(i,j,k)*fld2(i,j,k)
-                  fld2(i,j,1)=fld2(i,j,1)+fld2(i,j,k)
-                ENDIF
-              ENDDO
-              IF (fld(i,j,1).NE.1e20)
-     .          fld(i,j,1)=fld(i,j,1)/fld2(i,j,1)
-            ENDDO
-          ENDDO
-c
-c --- - Average over upper 300 m
-        CASE ('dzavg300')
-          fldtmp=1e20
-          DO j=1,jj
-            DO i=1,ii
-              IF (fld(i,j,1).NE.1e20) THEN
-                fldtmp(i,j,1)= (min(300.,pdepth(i,j),depth_bnds(2,1))
-     .                         -min(300.,pdepth(i,j),depth_bnds(1,1)))
-     .                         *pbot(i,j)/pdepth(i,j)
-                fld(i,j,1)=fld(i,j,1)*fldtmp(i,j,1)
-              END IF
-              DO k=2,kk
-                IF (fld(i,j,k).NE.1e20) THEN
-                  fldtmp(i,j,k)= (min(300.,pdepth(i,j),depth_bnds(2,k))
-     .                           -min(300.,pdepth(i,j),depth_bnds(1,k)))
-     .                           *pbot(i,j)/pdepth(i,j)
-                  fld(i,j,1)=fld(i,j,1)+fld(i,j,k)*fldtmp(i,j,k)
-                  fldtmp(i,j,1)=fldtmp(i,j,1)+fldtmp(i,j,k)
-                ENDIF
-              ENDDO
-              IF (fld(i,j,1).NE.1e20)
-     .          fld(i,j,1)=fld(i,j,1)/fldtmp(i,j,1)
-            ENDDO
-          ENDDO
-c
-c --- - Average over upper 700 m
-        CASE ('dzavg700')
-          fldtmp=1e20
-          DO j=1,jj
-            DO i=1,ii
-              IF (fld(i,j,1).NE.1e20) THEN
-                fldtmp(i,j,1)= (min(700.,pdepth(i,j),depth_bnds(2,1))
-     .                         -min(700.,pdepth(i,j),depth_bnds(1,1)))
-     .                         *pbot(i,j)/pdepth(i,j)
-                fld(i,j,1)=fld(i,j,1)*fldtmp(i,j,1)
-              END IF
-              DO k=2,kk
-                IF (fld(i,j,k).NE.1e20) THEN
-                  fldtmp(i,j,k)= (min(700.,pdepth(i,j),depth_bnds(2,k))
-     .                           -min(700.,pdepth(i,j),depth_bnds(1,k)))
-     .                           *pbot(i,j)/pdepth(i,j)
-                  fld(i,j,1)=fld(i,j,1)+fld(i,j,k)*fldtmp(i,j,k)
-                  fldtmp(i,j,1)=fldtmp(i,j,1)+fldtmp(i,j,k)
-                ENDIF
-              ENDDO
-              IF (fld(i,j,1).NE.1e20)
-     .          fld(i,j,1)=fld(i,j,1)/fldtmp(i,j,1)
-            ENDDO
-          ENDDO
-c
-c --- - Average over upper 2000 m
-        CASE ('dzavg2000')
-          fldtmp=1e20
-          DO j=1,jj
-            DO i=1,ii
-              IF (fld(i,j,1).NE.1e20) THEN
-                fldtmp(i,j,1)= (min(2000.,pdepth(i,j),depth_bnds(2,1))
-     .                         -min(2000.,pdepth(i,j),depth_bnds(1,1)))
-     .                         *pbot(i,j)/pdepth(i,j)
-                fld(i,j,1)=fld(i,j,1)*fldtmp(i,j,1)
-              END IF
-              DO k=2,kk
-                IF (fld(i,j,k).NE.1e20) THEN
-                  fldtmp(i,j,k)= (min(2000.,pdepth(i,j),depth_bnds(2,k))
-     .                          -min(2000.,pdepth(i,j),depth_bnds(1,k)))
-     .                           *pbot(i,j)/pdepth(i,j)
-                  fld(i,j,1)=fld(i,j,1)+fld(i,j,k)*fldtmp(i,j,k)
-                  fldtmp(i,j,1)=fldtmp(i,j,1)+fldtmp(i,j,k)
-                ENDIF
-              ENDDO
-              IF (fld(i,j,1).NE.1e20)
-     .          fld(i,j,1)=fld(i,j,1)/fldtmp(i,j,1)
-            ENDDO
-          ENDDO
-c
-c --- - Unit transformation: mol cfcXX m-3 -> mol cfcXX kg-1
-        CASE ('cfcunits')
-          DO k=1,kk
-            DO j=1,jj
-              DO i=1,ii
-                IF (fld(i,j,k).NE.1e20) fld(i,j,k)=fld(i,j,k)/1027.
-              ENDDO
-            ENDDO
-          ENDDO
-c
-c --- - atm to Pa
-        CASE ('atm2Pa')
-          DO k=1,kk
-            DO j=1,jj
-              DO i=1,ii
-                IF (fld(i,j,k).NE.1e20) fld(i,j,k)=fld(i,j,k)*101325
-              ENDDO
-            ENDDO
-          ENDDO
-c
-c --- - uatm to Pa 
-        CASE ('uatm2Pa')
-          DO k=1,kk
-            DO j=1,jj
-              DO i=1,ii
-                IF (fld(i,j,k).NE.1e20) fld(i,j,k)=fld(i,j,k)*0.101325
-              ENDDO
-            ENDDO
-          ENDDO
-c
-c --- - Convert units from [mol P/m3] to [kg Chl/m3] using [60 gC/gChl]
-        CASE ('mol P m-3 -> kg Chl m-3')
-          DO k=1,kk
-            DO j=1,jj
-              DO i=1,ii
-                IF (fld(i,j,k).NE.1e20)
-     .            fld(i,j,k)=fld(i,j,k)*122*12/60/1000
-              ENDDO
-            ENDDO
-          ENDDO
-c
-c --- - Convert units from [m3] to [1e3 km3]
-        CASE ('1e3 km3')
-          DO k=1,kk
-            DO j=1,jj
-              DO i=1,ii
-                IF (fld(i,j,k).NE.1e20)
-     .            fld(i,j,k)=fld(i,j,k)/1e3/1e9
-              ENDDO
-            ENDDO
-          ENDDO
-c
-c --- - Mask grid points in the southern hemisphere
-        CASE ('masks')
-          DO k=1,kk
-            DO j=1,jj 
-              DO i=1,ii    
-                IF (plat(i,j).LT.0.0) fld(i,j,k)=1e20
-              ENDDO  
-            ENDDO 
-          ENDDO
-c
-c --- - Mask grid points in the southern hemisphere
-        CASE ('maskn')
-          DO k=1,kk
-            DO j=1,jj 
-              DO i=1,ii    
-                IF (plat(i,j).GT.0.0) fld(i,j,k)=1e20
-              ENDDO  
-            ENDDO 
-          ENDDO
-c
-c --- - Multiple parea
-        CASE ('xparea')
-          DO k=1,kk
-            DO j=1,jj 
-              DO i=1,ii    
-                IF (fld(i,j,k).NE.1e20) fld(i,j,k)=fld(i,j,k)*parea(i,j)
-              ENDDO  
-            ENDDO 
-          ENDDO
+    ! Read grid information from input files
+    write(*, *) 'Read grid information from input files'
+    itag = tagomon
+    call scan_files(reset=.true.)
+    if (len_trim(fnm) == 0) return
+    call read_gridinfo_ifile
 
-c --- - Iron to phosphorous ratio in organic matter
-        CASE ('fe2ph')
-          DO k=1,kk
-            DO j=1,jj 
-              DO i=1,ii    
-                IF (fld(i,j,k).NE.1e20)
-     .              fld(i,j,k)=fld(i,j,k)*5.*122*1.e-6
-              ENDDO  
-            ENDDO 
-          ENDDO
+    ! Process table fx
+    write(*, *) 'Process table fx'
+    fnm = trim(griddata)//trim(ocngridfile)
+    table = tfx
+    do n = 1, nfx
+      if (skip_variable(n, nfx, dfx)) cycle
 
+      ! Map namelist variables
+      ovnm = vfx(ovnmpos, n)
+      ivnm = vfx(ivnmpos, n)
+      special = vfx(3, n)
+      vunits = ' '
+      vpositive = ' '
+      vcomment = ' '
 
-c --- - Carbon to iron 
-        CASE ('c2fe')
-          DO k=1,kk
-            DO j=1,jj 
-              DO i=1,ii    
-                IF (fld(i,j,k).NE.1e20) fld(i,j,k)=fld(i,j,k)*5.*1.e-6
-              ENDDO  
-            ENDDO 
-          ENDDO
+      ! Check if input variable is present
+      if (.not. var_in_file(fnm, ivnm)) cycle
 
-c --- - epc100 to epn100
-        CASE ('epc100toepn100')
-          DO k=1,kk
-            DO j=1,jj 
-              DO i=1,ii    
-                IF (fld(i,j,k).NE.1e20) fld(i,j,k)=fld(i,j,k)/122.*16.
-              ENDDO  
-            ENDDO 
-          ENDDO
+      ! Check if vertical coordinate required
+      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
 
-c --- - epc100 to epp100
-        CASE ('epc100toepp100')
-          DO k=1,kk
-            DO j=1,jj 
-              DO i=1,ii    
-                IF (fld(i,j,k).NE.1e20) fld(i,j,k)=fld(i,j,k)/122.
-              ENDDO  
-            ENDDO 
-          ENDDO
+      ! Prepare output file
+      call special_pre
+      call open_ofile(fx=.true.)
 
-c --- - percent
-        CASE ('percent')
-          DO k=1,kk
-            DO j=1,jj 
-              DO i=1,ii    
-                IF (fld(i,j,k).NE.1e20) fld(i,j,k)=fld(i,j,k)*100.
-              ENDDO  
-            ENDDO 
-          ENDDO
+      ! Read field
+      call read_field
 
-c
-        END SELECT
-c
-        IF (str1.EQ.str2) exit
-      END DO
-c
-      END SUBROUTINE special_post
+      ! Post Processing
+      call special_post
 
+      ! Write field
+      call write_field
 
+      ! Close output file
+      call close_ofile
 
-      SUBROUTINE read_gridinfo_ifile 
-c
-      IMPLICIT NONE
-c
-      LOGICAL :: check 
-      INTEGER :: i,j,k,n,fid
-      REAL(KIND=8) :: missing,phiu,phil
-c
-c --- Open first input file 
-      CALL scan_files(reset=.TRUE.)
-      status=nf90_open(fnm,nf90_nowrite,ncid)
-      CALL handle_ncerror(status)
-c
-c --- Read dimensions
-      status=nf90_inq_dimid(ncid,'x',dimid)
-      CALL handle_ncerror(status)
-      status=nf90_inquire_dimension(ncid,dimid,len=idm)
-      CALL handle_ncerror(status)
-c
-      status=nf90_inq_dimid(ncid,'y',dimid)
-      CALL handle_ncerror(status)
-      status=nf90_inquire_dimension(ncid,dimid,len=jdm)
-      CALL handle_ncerror(status)
-c
-      status=nf90_inq_dimid(ncid,'layer',dimid)
-      IF (status.EQ.nf90_noerr) THEN
-        status=nf90_inquire_dimension(ncid,dimid,len=kdm)
-        CALL handle_ncerror(status)
-        ALLOCATE(sigma(kdm),sigmahalf(kdm+1),sigma_bnds(2,kdm),
-     .    sigmahalf_bnds(2,kdm+1),STAT=status)
-        IF (status.NE.0) STOP 'cannot ALLOCATE enough memory (1b)'
-        status=nf90_inq_varid(ncid,'sigma',rhid)
-        CALL handle_ncerror(status)
-        status=nf90_get_var(ncid,rhid,sigma)
-        CALL handle_ncerror(status)
-        sigma_bnds(1,1)=sigma(1)-0.5*(sigma(2)-sigma(1)) 
-        sigma_bnds(2,1)=0.5*(sigma(2)+sigma(1)) 
-        DO k=2,kdm-1 
-          sigma_bnds(1,k)=0.5*(sigma(k)+sigma(k-1)) 
-          sigma_bnds(2,k)=0.5*(sigma(k)+sigma(k+1)) 
-        ENDDO
-        sigma_bnds(1,kdm)=0.5*(sigma(kdm)+sigma(kdm-1))
-        sigma_bnds(2,kdm)=sigma(kdm)+0.5*(sigma(kdm)-sigma(kdm-1)) 
-        sigmahalf(1:kdm)=sigma_bnds(1,1:kdm) 
-        sigmahalf(kdm+1)=sigma_bnds(2,kdm)
-        sigmahalf_bnds(1,2:kdm+1)=sigma
-        sigmahalf_bnds(2,1:kdm)=sigma
-        sigmahalf_bnds(1,1)=sigmahalf(1)
-        sigmahalf_bnds(2,kdm+1)=sigmahalf(kdm+1)
-      ENDIF
-c
-      status=nf90_inq_dimid(ncid,'depth',dimid)
-      IF (status.EQ.nf90_noerr) THEN
-        status=nf90_inquire_dimension(ncid,dimid,len=ddm)
-        CALL handle_ncerror(status)
-        ALLOCATE(depth(ddm),depth_bnds(2,ddm),STAT=status)
-        IF (status.NE.0) STOP 'cannot ALLOCATE enough memory (1c)'
-        status=nf90_inq_varid(ncid,'depth',rhid)
-        CALL handle_ncerror(status)
-        status=nf90_get_var(ncid,rhid,depth)
-        CALL handle_ncerror(status)
-        status=nf90_inq_varid(ncid,'depth_bnds',rhid)
-        CALL handle_ncerror(status)
-        status=nf90_get_var(ncid,rhid,depth_bnds)
-        CALL handle_ncerror(status)
-      ENDIF
-c
-      WRITE(*,*) 'read lat'
-      status=nf90_inq_dimid(ncid,'lat',dimid)
-      IF (status.EQ.nf90_noerr) THEN
-        status=nf90_inquire_dimension(ncid,dimid,len=ldm)
-        CALL handle_ncerror(status)
-        ALLOCATE(slat(ldm),slat_bnds(2,ldm),STAT=status)
-        IF (status.NE.0) STOP 'cannot ALLOCATE enough memory (1c)'
-        status=nf90_inq_varid(ncid,'lat',rhid)
-        CALL handle_ncerror(status)
-        status=nf90_get_var(ncid,rhid,slat)
-        CALL handle_ncerror(status)
-        slat_bnds(1,1)=max(-90.,slat(1)-0.5*(slat(2)-slat(1)))
-        slat_bnds(2,1)=0.5*(slat(2)+slat(1)) 
-        DO j=2,ldm-1 
-          slat_bnds(1,j)=0.5*(slat(j)+slat(j-1)) 
-          slat_bnds(2,j)=0.5*(slat(j)+slat(j+1)) 
-        ENDDO 
-        slat_bnds(1,ldm)=0.5*(slat(ldm)+slat(ldm-1))
-        slat_bnds(2,ldm)=min(90.,slat(ldm)+0.5*(slat(ldm)-slat(ldm-1)))
-      ENDIF
-c
-      WRITE(*,*) 'read region'
-      status=nf90_inq_varid(ncid,'region',rhid)
-c      IF (model_id.NE.'NorESM1-F'.AND.status.EQ.nf90_noerr) THEN
-      IF (status.EQ.nf90_noerr) THEN
-        status=nf90_inq_dimid(ncid,'region',dimid)
-        CALL handle_ncerror(status)
-        status=nf90_inquire_dimension(ncid,dimid,len=rdm)
-        CALL handle_ncerror(status)
-        status=nf90_inq_dimid(ncid,'slenmax',dimid)
-        status=nf90_inquire_dimension(ncid,dimid,len=slenmax2)
-        CALL handle_ncerror(status)
-        ALLOCATE(region(slenmax2,rdm),region1(rdm),STAT=status)
-        IF (status.NE.0) STOP 'cannot ALLOCATE enough memory (1d)'
-        status=nf90_inq_varid(ncid,'region',rhid)
-        CALL handle_ncerror(status)
-        WRITE(*,*) 'read region',slenmax2,rdm,shape(region)
-        status=nf90_get_var(ncid,rhid,region,(/1,1/),(/slenmax2,rdm/))
-        CALL handle_ncerror(status)
-        region1=' ' 
-        DO i=1,rdm
-          DO j=1,slenmax2 
-            region1(i)(j:j)=region(j,i)
-          ENDDO
-        ENDDO 
-      ENDIF
-c
-      WRITE(*,*) 'read section'
-      status=nf90_inq_varid(ncid,'section',rhid)
-c      IF (model_id.NE.'NorESM1-F'.AND.status.EQ.nf90_noerr) THEN
-      IF (status.EQ.nf90_noerr) THEN
-        status=nf90_inq_dimid(ncid,'section',dimid)
-        CALL handle_ncerror(status)
-        status=nf90_inquire_dimension(ncid,dimid,len=secdm)
-        CALL handle_ncerror(status)
-        status=nf90_inq_dimid(ncid,'slenmax',dimid)
-        status=nf90_inquire_dimension(ncid,dimid,len=slenmax2)
-        CALL handle_ncerror(status)
-        ALLOCATE(section(slenmax2,secdm),section1(secdm),
-     .    STAT=status)
-        IF (status.NE.0) STOP 'cannot ALLOCATE enough memory (1d)'
-        status=nf90_inq_varid(ncid,'section',rhid)
-        CALL handle_ncerror(status)
-        write(*,*) 'secdm,slenmax2:',secdm,slenmax2
-        status=nf90_get_var(ncid,rhid,section,(/1,1/),
-     .    (/slenmax2,secdm/))
-        CALL handle_ncerror(status)
-        write(*,*) 'section:',section
-        section1=' '
-        DO i=1,secdm
-          write(*,*) 'i:',i
-          s1=' '
-          DO j=1,slenmax2
-c            write(*,*) 'section(j,i):',section(j,i)
-            s1(j:j)=section(j,i)  
-          ENDDO
-          write(*,*) 's1:',s1
-c          s1 = trim(section(:,i))
-c          IF (TRIM(s1).EQ.'equatorial_undercurrent') THEN    
-c            section1(i)='pacific_equatorial_undercurrent'
-c          ELSEIF (TRIM(s1).EQ.'florida_bahamas') THEN  
-c            section1(i)='florida_bahamas_strait'
-c          ELSEIF (TRIM(s1).EQ.'taiwan_and_luzon_straits') THEN  
-          IF (TRIM(s1).EQ.'taiwan_and_luzon_straits') THEN  
-            section1(i)='taiwan_luzon_straits'
-          ELSE
-            section1(i)=TRIM(s1)
-          ENDIF
-          k=k+1
-        ENDDO
-      ENDIF
-c
-      write(*,*) 'l1898'
-c --- Read calendar information (change reference year)
-      status=nf90_inq_varid(ncid,'time',rhid)
-      CALL handle_ncerror(status)
-      status=nf90_get_att(ncid,rhid,'calendar',calendar)
-      CALL handle_ncerror(status)
-      status=nf90_get_att(ncid,rhid,'units',calunits)
-      CALL handle_ncerror(status)
-      READ(calunits(12:15),'(i4.4)') exprefyear 
-c
-c --- Close first file
-      status=nf90_close(ncid)
-      CALL handle_ncerror(status)
-c
-c --- Read longitudes, latitudes
-      ALLOCATE(parea(idm,jdm),pmask(idm,jdm),pdepth(idm,jdm),
-     .  plon(idm,jdm),plat(idm,jdm),bpini(idm,jdm),bpinit(idm,jdm),
-     .  ulon(idm,jdm),ulat(idm,jdm),vlon(idm,jdm),vlat(idm,jdm),
-     .  plon_crns(idm,jdm,ncrns),plat_crns(idm,jdm,ncrns),
-     .  ulon_crns(idm,jdm,ncrns),ulat_crns(idm,jdm,ncrns),
-     .  vlon_crns(idm,jdm,ncrns),vlat_crns(idm,jdm,ncrns),
-     .  plon_crnsp(ncrns,idm,jdm),plat_crnsp(ncrns,idm,jdm),
-     .  ulon_crnsp(ncrns,idm,jdm),ulat_crnsp(ncrns,idm,jdm),
-     .  vlon_crnsp(ncrns,idm,jdm),vlat_crnsp(ncrns,idm,jdm),
-     .  sealv(idm,jdm),xvec(idm),yvec(jdm),kvec(kdm),pbot(idm,jdm),
-     .  dzini(idm,jdm,kdm),sini(idm,jdm,kdm),tini(idm,jdm,kdm),
-     .  kvechalf(kdm+1),uscaley(idm,jdm),vscalex(idm,jdm),
-     .  udepth(idm,jdm),vdepth(idm,jdm),basin(idm,jdm),STAT=status) 
-      IF (status.NE.0) STOP 'cannot ALLOCATE enough memory (1)'
-c
-      FORALL (i=1:idm) xvec(i)=i 
-      FORALL (j=1:jdm) yvec(j)=j 
-      FORALL (k=1:kdm) kvec(k)=k-0.5
-      FORALL (k=1:kdm+1) kvechalf(k)=k-1 
-c
-c --- Open grid file 
-      status=nf90_open(TRIM(griddata)//TRIM(ocngridfile),nf90_nowrite,
-     .  ncid) 
-      CALL handle_ncerror(status)
-c
-c --- Read grid cell mask, area and bathymetry
-      status=nf90_inq_varid(ncid,'pdepth',rhid) 
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,pdepth)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'udepth',rhid) 
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,udepth)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'vdepth',rhid) 
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,vdepth)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'pmask',rhid) 
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,pmask)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'parea',rhid) 
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,parea)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'udy',rhid) 
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,uscaley)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'vdx',rhid) 
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,vscalex)
-      CALL handle_ncerror(status)
-      parea=parea*pmask
-c
-c --- Compute global ocean volume and area
-      voglb=SUM(parea*pdepth)
-      aoglb=SUM(parea)
-c
-c --- Read coordinates
-      write(*,*) 'line1974'
-      status=nf90_inq_varid(ncid,'plon',rhid) 
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,plon)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'plat',rhid) 
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,plat)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'ulon',rhid) 
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,ulon)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'ulat',rhid) 
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,ulat)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'vlon',rhid)
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,vlon)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'vlat',rhid)
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,vlat)
-      CALL handle_ncerror(status)
-c
-c --- Read grid cell vertices 
-      status=nf90_inq_varid(ncid,'pclon',rhid) 
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,plon_crns)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'pclat',rhid) 
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,plat_crns)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'uclon',rhid) 
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,ulon_crns)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'uclat',rhid) 
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,ulat_crns)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'vclon',rhid)
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,vlon_crns)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'vclat',rhid)
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,vlat_crns)
-      CALL handle_ncerror(status)
-      write(*,*) 'line2025'
-c
-c --- Permute to compensate for dimension bug in CMOR
-      DO j=1,jdm 
-        DO i=1,idm 
-          DO n=1,ncrns
-              plon_crnsp(n,i,j)=plon_crns(i,j,n)             
-              plat_crnsp(n,i,j)=plat_crns(i,j,n)             
-              ulon_crnsp(n,i,j)=ulon_crns(i,j,n)             
-              ulat_crnsp(n,i,j)=ulat_crns(i,j,n)     
-              vlon_crnsp(n,i,j)=vlon_crns(i,j,n)             
-              vlat_crnsp(n,i,j)=vlat_crns(i,j,n)     
-              IF (plon_crnsp(n,i,j).LT.0.)
-     .          plon_crnsp(n,i,j)=plon_crnsp(n,i,j)+360                 
-              IF (ulon_crnsp(n,i,j).LT.0.)
-     .          ulon_crnsp(n,i,j)=ulon_crnsp(n,i,j)+360                 
-              IF (vlon_crnsp(n,i,j).LT.0.)
-     .          vlon_crnsp(n,i,j)=vlon_crnsp(n,i,j)+360                 
-          ENDDO 
-          IF (plon(i,j).LT.0.) plon(i,j)=plon(i,j)+360                 
-          IF (ulon(i,j).LT.0.) ulon(i,j)=ulon(i,j)+360                 
-          IF (vlon(i,j).LT.0.) vlon(i,j)=vlon(i,j)+360                 
-        ENDDO 
-      ENDDO
-c
-c --- Close grid file 
-      status=nf90_close(ncid)
-      CALL handle_ncerror(status)
-c
-      return
-c --- Read initial layer profile from inicon.nc
-      status=nf90_open(TRIM(griddata)//TRIM(ocninitfile),nf90_nowrite,
-     .  ncid) 
-      CALL handle_ncerror(status)
-c
-      status=nf90_inq_varid(ncid,'dz',rhid)
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,dzini)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'saln',rhid)
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,sini)
-      CALL handle_ncerror(status)
-      status=nf90_inq_varid(ncid,'temp',rhid)
-      CALL handle_ncerror(status)
-      status=nf90_get_var(ncid,rhid,tini)
-      CALL handle_ncerror(status)
-c
-      status=nf90_close(ncid)
-      CALL handle_ncerror(status)
-c
-c --- Compute initial bottom pressure
-      bpini=0.
-      bpinit=0. 
-      DO j=1,jdm 
-        DO i=1,idm 
-          IF (pmask(i,j).GT.0.5) THEN  
-            phil=0.
-            DO k=1,kdm 
-              phiu=phil
-              phil=phiu-1e+4*g*dzini(i,j,k)
-              bpini(i,j)=getlpi(tini(i,j,k),sini(i,j,k),phiu,phil,
-     .          bpini(i,j))
-              bpinit(i,j)=getlpi(tini(i,j,k),35.,phiu,phil,bpinit(i,j))
-            ENDDO
-          ENDIF
-        ENDDO
-      ENDDO
-c
-      END SUBROUTINE read_gridinfo_ifile
+    end do
 
+    ! Process table Ofx
+    write(*, *) 'Process table Ofx'
+    fnm = trim(griddata)//trim(ocngridfile)
+    table = tofx
+    do n = 1, nofx
+      if (skip_variable(n, nofx, dofx)) cycle
 
+      ! Map namelist variables
+      ovnm = vofx(ovnmpos, n)
+      ivnm = vofx(ivnmpos, n)
+      special = vofx(3, n)
+      vunits = ' '
+      vpositive = ' '
+      vcomment = ' '
 
-      SUBROUTINE open_ofile(fx)
-c 
-      IMPLICIT NONE
-c
-      LOGICAL, OPTIONAL :: fx  
-      LOGICAL :: fxflag      
-c
-      REAL :: fac1,fac2,fac3,fac4,fac5,fac6
-      INTEGER, PARAMETER :: ndimmax=10
-      INTEGER :: i,j,k,n,ndims,dimids(ndimmax),dimlens(ndimmax)
-      CHARACTER(len=slenmax) :: coord,ivnm1,ivnm2,ivnm3,ivnm4,ivnm5,
-     .  ivnm6
-c
-      REAL(KIND=8), ALLOCATABLE   :: tmp1d(:),tmp2d(:,:)
-c
-c --- Check if output variable should have time coordinate
-      fxflag=.FALSE. 
-      IF (PRESENT(fx)) THEN 
-        IF (fx) fxflag=.TRUE.
-      ENDIF 
-c
-c --- Inquire variable units and dimensions in input file 
-      status=nf90_open(fnm,nf90_nowrite,ncid)
-      CALL handle_ncerror(status)
-c
-      CALL resolve_vnm(slenmax,ivnm,ivnm1,ivnm2,ivnm3,ivnm4,ivnm5,ivnm6,
-     .  fac1,fac2,fac3,fac4,fac5,fac6)
-      IF (verbose) THEN
-        WRITE(*,*) 'Resolve input variable term ',TRIM(ivnm),' ='
-        IF (LEN_TRIM(ivnm1).GT.0) WRITE(*,*) ' ',TRIM(ivnm1),'*',fac1
-        IF (LEN_TRIM(ivnm2).GT.0) WRITE(*,*) ' + ',TRIM(ivnm2),'*',fac2
-        IF (LEN_TRIM(ivnm3).GT.0) WRITE(*,*) ' + ',TRIM(ivnm3),'*',fac3
-        IF (LEN_TRIM(ivnm4).GT.0) WRITE(*,*) ' + ',TRIM(ivnm4),'*',fac4
-        IF (LEN_TRIM(ivnm5).GT.0) WRITE(*,*) ' + ',TRIM(ivnm5),'*',fac5
-        IF (LEN_TRIM(ivnm6).GT.0) WRITE(*,*) ' + ',TRIM(ivnm6),'*',fac6
-      ENDIF 
-      status=nf90_inq_varid(ncid,TRIM(ivnm1),rhid)
-      IF (status.NE.nf90_noerr) THEN
-        WRITE(*,*) 'cannot find input variable ',TRIM(ivnm1)
-        STOP
-      ENDIF
-      status=nf90_inquire_variable(ncid,rhid,ndims=ndims)
-      CALL handle_ncerror(status)
-      status=nf90_inquire_variable(ncid,rhid,dimids=dimids(1:ndims))
-      CALL handle_ncerror(status)
-      dimlens=1
-      DO n=1,ndims
-        status=nf90_inquire_dimension(ncid,dimids(n),len=dimlens(n))
-        CALL handle_ncerror(status)
-      ENDDO
-      IF (.NOT.ALLOCATED(dp)) ALLOCATE(dp(idm,jdm,kdm))
-      IF (ALLOCATED(fld)) DEALLOCATE(fld,fld2,fldacc,fldtmp)
-      ii=idm
-      jj=jdm
-      kk=kdm
-      write(*,*) 'dimlens(3):',dimlens(3)
-      write(*,*) 'kdm:',kdm
-      IF (dimlens(3).EQ.kdm.AND.kdm.GT.0) THEN
-        vtype='layer'
-      ELSEIF (dimlens(3).EQ.ddm.AND.ddm.GT.0.OR.
-     .  INDEX(special,'volcello').GT.0.OR.
-     .  INDEX(special,'thkcello').GT.0.OR.
-     .  INDEX(special,'masscello').GT.0) THEN
-        vtype='level'
-        kk=ddm
-      ELSEIF (dimlens(1).EQ.idm.AND.dimlens(2).EQ.jdm.AND.ndims.LE.3)
-     .  THEN
-        vtype='2d'
-        kk=1
-      ELSEIF (dimlens(1).EQ.ldm.AND.dimlens(2).EQ.kdm) THEN
-        vtype='merk'
-        ii=ldm
-        jj=kdm
-        kk=rdm
-      ELSEIF (dimlens(1).EQ.ldm.AND.dimlens(2).EQ.ddm) THEN
-        vtype='merd'
-        ii=ldm
-        jj=ddm
-        kk=rdm
-      ELSEIF (dimlens(1).EQ.ldm.AND.dimlens(2).EQ.rdm) THEN
-        vtype='mert'
-        ii=ldm
-        jj=rdm
-        kk=1
-      ELSEIF (dimlens(1).EQ.secdm.AND.ndims.EQ.2) THEN
-        vtype='sect'
-        ii=secdm
-        jj=1
-        kk=1
-      ELSEIF (dimlens(1).EQ.1.AND.ndims.EQ.1) THEN
-        vtype='1d'
-        ii=1
-        jj=1
-        kk=1
-      ENDIF
-      ALLOCATE(fld(ii,jj,kk),fld2(ii,jj,kk),fldacc(ii,jj,kk),
-     .    fldtmp(ii,jj,kk),STAT=status)
-      IF (status.NE.0) STOP 'cannot ALLOCATE enough memory (4)'
-      IF (INDEX(special,'half').GT.0) THEN
-        IF (ALLOCATED(fldhalf)) DEALLOCATE(fldhalf)
-        ALLOCATE(fldhalf(idm,jdm,kdm+1),STAT=status)
-        IF (status.NE.0) STOP 'cannot ALLOCATE enough memory (5)'
-      ENDIF
-c 
-      IF (LEN_TRIM(vunits).EQ.0) THEN
-        status=nf90_get_att(ncid,rhid,'units',vunits)
-        CALL handle_ncerror(status)
-        IF (TRIM(vunits).EQ.'mm/s') vunits='kg m-2 s-1'
-      END IF 
-c
-      coord=' '
-      status=nf90_get_att(ncid,rhid,'coordinates',coord)
-      IF (status.NE.nf90_noerr) coord(1:1)=ivnm(1:1)
-c
-      status=nf90_close(ncid)
-      CALL handle_ncerror(status)
-c
-c --- Derive path of CMOR table 
-        tablepath=TRIM(tabledir)//TRIM(table)
-c
-c --- Inquire time dimension of output variable 
-        write(*,*) 'tablepath:',trim(tablepath)
-        write(*,*) 'ovm:',trim(ovnm)
-        write(*,*) 'vtype:',trim(vtype)
-      IF (.NOT.fxflag) CALL get_timecoord(TRIM(tablepath),ovnm,tcoord)
-c
-c --- Call CMOR setup 
-      IF (verbose) THEN
-        IF (createsubdirs) THEN  
-          error_flag=cmor_setup(inpath=TRIM(ibasedir),
-     .      netcdf_file_action=CMOR_REPLACE_4,set_verbosity=CMOR_NORMAL, 
-     .      create_subdirectories=1)
-        ELSE
-          error_flag=cmor_setup(inpath=TRIM(ibasedir),
-     .      netcdf_file_action=CMOR_REPLACE_4,set_verbosity=CMOR_NORMAL, 
-     .      create_subdirectories=0)
-        ENDIF
-      ELSE
-        IF (createsubdirs) THEN
-          error_flag=cmor_setup(inpath=TRIM(ibasedir),
-     .      netcdf_file_action=CMOR_REPLACE_4,set_verbosity=CMOR_QUIET,
-     .      create_subdirectories=1)
-        ELSE
-          error_flag=cmor_setup(inpath=TRIM(ibasedir),
-     .      netcdf_file_action=CMOR_REPLACE_4,set_verbosity=CMOR_QUIET,
-     .      create_subdirectories=0)
-        ENDIF
-      ENDIF
-      IF (error_flag.NE.0) STOP 'Problem setting up CMOR'
-c
-c --- Derive path to CMOR table 
-      tablepath=TRIM(tabledir)//TRIM(table)
-c
-c --- Define output dataset 
-      grid_label=ocngrid_label
-      grid=TRIM(ocngrid) 
-      IF (TRIM(vtype).EQ.'layer'.AND..NOT.
-     .  (lsumz.OR.INDEX(special,'glbave').GT.0
-     .  .OR.INDEX(special,'2zos').GT.0 
-     .  .OR.INDEX(special,'level1').GT.0)) THEN
-        grid=TRIM(ocngrid)//', vertical density coordinate' 
-      ELSE 
-        IF (INDEX(special,'glbave').GT.0
-     .     .OR.INDEX(special,'2zos').GT.0) THEN 
-          grid_label='gm'
-          grid='global mean or integral'  
-        ELSE
-          IF (vtype(1:3).EQ.'mer'.OR.ovnm(1:7).EQ.'hfbasin') THEN 
-            grid_label='grz' 
-            grid='zonal mean or integral'  
-          ELSEIF (TRIM(vtype).EQ.'level') THEN 
-            grid_label='gr' 
-            grid=TRIM(ocngrid)//', interpolated to z-levels'
-          ENDIF 
-        ENDIF 
-      ENDIF 
-      CALL write_namelist_json(grid,grid_label,ocngrid_resolution,ovnm)
-      error_flag=cmor_dataset_json(namelist_file_json)
-      CALL SYSTEM('rm '//TRIM(namelist_file_json))
-c
-c --- Define horizontal axes 
-      write(*,*) 'Define horizontal axes'
-      IF (vtype(1:3).NE.'mer'.AND.vtype(1:3).NE.'sec') THEN
-        iaxid=cmor_axis(
-     .    table           = TRIM(tabledir)//TRIM(tgrids),  
-     .    table_entry     = 'i_index',
-     .    units           = '1',
-     .    length          = idm,
-     .    coord_vals      = xvec)
-        jaxid=cmor_axis(
-     .    table           = TRIM(tabledir)//TRIM(tgrids),
-     .    table_entry     = 'j_index',
-     .    units           = '1',
-     .    length          = jdm,
-     .    coord_vals      = yvec)
-c
-        write(*,*) 'Define horizontal grid '//coord(1:1)
-        IF (coord(1:1).EQ.'p') THEN
-          grdid=cmor_grid(
-     .      axis_ids=(/iaxid,jaxid/),
-     .      latitude=plat,
-     .      longitude=plon,
-     .    latitude_vertices=plat_crnsp,
-     .    longitude_vertices=plon_crnsp)
-        ELSEIF (coord(1:1).EQ.'u') THEN
-          grdid=cmor_grid( 
-     .      axis_ids=(/iaxid,jaxid/),
-     .      latitude=ulat,
-     .      longitude=ulon,
-     .      latitude_vertices=ulat_crnsp,
-     .      longitude_vertices=ulon_crnsp)
-        ELSEIF (coord(1:1).EQ.'v') THEN
-          grdid=cmor_grid(
-     .      axis_ids=(/iaxid,jaxid/),
-     .      latitude=vlat,
-     .      longitude=vlon,
-     .      latitude_vertices=vlat_crnsp,
-     .      longitude_vertices=vlon_crnsp)
-        ENDIF
-      ENDIF 
-c
-      IF (vtype(1:3).EQ.'mer') THEN
-        laxid=cmor_axis(
-     .    table           = TRIM(tablepath),
-     .    table_entry     = 'latitude',
-     .    units           = 'degrees_north',
-     .    length          = ldm,
-     .    coord_vals      = slat,
-     .    cell_bounds     = slat_bnds)
-        raxid=cmor_axis(
-     .    table           = TRIM(tablepath),
-     .    table_entry     = 'basin',
-     .    units           = '1',
-     .    coord_vals      = region1)
-      ENDIF            
-c
-c --- Define vertical axis 
-          write(*,*) "line 2428"
-          write(*,*) 'vtype:',trim(vtype)
-      IF (TRIM(vtype).EQ.'layer'.AND..NOT.
-     .  (lsumz.OR.INDEX(special,'glbave').GT.0
-     .  .OR.INDEX(special,'2zos').GT.0
-     .  .OR.INDEX(special,'level1').GT.0)) THEN 
-        IF (INDEX(special,'half').GT.0) THEN 
-          kaxid=cmor_axis(
-     .      table           = TRIM(tablepath),
-     .      table_entry     = 'rho',
-     .      units           = 'kg m-3',
-     .      length          = kdm+1,
-     .      coord_vals      = 1000.+sigmahalf,
-     .      cell_bounds     = 1000.+sigmahalf_bnds)
-        ELSE
-          write(*,*) "line 2451"
-          kaxid=cmor_axis(
-     .      table           = TRIM(tablepath),
-     .      table_entry     = 'rho',
-     .      units           = 'kg m-3',
-     .      length          = kdm,
-     .      coord_vals      = 1000.+sigma,
-     .      cell_bounds     = 1000.+sigma_bnds)
-          write(*,*) "line 2459"
-        ENDIF
-      ELSEIF (INDEX(special,'level1').GT.0) THEN 
-        kaxid=cmor_axis(
-     .    table           = TRIM(tablepath),
-     .    table_entry     = 'depth0m',
-     .    units           = 'm',
-     .    length          = 1,
-     .    coord_vals      = (/0/))
-      ELSEIF (INDEX(special,'dzavg300').GT.0) THEN 
-        kaxid=cmor_axis(
-     .    table           = TRIM(tablepath),
-     .    table_entry     = 'depth300m',
-     .    units           = 'm',
-     .    length          = 1,
-     .    coord_vals      = (/150./),
-     .    cell_bounds     = (/0.,300./))
-      ELSEIF (INDEX(special,'dzavg700').GT.0) THEN 
-        kaxid=cmor_axis(
-     .    table           = TRIM(tablepath),
-     .    table_entry     = 'depth700m',
-     .    units           = 'm',
-     .    length          = 1,
-     .    coord_vals      = (/350./),
-     .    cell_bounds     = (/0.,700./))
-      ELSEIF (INDEX(special,'dzavg2000').GT.0) THEN 
-        kaxid=cmor_axis(
-     .    table           = TRIM(tablepath),
-     .    table_entry     = 'depth2000m',
-     .    units           = 'm',
-     .    length          = 1,
-     .    coord_vals      = (/1000./),
-     .    cell_bounds     = (/0.,2000./))
-      ELSEIF (TRIM(vtype).EQ.'level'.OR.vtype(1:4).EQ.'merd') THEN
-        kaxid=cmor_axis(
-     .    table           = TRIM(tablepath),
-     .    table_entry     = 'depth_coord',
-     .    units           = 'm',
-     .    length          = ddm,
-     .    coord_vals      = depth,
-     .    cell_bounds     = depth_bnds)
-      ELSEIF (vtype(1:4).EQ.'merk') THEN
-        kaxid=cmor_axis(
-     .    table           = TRIM(tablepath),
-     .    table_entry     = 'rho',
-     .    units           = 'kg m-3',
-     .    length          = kdm,
-     .    coord_vals      = sigma+1000.,
-     .    cell_bounds     = sigma_bnds+1000.)
-      ELSEIF (TRIM(zcoord).EQ.'olevel') THEN
-        ALLOCATE (tmp1d(1),tmp2d(2,1))
-        tmp1d(:) = (/5.d0/)
-        tmp2d(:,1) = (/0.d0,10.d0/)
-        kaxid=cmor_axis(
-     .    table           = TRIM(tablepath),
-     .    table_entry     = 'depth_coord',
-     .    units           = 'm',
-     .    length          = 1,
-     .    coord_vals      = tmp1d, !(/5.d0/),
-     .    cell_bounds     = tmp2d ) !reshape((/0.d0,10.d0/),(/2,1/)))
-        DEALLOCATE(tmp1d,tmp2d)
-        ELSEIF (vtype(1:3).EQ.'sec') THEN
-        saxid=cmor_axis(
-     .    table           = TRIM(tablepath),
-     .    table_entry     = 'oline',
-     .    units           = '1',
-     .    coord_vals      = section1) 
-      ENDIF
-c   
-c --- Define time axis 
-      IF (.NOT.fxflag) THEN
-        write(*,*) 'Define time axis ' 
-        write(*,*) 'tcoord:',trim(tcoord)
-          taxid=cmor_axis(
-     .      table          = TRIM(tablepath),
-     .      table_entry    = TRIM(tcoord),
-     .      units          = TRIM(calunits),
-     .      length         = 1)
-      ENDIF 
-c
-c --- Define output variable
-      write(*,*) 'Define output variable'
-      write(*,*) 'zcoord:',trim(zcoord)
-      IF (fxflag) THEN 
-        IF ((TRIM(vtype).EQ.'2d'.AND..NOT.(TRIM(zcoord).EQ.'olevel'.OR.
-     .    INDEX(special,'glbave').GT.0.OR.INDEX(special,'2zos').GT.0.))
-     .    .OR.lsumz) THEN
-          varid=cmor_variable(
-     .      table          = TRIM(tablepath),
-     .      table_entry    = TRIM(ovnm),
-     .      units          = TRIM(vunits),
-     .      axis_ids       = (/grdid/),
-     .      missing_value  = 1e20,
-     .      comment        = TRIM(vcomment),
-     .      original_name  = TRIM(ivnm))
-        ELSEIF (INDEX(special,'glbave').GT.0
-     .    .OR.INDEX(special,'2zos').GT.0.) THEN
-          varid=cmor_variable(
-     .      table          = TRIM(tablepath),
-     .      table_entry    = TRIM(ovnm),
-     .      units          = TRIM(vunits),
-     .      axis_ids       = (/taxid/),
-     .      original_name  = TRIM(ivnm),
-     .      missing_value  = 1e20,
-     .      comment        = TRIM(vcomment),
-     .      positive       = TRIM(vpositive))
-        ELSE
-          varid=cmor_variable(
-     .      table          = TRIM(tablepath),
-     .      table_entry    = TRIM(ovnm),
-     .      units          = TRIM(vunits),
-     .      axis_ids       = (/grdid,kaxid/),
-     .      missing_value  = 1e20,
-     .      comment        = TRIM(vcomment),
-     .      original_name  = TRIM(ivnm))
-        ENDIF
-      ELSE
-        write(*,*) 'vtype:',trim(vtype)
-        write(*,*) 'zcoord:',trim(zcoord)
-        IF ((TRIM(vtype).EQ.'2d'.AND..NOT.(TRIM(zcoord).EQ.'ol'.OR.
-     .    INDEX(special,'glbave').GT.0.OR.INDEX(special,'2zos').GT.0.
-     .  )).OR.lsumz.AND..NOT.INDEX(special,'glbave').GT.0
-     .    .OR.INDEX(special,'lvl2srf').GT.0
-     .    .OR.INDEX(special,'locmin').GT.0
-     .    .OR.INDEX(special,'dpint').GT.0
-     .    .OR.INDEX(special,'dpavg').GT.0
-     .    .OR.INDEX(special,'omega2z').GT.0) THEN 
-        write(*,*) 'case l2594'
-          varid=cmor_variable(
-     .      table          = TRIM(tablepath),
-     .      table_entry    = TRIM(ovnm),
-     .      units          = TRIM(vunits),
-     .      axis_ids       = (/grdid,taxid/),
-     .      original_name  = TRIM(ivnm),
-     .      missing_value  = 1e20, 
-     .      comment        = TRIM(vcomment),
-     .      positive       = TRIM(vpositive))
-        ELSEIF (INDEX(special,'dzavg').GT.0.) THEN
-          varid=cmor_variable(
-     .      table          = TRIM(tablepath),
-     .      table_entry    = TRIM(ovnm),
-     .      units          = TRIM(vunits),
-     .      axis_ids       = (/grdid,taxid,kaxid/),
-     .      original_name  = TRIM(ivnm),
-     .      missing_value  = 1e20, 
-     .      comment        = TRIM(vcomment),
-     .      positive       = TRIM(vpositive))
-        ELSEIF (TRIM(vtype).EQ.'layer'.AND..NOT.(TRIM(ovnm).EQ.'zfull'
-     .    .OR.TRIM(ovnm).EQ.'half'.OR.INDEX(special,'glbave').GT.0
-     .    .OR.INDEX(special,'2zos').GT.0.)) THEN
-        write(*,*) 'case l2617'
-          varid=cmor_variable(
-     .      table          = TRIM(tablepath),
-     .      table_entry    = TRIM(ovnm),
-     .      units          = TRIM(vunits),
-     .      axis_ids       = (/grdid,kaxid,taxid/),
-     .      original_name  = TRIM(ivnm),
-     .      missing_value  = 1e20,
-     .      positive       = TRIM(vpositive),
-     .      comment        = 'Please note that the layer depth '
-     .                     //'information is stored '
-     .                     //'separately in "zfull" '
-     .                     //'and "zhalf" while approximate layer '
-     .                     //'density values are stored together '
-     .                     //'with "msftmrho". '//TRIM(vcomment))
-        ELSEIF (vtype(1:4).EQ.'merd'.OR.vtype(1:4).EQ.'merk') THEN
-          varid=cmor_variable(
-     .      table          = TRIM(tablepath),
-     .      table_entry    = TRIM(ovnm),
-     .      units          = TRIM(vunits),
-     .      axis_ids       = (/laxid,kaxid,raxid,taxid/),
-     .      original_name  = TRIM(ivnm),
-     .      missing_value  = 1e20, 
-     .      comment        = TRIM(vcomment),
-     .      positive       = TRIM(vpositive))
-        ELSEIF (vtype(1:4).EQ.'mert') THEN 
-          varid=cmor_variable(
-     .      table          = TRIM(tablepath),
-     .      table_entry    = TRIM(ovnm),
-     .      units          = TRIM(vunits),
-     .      axis_ids       = (/laxid,raxid,taxid/),
-     .      original_name  = TRIM(ivnm),
-     .      missing_value  = 1e20, 
-     .      comment        = TRIM(vcomment),
-     .      positive       = TRIM(vpositive))
-        ELSEIF (vtype(1:4).EQ.'sect') THEN 
-          varid=cmor_variable(
-     .      table          = TRIM(tablepath),
-     .      table_entry    = TRIM(ovnm),
-     .      units          = TRIM(vunits),
-     .      axis_ids       = (/saxid,taxid/),
-     .      original_name  = TRIM(ivnm),
-     .      missing_value  = 1e20, 
-     .      comment        = TRIM(vcomment),
-     .      positive       = TRIM(vpositive))
-        ELSEIF (INDEX(special,'glbave').GT.0
-     .    .OR.INDEX(special,'2zos').GT.0.) THEN
-          varid=cmor_variable(
-     .      table          = TRIM(tablepath),
-     .      table_entry    = TRIM(ovnm),
-     .      units          = TRIM(vunits),
-     .      axis_ids       = (/taxid/),
-     .      original_name  = TRIM(ivnm),
-     .      missing_value  = 1e20,
-     .      comment        = TRIM(vcomment),
-     .      positive       = TRIM(vpositive))
-        ELSE 
-          varid=cmor_variable(
-     .      table          = TRIM(tablepath),
-     .      table_entry    = TRIM(ovnm),
-     .      units          = TRIM(vunits),
-     .      axis_ids       = (/grdid,kaxid,taxid/),
-     .      original_name  = TRIM(ivnm),
-     .      missing_value  = 1e20, 
-     .      comment        = TRIM(vcomment),
-     .      positive       = TRIM(vpositive))
-        ENDIF
-      ENDIF
+      ! Use oceanregnfile for region
+      if (ovnm == 'basin') then
+        fnm = trim(griddata)//trim(ocnregnfile)
+      else
+        fnm = trim(griddata)//trim(ocngridfile)
+      end if
+
+      ! Check if input variable is present
+      if (.not. var_in_file(fnm, ivnm)) cycle
+
+      ! Check if vertical coordinate required
+      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
+
+      ! Prepare output file
+      call special_pre
+      call open_ofile(fx=.true.)
+
+      ! Read field
+      call read_field
+
+      ! Post Processing
+      call special_post
+
+      ! Write field
+      call write_field
+
+      ! Close output file
+      call close_ofile
+
+    end do
+
+    ! Process table Oyr
+    write(*, *) 'Process table Oyr'
+    fnm = poyr
+    table = toyr
+    do n = 1, noyr
+      if (skip_variable(n, noyr, doyr)) cycle
+
+      ! Map namelist variables
+      ovnm = voyr(ovnmpos, n)
+      ivnm = voyr(ivnmpos, n)
+      special = voyr(3, n)
+      vunits = ' '
+      vpositive = ' '
+      vcomment = ' '
+
+      ! Check if vertical coordinate required
+      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
+
+      ! Choose history file
+      if (index(special, 'mon2yr') > 0) then
+        itag = tagomon
+      else
+        itag = tagoyr
+      end if
+
+      ! Check if input variable is present
+      if (len_trim(poyr) == 0) call scan_files(reset=.true.)
+      if (.not. var_in_file(fnm, ivnm)) cycle
+
+      ! Prepare output file
+      call special_pre
+
+      ! Loop over input files
+      m = 0
+      do
+        m = m + 1
+
+        ! Open output file
+        if (mod(m - 1, royr) == 0) call open_ofile
+
+        ! Read variable into buffer (average if necessary)
+        rec = 0
+        nrec = 0
+        fldacc = 0.
+        last = .false.
+        first = .true.
+        do
+          if (len_trim(poyr) == 0) call scan_files(reset=.false.)
+          if (rec == 0) then
+            last = .true.
+            exit
+          end if
+          nrec = nrec + 1
+          call read_tslice(rec, badrec, fnm)
+          fldacc = fldacc + fld
+          if (index(special, 'mon2yr') > 0) then
+            if (first) tbnds(1, 1) = mbnd(1)
+            tbnds(2, 1) = mbnd(2)
+          else
+            tbnds(1, 1) = tval(1) - 365. / 2.
+            tbnds(2, 1) = tval(1) + 365. / 2.
+            exit
+          end if
+          first = .false.
+          if (month == 12) exit
+        end do
+        if (last) exit
+        fld = fldacc / real(nrec)
+        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
+
+        ! Post processing
+        call special_post
+
+        ! Write time slice to output file
+        call write_tslice
+
+        ! Close output file if max rec has been reached
+        if (mod(m, royr) == 0) call close_ofile
+
+      end do
+
+      ! Close output file if still open
+      if (mod(m, royr) > 0) call close_ofile
+
+    end do
+
+    ! Process table oyr (bgc)
+    write(*, *) 'Process table oyr (bgc)'
+    fnm = poyrbgc
+    table = toyrbgc
+    do n = 1, noyrbgc
+      if (skip_variable(n, noyrbgc, doyrbgc)) cycle
+
+      ! Map namelist variables
+      ovnm = voyrbgc(ovnmpos, n)
+      ivnm = voyrbgc(ivnmpos, n)
+      special = voyrbgc(3, n)
+      vunits = ' '
+      vpositive = ' '
+      vcomment = ' '
+
+      ! Choose history file
+      if (index(special, 'mon2yr') > 0) then
+        itag = tagomonbgc
+      else
+        itag = tagoyrbgc
+      end if
+
+      ! Check if input variable is present
+      if (len_trim(poyrbgc) == 0) call scan_files(reset=.true.)
+      if (.not. var_in_file(fnm, ivnm)) cycle
+
+      ! Check if vertical coordinate required
+      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
+
+      ! Prepare output file
+      call special_pre
+
+      ! Loop over input files
+      m = 0
+      do
+        m = m + 1
+
+        ! Open output file
+        if (mod(m - 1, royrbgc) == 0) call open_ofile
+
+        ! Read variable into buffer (average if necessary)
+        rec = 0
+        nrec = 0
+        fldacc = 0.
+        last = .false.
+        first = .true.
+        do
+          if (len_trim(poyrbgc) == 0) call scan_files(reset=.false.)
+          if (rec == 0) then
+            last = .true.
+            exit
+          end if
+          nrec = nrec + 1
+          call read_tslice(rec, badrec, fnm)
+          fldacc = fldacc + fld
+          if (index(special, 'mon2yr') > 0) then
+            if (first) tbnds(1, 1) = mbnd(1)
+            tbnds(2, 1) = mbnd(2)
+          else
+            tbnds(1, 1) = tval(1) - 365. / 2.
+            tbnds(2, 1) = tval(1) + 365. / 2.
+            exit
+          end if
+          first = .false.
+          if (month == 12) exit
+        end do
+        if (last) exit
+        fld = fldacc / real(nrec)
+        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
+
+        ! Post processing
+        call special_post
+
+        ! Write time slice to output file
+        call write_tslice
+
+        ! Close output file if max rec has been reached
+        if (mod(m, royrbgc) == 0) call close_ofile
+
+      end do
+
+      ! Close output file if still open
+      if (mod(m, royrbgc) > 0) call close_ofile
+
+    end do
+
+    ! Process table Omon
+    write(*, *) 'Process table Omon'
+    fnm = pomon
+    table = tomon
+    do n = 1, nomon
+      if (skip_variable(n, nomon, domon)) cycle
+
+      ! Map namelist variables
+      ovnm = vomon(ovnmpos, n)
+      ivnm = vomon(ivnmpos, n)
+      special = vomon(3, n)
+      vunits = ' '
+      vpositive = ' '
+      vcomment = ' '
+
+      ! Check if vertical coordinate required
+      write(*, *) 'l381,tabledir/table:', trim(tabledir)//trim(table)
+      write(*, *) 'ovnm:', trim(ovnm)
+      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
+      write(*, *) 'l382,zcoord:', trim(zcoord)
+
+      ! Check if we should skip variable
+      write(*, *) trim(ovnm), trim(zcoord), do_3d, do_xd
+      if (.not. do_3d .and. do_xd) then
+        if (zcoord(1:6) == 'olevel' .and. ovnm(1:5) /= 'mmflx' &
+          .and. ovnm(1:8) /= 'ficeberg' .and. &
+          ovnm(1:11) /= 'hfsithermds') cycle
+      else if (do_3d .and. .not. do_xd) then
+        if (zcoord(1:6) /= 'olevel' .or. ovnm(1:5) == 'mmflx' &
+          .or. ovnm(1:8) == 'ficeberg' .or. &
+          ovnm(1:11) == 'hfsithermds') cycle
+      else if (.not. do_3d .and. .not. do_xd) then
+        cycle
+      end if
+
+      ! Choose history file
+      if (index(special, 'day2mon') > 0) then
+        itag = tagoday
+      else
+        itag = tagomon
+      end if
+
+      ! Check if input variable is present
+      if (len_trim(pomon) == 0) call scan_files(reset=.true.)
+      if (.not. var_in_file(fnm, ivnm)) cycle
+
+      ! Prepare output file
+      call special_pre
+
+      ! Loop over input files
+      m = 0
+      do
+        m = m + 1
+
+        ! Open output file
+        if (mod(m - 1, romon) == 0) call open_ofile
+
+        ! Read variable into buffer (average if necessary)
+        rec = 0
+        nrec = 0
+        fldacc = 0.
+        last = .false.
+        do
+          if (len_trim(pomon) == 0) call scan_files(reset=.false.)
+          if (rec == 0) then
+            last = .true.
+            exit
+          end if
+          nrec = nrec + 1
+          call read_tslice(rec, badrec, fnm)
+          fldacc = fldacc + fld
+          if (index(special, 'day2mon') > 0) then
+            if (tbnd(2) + 0.5 >= mbnd(2)) exit
+          else
+            exit
+          end if
+        end do
+        if (last) exit
+        fld = fldacc / real(nrec)
+        tbnds(:, 1) = mbnd
+        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
+
+        ! Post processing
+        call special_post
+
+        ! Write time slice to output file
+        call write_tslice
+
+        ! Close output file if max rec has been reached
+        if (mod(m, romon) == 0) call close_ofile
+
+      end do
+
+      ! Close output file if still open
+      if (mod(m, romon) > 0) call close_ofile
+
+    end do
+
+    ! Process table Emon
+    write(*, *) 'Process table Emon'
+    fnm = pEmon
+    table = tEmon
+    do n = 1, nEmon
+      if (skip_variable(n, nEmon, dEmon)) cycle
+
+      ! Map namelist variables
+      ovnm = vEmon(ovnmpos, n)
+      ivnm = vEmon(ivnmpos, n)
+      special = vEmon(3, n)
+      vunits = ' '
+      vpositive = ' '
+      vcomment = ' '
+
+      ! Check if vertical coordinate required
+      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
+
+      ! Check if we should skip variable
+      write(*, *) trim(ovnm), trim(zcoord), do_3d, do_xd
+      if (.not. do_3d .and. do_xd) then
+        if (zcoord(1:6) == 'olevel' .and. ovnm(1:5) /= 'mmflx' &
+          .and. ovnm(1:8) /= 'ficeberg' .and. &
+          ovnm(1:11) /= 'hfsithermds') cycle
+      else if (do_3d .and. .not. do_xd) then
+        if (zcoord(1:6) /= 'olevel' .or. ovnm(1:5) == 'mmflx' &
+          .or. ovnm(1:8) == 'ficeberg' .or. &
+          ovnm(1:11) == 'hfsithermds') cycle
+      else if (.not. do_3d .and. .not. do_xd) then
+        cycle
+      end if
+
+      ! Choose history file
+      if (index(special, 'day2mon') > 0) then
+        itag = tagoday
+      else
+        itag = tagomon
+      end if
+
+      ! Check if input variable is present
+      if (len_trim(pEmon) == 0) call scan_files(reset=.true.)
+      if (.not. var_in_file(fnm, ivnm)) cycle
+
+      ! Prepare output file
+      call special_pre
+
+      ! Loop over input files
+      m = 0
+      do
+        m = m + 1
+
+        ! Open output file
+        if (mod(m - 1, rEmon) == 0) call open_ofile
+
+        ! Read variable into buffer (average if necessary)
+        rec = 0
+        nrec = 0
+        fldacc = 0.
+        last = .false.
+        do
+          if (len_trim(pEmon) == 0) call scan_files(reset=.false.)
+          if (rec == 0) then
+            last = .true.
+            exit
+          end if
+          nrec = nrec + 1
+          call read_tslice(rec, badrec, fnm)
+          fldacc = fldacc + fld
+          if (index(special, 'day2mon') > 0) then
+            if (tbnd(2) + 0.5 >= mbnd(2)) exit
+          else
+            exit
+          end if
+        end do
+        if (last) exit
+        fld = fldacc / real(nrec)
+        tbnds(:, 1) = mbnd
+        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
+
+        ! Post processing
+        call special_post
+
+        ! Write time slice to output file
+        call write_tslice
+
+        ! Close output file if max rec has been reached
+        if (mod(m, rEmon) == 0) call close_ofile
+
+      end do
+
+      ! Close output file if still open
+      if (mod(m, rEmon) > 0) call close_ofile
+
+    end do
+
+    ! Process table omon (bgc)
+    write(*, *) 'Process table omon (bgc)'
+    fnm = pomonbgc
+    table = tomonbgc
+    do n = 1, nomonbgc
+      if (skip_variable(n, nomonbgc, domonbgc)) cycle
+
+      ! Map namelist variables
+      ovnm = vomonbgc(ovnmpos, n)
+      ivnm = vomonbgc(ivnmpos, n)
+      special = vomonbgc(3, n)
+      vunits = ' '
+      vpositive = ' '
+      vcomment = ' '
+
+      ! Check if vertical coordinate required
+      write(*, *) trim(ovnm)
+      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
+
+      ! Check if we should skip variable
+      write(*, *) trim(ovnm), trim(zcoord), do_3d, do_xd
+      if (.not. do_3d .and. do_xd) then
+        if (zcoord(1:6) == 'olevel') cycle
+      else if (do_3d .and. .not. do_xd) then
+        if (zcoord(1:6) /= 'olevel') cycle
+      else if (.not. do_3d .and. .not. do_xd) then
+        cycle
+      end if
+
+      ! Choose history file
+      if (index(special, 'day2mon') > 0) then
+        itag = tagodaybgc
+      else
+        itag = tagomonbgc
+      end if
+
+      ! Check if input variable is present
+      if (len_trim(pomonbgc) == 0) call scan_files(reset=.true.)
+      if (.not. var_in_file(fnm, ivnm)) cycle
+
+      ! Prepare output file
+      call special_pre
+
+      ! Loop over input files
+      m = 0
+      do
+        m = m + 1
+
+        ! Open output file
+        if (mod(m - 1, romonbgc) == 0) call open_ofile
+
+        ! Read variable into buffer (average if necessary)
+        rec = 0
+        nrec = 0
+        fldacc = 0.
+        last = .false.
+        do
+          if (len_trim(pomonbgc) == 0) call scan_files(reset=.false.)
+          if (rec == 0) then
+            last = .true.
+            exit
+          end if
+          nrec = nrec + 1
+          call read_tslice(rec, badrec, fnm)
+          fldacc = fldacc + fld
+          if (index(special, 'day2mon') > 0) then
+            if (tbnd(2) + 0.5 >= mbnd(2)) exit
+          else
+            exit
+          end if
+        end do
+        if (last) exit
+        fld = fldacc / real(nrec)
+        tbnds(:, 1) = mbnd
+        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
+
+        ! Post processing
+        call special_post
+
+        ! Write time slice to output file
+        call write_tslice
+
+        ! Close output file if max rec has been reached
+        if (mod(m, romonbgc) == 0) call close_ofile
+
+      end do
+
+      ! Close output file if still open
+      if (mod(m, romonbgc) > 0) call close_ofile
+
+    end do
+
+    ! Process table day
+    write(*, *) 'Process table day'
+    fnm = pday
+    table = tday
+    do n = 1, nday
+      if (skip_variable(n, nday, dday)) cycle
+
+      ! Map namelist variables
+      ovnm = vday(ovnmpos, n)
+      ivnm = vday(ivnmpos, n)
+      special = vday(3, n)
+      vunits = ' '
+      vpositive = ' '
+      vcomment = ' '
+
+      ! Check if vertical coordinate required
+      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
+
+      ! Choose history file
+      itag = tagoday
+
+      ! Check if input variable is present
+      if (len_trim(pday) == 0) call scan_files(reset=.true.)
+      if (.not. var_in_file(fnm, ivnm)) cycle
+
+      ! Prepare output file
+      call special_pre
+
+      ! Loop over input files
+      m = 0
+      do
+        m = m + 1
+
+        ! Open output file
+        if (mod(m - 1, rday) == 0) call open_ofile
+
+        ! Read variable into buffer
+        rec = 0
+        if (len_trim(pday) == 0) call scan_files(reset=.false.)
+        if (rec == 0) exit
+        tbnds(1, 1) = tval(1) - 0.5
+        tbnds(2, 1) = tval(1) + 0.5
+        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
+
+        ! Read data
+        call read_tslice(rec, badrec, fnm)
+
+        ! Post processing
+        call special_post
+
+        ! Write time slice to output file
+        if (badrec) fld = 1e20
+        call write_tslice
+
+        ! Close output file if max rec has been reached
+        if (mod(m, rday) == 0) call close_ofile
+
+      end do
+
+      ! Close output file if still open
+      if (mod(m, rday) > 0) call close_ofile
+
+    end do
+
+    ! Process table Oday
+    write(*, *) 'Process table Oday'
+    fnm = pOday
+    table = tOday
+    do n = 1, nOday
+      if (skip_variable(n, nOday, dOday)) cycle
+
+      ! Map namelist variables
+      ovnm = vOday(ovnmpos, n)
+      ivnm = vOday(ivnmpos, n)
+      special = vOday(3, n)
+      vunits = ' '
+      vpositive = ' '
+      vcomment = ' '
+
+      ! Check if vertical coordinate required
+      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
+
+      ! Choose history file
+      itag = tagoday
+
+      ! Check if input variable is present
+      if (len_trim(pOday) == 0) call scan_files(reset=.true.)
+      if (.not. var_in_file(fnm, ivnm)) cycle
+
+      ! Prepare output file
+      call special_pre
+
+      ! Loop over input files
+      m = 0
+      do
+        m = m + 1
+
+        ! Open output file
+        if (mod(m - 1, rOday) == 0) call open_ofile
+
+        ! Read variable into buffer
+        rec = 0
+        if (len_trim(pOday) == 0) call scan_files(reset=.false.)
+        if (rec == 0) exit
+        tbnds(1, 1) = tval(1) - 0.5
+        tbnds(2, 1) = tval(1) + 0.5
+        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
+
+        ! Read data
+        call read_tslice(rec, badrec, fnm)
+
+        ! Post processing
+        call special_post
+
+        ! Write time slice to output file
+        if (badrec) fld = 1e20
+        call write_tslice
+
+        ! Close output file if max rec has been reached
+        if (mod(m, rOday) == 0) call close_ofile
+
+      end do
+
+      ! Close output file if still open
+      if (mod(m, rOday) > 0) call close_ofile
+
+    end do
+
+    ! Process table Odaybgc
+    write(*, *) 'Process table Odaybgc'
+    fnm = pOdaybgc
+    table = tOdaybgc
+    do n = 1, nOdaybgc
+      if (skip_variable(n, nOdaybgc, dOdaybgc)) cycle
+
+      ! Map namelist variables
+      ovnm = vOdaybgc(ovnmpos, n)
+      ivnm = vOdaybgc(ivnmpos, n)
+      special = vOdaybgc(3, n)
+      vunits = ' '
+      vpositive = ' '
+      vcomment = ' '
+
+      ! Check if vertical coordinate required
+      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
+
+      ! Choose history file
+      itag = tagodaybgc
+
+      ! Check if input variable is present
+      if (len_trim(pOdaybgc) == 0) call scan_files(reset=.true.)
+      if (.not. var_in_file(fnm, ivnm)) cycle
+
+      ! Prepare output file
+      call special_pre
+
+      ! Loop over input files
+      m = 0
+      do
+        m = m + 1
+
+        ! Open output file
+        if (mod(m - 1, rOdaybgc) == 0) call open_ofile
+
+        ! Read variable into buffer
+        rec = 0
+        if (len_trim(pOdaybgc) == 0) call scan_files(reset=.false.)
+        if (rec == 0) exit
+        tbnds(1, 1) = tval(1) - 0.5
+        tbnds(2, 1) = tval(1) + 0.5
+        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
+
+        ! Read data
+        call read_tslice(rec, badrec, fnm)
+
+        ! Post processing
+        call special_post
+
+        ! Write time slice to output file
+        if (badrec) fld = 1e20
+        call write_tslice
+
+        ! Close output file if max rec has been reached
+        if (mod(m, rOdaybgc) == 0) call close_ofile
+
+      end do
+
+      ! Close output file if still open
+      if (mod(m, rOdaybgc) > 0) call close_ofile
+
+    end do
+
+    ! Process table Eday
+    write(*, *) 'Process table Eday'
+    fnm = pEday
+    table = tEday
+    do n = 1, nEday
+      if (skip_variable(n, nEday, dEday)) cycle
+
+      ! Map namelist variables
+      ovnm = vEday(ovnmpos, n)
+      ivnm = vEday(ivnmpos, n)
+      special = vEday(3, n)
+      vunits = ' '
+      vpositive = ' '
+      vcomment = ' '
+
+      ! Check if vertical coordinate required
+      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
+
+      ! Choose history file
+      itag = tagoday
+
+      ! Check if input variable is present
+      if (len_trim(pEday) == 0) call scan_files(reset=.true.)
+      if (.not. var_in_file(fnm, ivnm)) cycle
+
+      ! Prepare output file
+      call special_pre
+
+      ! Loop over input files
+      m = 0
+      do
+        m = m + 1
+
+        ! Open output file
+        if (mod(m - 1, rEday) == 0) call open_ofile
+
+        ! Read variable into buffer
+        rec = 0
+        if (len_trim(pEday) == 0) call scan_files(reset=.false.)
+        if (rec == 0) exit
+        tbnds(1, 1) = tval(1) - 0.5
+        tbnds(2, 1) = tval(1) + 0.5
+        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
+
+        ! Read data
+        call read_tslice(rec, badrec, fnm)
+
+        ! Post processing
+        call special_post
+
+        ! Write time slice to output file
+        if (badrec) fld = 1e20
+        call write_tslice
+
+        ! Close output file if max rec has been reached
+        if (mod(m, rEday) == 0) call close_ofile
+
+      end do
+
+      ! Close output file if still open
+      if (mod(m, rEday) > 0) call close_ofile
+
+    end do
+
+  end subroutine ocn2cmor
+
+  ! -----------------------------------------------------------------
+
+  subroutine special_pre
+
+    implicit none
+
+    integer :: i, j, k
+
+    lsumz = .false.
+    str2 = special
+    do
+      if (index(str2, ';') > 0) then
+        str1 = str2(1:index(str2, ';') - 1)
+        str2 = str2(index(str2, ';') + 1:)
+      else
+        str1 = str2
+      end if
+      select case (str1)
+
+        ! atm to Pa
+      case ('atm2Pa')
+        vunits = 'Pa'
+
+        ! uatm to Pa
+      case ('uatm2Pa')
+        vunits = 'Pa'
+
+        ! Unit transformation: mol cfcXX m-3 -> mol cfcXX kg-1
+      case ('cfcunits')
+        vunits = 'mol kg-1'
+
+        ! CFC11 comment
+      case ('cfc11comment')
+        vcomment = 'In this simulation, annual means of reconstructed' &
+          // ' Northern Hemisphere CFC-11 are applied globally to the ocean.' &
+          // ' Reference: Walker S.J., Weiss R.F., Salameh P.K. (2000)' &
+          // ' Reconstructed histories of the annual mean atmospheric mole' &
+          // ' fractions for the halocarbons CFC-11, CFC-12, CFC-113 and' &
+          // ' carbon tetrachloride. J. Geophys. Res. 105(C6): 14285-14296.' &
+          // ' CFC-11 data in ppt (1910.5-2008.5):' &
+          // ' 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,' &
+          // ' 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,' &
+          // ' 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,' &
+          // ' 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1, 0.2, 0.4, 0.7, 1.0,' &
+          // ' 1.5, 2.2, 3.0, 4.1, 5.4, 6.8, 8.1, 9.4, 11.1, 13.3, 16.1,' &
+          // ' 19.6, 23.8, 28.4, 33.6, 39.5, 46.1, 53.7, 62.5, 72.0, 82.7,' &
+          // ' 94.9, 108.4, 121.4, 133.9, 145.9, 156.6, 168.3, 176.7, 184.3,' &
+          // ' 191.4, 199.4, 208.1, 218.1, 229.5, 241.7, 253.0, 259.5,' &
+          // ' 266.0, 268.4, 268.3, 269.7, 269.8, 268.5, 267.3, 265.9,' &
+          // ' 264.4, 262.9, 262.0, 260.3, 258.1, 256.0, 254.1, 252.0,' &
+          // ' 248.9, 246.9, 245.3'
+
+        ! CFC12 comment
+      case ('cfc12comment')
+        vcomment = 'In this simulation, annual means of reconstructed' &
+          // ' Northern Hemisphere CFC-12 are applied globally to the ocean.' &
+          // ' Reference: Walker S.J., Weiss R.F., Salameh P.K. (2000)' &
+          // ' Reconstructed histories of the annual mean atmospheric mole' &
+          // ' fractions for the halocarbons CFC-11, CFC-12, CFC-113 and' &
+          // ' carbon tetrachloride. J. Geophys. Res. 105(C6): 14285-14296.' &
+          // ' CFC-12 data in ppt (1910.5-2008.5):' &
+          // ' 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,' &
+          // ' 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,' &
+          // ' 0.0, 0.0, 0.1, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.9, 1.2, 1.7,' &
+          // ' 2.3, 3.4, 4.8, 6.1, 7.6, 9.2, 11.0, 12.8, 15.0, 17.4, 20.2,' &
+          // ' 23.4, 26.8, 30.5, 35.0, 40.0, 45.8, 52.5, 60.4, 69.3, 79.2,' &
+          // ' 90.3, 102.8, 116.7, 132.0, 148.3, 166.1, 185.7, 207.1, 228.1,' &
+          // ' 248.0, 266.9, 284.2, 305.9, 323.0, 339.6, 353.3, 369.0,' &
+          // ' 385.7, 403.4, 424.3, 444.0, 465.4, 483.6, 497.7, 506.0,' &
+          // ' 516.4, 523.2, 528.9, 533.9, 537.6, 540.5, 542.5, 544.1,' &
+          // ' 546.4, 546.9, 546.8, 546.5, 547.2, 546.5, 544.5, 541.8, 540.6'
+
+        ! mol m-3
+      case ('mol m-3')
+        vunits = 'mol m-3'
+
+        ! mol m-2 s-1
+      case ('mol m-2 s-1')
+        vunits = 'mol m-2 s-1'
+
+        ! mol m-3 s-1
+      case ('mol m-3 s-1')
+        vunits = 'mol m-3 s-1'
+
+        ! Salinity has to be in practical salinity units
+      case ('psu')
+        vunits = 'psu'
+
+        ! Fix unitless units
+      case ('unitless')
+        vunits = '1'
+
+        ! Set correct units for percentage
+      case ('percent')
+        vunits = '%'
+
+        ! Set correct units for fraction
+      case ('fraction')
+        vunits = '1'
+
+        ! Unit transformation: kg m-2
+      case ('kg m-2')
+        vunits = 'kg m-2'
+
+        ! Unit transformation: mm s-1 -> kg m-2 s-1
+      case ('kg m-2 s-1')
+        vunits = 'kg m-2 s-1'
+
+        ! Fix micrometers units
+      case ('micrometer')
+        vunits = 'micrometers'
+
+        ! Fix m-2 units
+      case ('m-2')
+        vunits = 'm-2'
+
+        ! Fix wo units
+      case ('wflx2wo')
+        vunits = 'm s-1'
+
+        ! Set units to kg
+      case ('kg')
+        vunits = 'kg'
+
+        ! Set units to m^3
+      case ('m3')
+        vunits = 'm3'
+
+        ! Convert units from radians2 to m2
+      case ('rad2m')
+        vunits = 'm2'
+
+        ! Set units for streamfunction
+      case ('strmf')
+        vunits = 'kg s-1'
+        lsumz = .true.
+
+        ! Set positive attribute
+      case ('positiveup')
+        vpositive = 'up'
+      case ('positivedo')
+        vpositive = 'down'
+
+        ! Compute vertical sum
+      case ('sumz')
+        lsumz = .true.
+
+        ! Compute density
+      case ('ts2rho0')
+        vunits = 'kg m-3'
+
+        ! Compute steric sea level change from density
+      case ('ts2zossga', 't2zostoga')
+        vunits = 'm'
+
+        ! Compute fixed cell volume of interpolated grid
+      case ('volcello')
+        vunits = 'm3'
+
+        ! Compute fixed cell thickness
+      case ('thkcello')
+        vunits = 'm'
+
+        ! Compute depth of local mimina
+      case ('locminz')
+        vunits = 'm'
+
+        ! Compute depth of local mimina
+      case ('omega2z')
+        vunits = 'm'
+
+        ! Convert units from [mol P/m3] to [kg Chl/m3] using [60 gC/gChl]
+      case ('kg m-3')
+        vunits = 'kg m-3'
+
+        ! Convert units from [m3] to [1e3 km3]
+      case ('1e3 km3')
+        vunits = '1e3 km3'
+
+        ! Convert units from [s-1] to [s-2], fix bug for the units of bfsq in micom
+      case ('s-2')
+        vunits = 's-2'
+
+        ! Set unit g m-2
+      case ('g m-2')
+        vunits = 'g m-2'
+
+        ! Set unit degC kg m-2
+      case ('degC kg m-2')
+        vunits = 'degC kg m-2'
+
+      end select
+      if (str1 == str2) exit
+    end do
+
+  end subroutine special_pre
+
+  ! -----------------------------------------------------------------
+
+  subroutine special_post
+
+    implicit none
+
+    integer :: i, j, k
+    real(kind=8) :: r, rd, p, ptoptmp, pbottmp, sref = 35.
+
+    str2 = special
+    do
+      if (index(str2, ';') > 0) then
+        str1 = str2(1:index(str2, ';') - 1)
+        str2 = str2(index(str2, ';') + 1:)
+      else
+        str1 = str2
+      end if
+      select case (str1)
+
+        ! Compute depth below geoid from dz or pddpo
+      case ('dz2zfull')
+        fldacc(:, :, 1) = fld(:, :, 1) * 0.5 - sealv
+        do k = 2, kdm
+          fldacc(:, :, k) = fldacc(:, :, k - 1) + (fld(:, :, k - 1) + fld(:, :, k)) * 0.5
+        end do
+        fld = fldacc
+
+        ! Compute depth below geoid at interfaces from dz
+      case ('dz2zhalf')
+        fldacc(:, :, 1) = -sealv
+        do k = 2, kdm
+          fldacc(:, :, k) = fldacc(:, :, k - 1) + fld(:, :, k - 1)
+        end do
+        fld = fldacc
+
+        ! Convert units from radians2 to m2
+      case ('rad2m')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) < 1e20) &
+                fld(i, j, k) = fld(i, j, k) * 6.37122e6**2
+            end do
+          end do
+        end do
+
+        ! Set ice free points to missing value
+      case ('zero2missing')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (abs(fld(i, j, k)) < 1e-6) fld(i, j, k) = 1e20
+            end do
+          end do
+        end do
+
+        ! Set ice free points to missing value
+      case ('pmask')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (pmask(i, j) < 0.5) fld(i, j, k) = 1e20
+            end do
+          end do
+        end do
+
+        ! Compute vertical sum
+      case ('sumz')
+        do k = 2, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (abs(fld(i, j, k)) < 1e20) &
+                fld(i, j, 1) = fld(i, j, 1) + fld(i, j, k)
+            end do
+          end do
+        end do
+
+        ! Compute local minima
+      case ('locmin')
+        do j = 1, jj
+          do i = 1, ii
+            do k = 2, kk
+              if (fld(i, j, 1) > fld(i, j, k)) then
+                fld(i, j, 1) = fld(i, j, k)
+              else
+                exit
+              end if
+            end do
+          end do
+        end do
+
+        ! Compute local minima depth
+      case ('locminz')
+        fld2 = fld
+        do j = 1, jj
+          do i = 1, ii
+            fld2(i, j, 1) = depth(1)
+            do k = 2, kk
+              if (fld(i, j, 1) > fld(i, j, k)) then
+                fld(i, j, 1) = fld(i, j, k)
+                fld2(i, j, 1) = depth(k)
+              else
+                exit
+              end if
+            end do
+          end do
+        end do
+        fld = fld2
+
+        ! Compute Aragonite Saturation Depth
+      case ('omega2z')
+        fldtmp = 1e20
+        do j = 1, jj
+          do i = 1, ii
+            do k = 1, kk
+              if (fld(i, j, k) < 1.0) then
+                if (k == 1) then
+                  fldtmp(i, j, 1) = 0.0
+                else
+                  fldtmp(i, j, 1) = depth(k)
+                end if
+              end if
+            end do
+          end do
+        end do
+        fld = fldtmp
+
+        ! Multiply with global ocean area
+      case ('xglbarea')
+        fld = fld * aoglb
+
+        ! Multiply gravity constant
+      case ('xg')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) < 1e20) fld(i, j, k) = fld(i, j, k) * 9.806
+            end do
+          end do
+        end do
+
+        ! Devide by gravity constant
+      case ('xginv')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) < 1e20) fld(i, j, k) = fld(i, j, k) / 9.806
+            end do
+          end do
+        end do
+
+        ! Flip sign
+      case ('flipsign')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) < 1e20) fld(i, j, k) = -fld(i, j, k)
+            end do
+          end do
+        end do
+
+        ! Compute global 2d average
+      case ('glbave2d')
+        fld(1, 1, 1) = sum(fld(:, :, 1) * parea) / sum(parea)
+
+        ! Compute global 3d average
+      case ('glbave3d')
+        r = 0.
+        rd = 0.
+        do k = 1, kk
+          r = r + sum(fld(:, :, k) * dp(:, :, k) * parea)
+          rd = rd + sum(dp(:, :, k) * parea)
+        end do
+        fld(1, 1, 1) = r / max(1e-10, rd)
+
+        ! Compute potential density
+      case ('ts2rho0')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) /= 1e20) &
+                fld(i, j, k) = 1e3 * rho(0., fld(i, j, k), fld2(i, j, k))
+            end do
+          end do
+        end do
+
+        ! Compute steric sea level
+      case ('ts2zossga')
+        if (vtype == 'layer') then
+          r = 0.
+          do j = 1, jj
+            do i = 1, ii
+              pbottmp = 0.
+              do k = 1, kk
+                ptoptmp = pbottmp
+                pbottmp = ptoptmp + dp(i, j, k)
+                if (fld(i, j, k) /= 1e20) then
+                  r = r + 1e-2 * (1e-2 * ginv) * parea(i, j) * &
+                    p_alpha(ptoptmp, pbottmp, fld(i, j, k), fld2(i, j, k))
+                end if
+              end do
+            end do
+          end do
+          fld(1, 1, 1) = (r - voglb) / aoglb
+          write(*, *) 'zossga=', fld(1, 1, 1)
+        else
+          stop 'input variables for zossga must be of type layer'
+        end if
+
+        ! Compute thermo-steric sea level
+      case ('t2zostoga')
+        if (vtype == 'layer') then
+          r = 0.
+          do j = 1, jj
+            do i = 1, ii
+              pbottmp = 0.
+              do k = 1, kk
+                ptoptmp = pbottmp
+                pbottmp = ptoptmp + dp(i, j, k)
+                if (fld(i, j, k) /= 1e20) &
+                  r = r + 1e-2 * (1e-2 * ginv) * parea(i, j) * &
+                    p_alpha(ptoptmp, pbottmp, fld(i, j, k), sref)
+              end do
+            end do
+          end do
+          fld(1, 1, 1) = (r - voglb) / aoglb
+          write(*, *) 'zostoga', fld(1, 1, 1)
+        else
+          stop 'input variable for zostoga must be of type layer'
+        end if
+
+        ! Set land mask of streamfunction
+      case ('strmf')
+        do j = 1, jj
+          do i = 1, ii
+            if (pmask(i, j) == 0) fld(i, j, 1) = 1e20
+          end do
+        end do
+
+        ! Compute fixed cell volume of interpolated grid
+      case ('volcello')
+        do j = 1, jj
+          do i = 1, ii
+            do k = ddm, 1, -1
+              if (fld(i, j, 1) == 0.) then
+                fld(i, j, k) = 1e20
+              else
+                ptoptmp = min(depth_bnds(1, k), fld(i, j, 1))
+                pbottmp = min(depth_bnds(2, k), fld(i, j, 1))
+                fld(i, j, k) = (pbottmp - ptoptmp) * fld2(i, j, 1)
+              end if
+            end do
+          end do
+        end do
+
+        ! Compute vertical velocity form vertical mass flux
+      case ('wflx2wo')
+        do j = 1, jj
+          do i = 1, ii
+            do k = 1, kk
+              if (fld(i, j, k) /= 1e20) then
+                fld(i, j, k) = fld(i, j, k) / (1035. * parea(i, j))
+              end if
+            end do
+          end do
+        end do
+
+        ! Compute fixed cell thickness
+      case ('thkcello')
+        do j = 1, jj
+          do i = 1, ii
+            do k = ddm, 1, -1
+              if (fld(i, j, 1) == 0.) then
+                fld(i, j, k) = 1e20
+              else
+                fld(i, j, k) = min(fld(i, j, 1), depth_bnds(2, k)) - &
+                  min(fld(i, j, 1), depth_bnds(1, k))
+              end if
+            end do
+          end do
+        end do
+
+        ! Compute basin index
+      case ('basin')
+        open(10, file=trim(griddata)//trim(ocnmertfile))
+        read(10, '(2i6)') i, j
+        if (i /= idm .or. j /= jdm) &
+          stop 'mertraocean: incorrect indexes in mertraoceans.dat!'
+        str1 = ' '
+        write(str1, *) '(', jdm, 'i1)'
+        read(10, str1) ((basin(i, j), j = 1, jdm), i = 1, idm)
+        close(10)
+        fld = 0
+        do j = 1, jdm
+          do i = 1, idm
+            ! Southern Ocean
+            if (plat(i, j) < 0. .and. basin(i, j) == 1) fld(i, j, 1) = 1
+            ! Pacific Ocean
+            if (basin(i, j) == 3) fld(i, j, 1) = 3
+            ! Arctic Ocean
+            if (plat(i, j) > 60. .and. basin(i, j) == 1) fld(i, j, 1) = 4
+            ! Indian Ocean
+            if (basin(i, j) == 4) fld(i, j, 1) = 5
+            ! Mediterranean Sea
+            if (basin(i, j) == 2 .and. plat(i, j) > 30.5 .and. &
+              plat(i, j) < 40.5 .and. (plon(i, j) > 354.5 .or. &
+              plon(i, j) < 37)) fld(i, j, 1) = 6
+            if (basin(i, j) == 2 .and. plat(i, j) > 40.5 .and. &
+              plat(i, j) < 46. .and. (plon(i, j) > 359. .or. &
+              plon(i, j) < 27.5)) fld(i, j, 1) = 6
+            ! Black Sea
+            if (basin(i, j) == 1 .and. plat(i, j) > 40.5 .and. &
+              plat(i, j) < 48. .and. plon(i, j) > 27.5 .and. &
+              plon(i, j) < 45) fld(i, j, 1) = 7
+            ! Hudson Bay
+            if (basin(i, j) == 2 .and. plat(i, j) > 50. .and. &
+              plat(i, j) < 70. .and. plon(i, j) > 265. .and. &
+              plon(i, j) < 295) fld(i, j, 1) = 8
+            ! Baltic Sea
+            if (basin(i, j) == 2 .and. plat(i, j) > 53. .and. &
+              plat(i, j) < 62. .and. plon(i, j) > 10. .and. &
+              plon(i, j) < 30) fld(i, j, 1) = 9
+            if (basin(i, j) == 2 .and. plat(i, j) > 62. .and. &
+              plat(i, j) < 66.5 .and. plon(i, j) > 17. .and. &
+              plon(i, j) < 30) fld(i, j, 1) = 9
+            ! Red Sea
+            if (basin(i, j) == 4 .and. plat(i, j) > 13. .and. &
+              plat(i, j) < 30. .and. plon(i, j) > 31. .and. &
+              plon(i, j) < 44) fld(i, j, 1) = 10
+            ! Atlantic ocean
+            if (basin(i, j) == 2 .and. fld(i, j, 1) == 0) fld(i, j, 1) = 2
+          end do
+        end do
+
+        ! Multiple a second field
+      case ('Xfield2')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) /= 1e20) &
+                fld(i, j, k) = fld(i, j, k) * fld2(i, j, k)
+            end do
+          end do
+        end do
+
+        ! Divide a second field
+      case ('Dfield2')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) /= 1e20) &
+                fld(i, j, k) = fld(i, j, k) / fld2(i, j, k)
+            end do
+          end do
+        end do
+
+        ! Integratal with respect to depth
+      case ('dpint')
+        do j = 1, jj
+          do i = 1, ii
+            if (fld(i, j, 1) /= 1e20) &
+              fld(i, j, 1) = fld(i, j, 1) * fld2(i, j, 1) / 9.806
+            do k = 2, kk
+              if (fld(i, j, k) /= 1e20) &
+                fld(i, j, k) = fld(i, j, k - 1) + fld(i, j, k) * fld2(i, j, k) / 9.806
+            end do
+          end do
+        end do
+
+        ! Average with respect to pressure
+      case ('dpavg')
+        do j = 1, jj
+          do i = 1, ii
+            if (fld(i, j, 1) /= 1e20) &
+              fld(i, j, 1) = fld(i, j, 1) * fld2(i, j, 1)
+            do k = 2, kk
+              if (fld(i, j, k) /= 1e20) then
+                fld(i, j, k) = fld(i, j, k - 1) + fld(i, j, k) * fld2(i, j, k)
+                fld2(i, j, 1) = fld2(i, j, 1) + fld2(i, j, k)
+              end if
+            end do
+            if (fld(i, j, 1) /= 1e20) &
+              fld(i, j, 1) = fld(i, j, 1) / fld2(i, j, 1)
+          end do
+        end do
+
+        ! Average over upper 300 m
+      case ('dzavg300')
+        fldtmp = 1e20
+        do j = 1, jj
+          do i = 1, ii
+            if (fld(i, j, 1) /= 1e20) then
+              fldtmp(i, j, 1) = (min(300., pdepth(i, j), depth_bnds(2, 1)) &
+                - min(300., pdepth(i, j), depth_bnds(1, 1))) &
+                * pbot(i, j) / pdepth(i, j)
+              fld(i, j, 1) = fld(i, j, 1) * fldtmp(i, j, 1)
+            end if
+            do k = 2, kk
+              if (fld(i, j, k) /= 1e20) then
+                fldtmp(i, j, k) = (min(300., pdepth(i, j), depth_bnds(2, k)) &
+                  - min(300., pdepth(i, j), depth_bnds(1, k))) &
+                  * pbot(i, j) / pdepth(i, j)
+                fld(i, j, 1) = fld(i, j, 1) + fld(i, j, k) * fldtmp(i, j, k)
+                fldtmp(i, j, 1) = fldtmp(i, j, 1) + fldtmp(i, j, k)
+              end if
+            end do
+            if (fld(i, j, 1) /= 1e20) &
+              fld(i, j, 1) = fld(i, j, 1) / fldtmp(i, j, 1)
+          end do
+        end do
+
+        ! Average over upper 700 m
+      case ('dzavg700')
+        fldtmp = 1e20
+        do j = 1, jj
+          do i = 1, ii
+            if (fld(i, j, 1) /= 1e20) then
+              fldtmp(i, j, 1) = (min(700., pdepth(i, j), depth_bnds(2, 1)) &
+                - min(700., pdepth(i, j), depth_bnds(1, 1))) &
+                * pbot(i, j) / pdepth(i, j)
+              fld(i, j, 1) = fld(i, j, 1) * fldtmp(i, j, 1)
+            end if
+            do k = 2, kk
+              if (fld(i, j, k) /= 1e20) then
+                fldtmp(i, j, k) = (min(700., pdepth(i, j), depth_bnds(2, k)) &
+                  - min(700., pdepth(i, j), depth_bnds(1, k))) &
+                  * pbot(i, j) / pdepth(i, j)
+                fld(i, j, 1) = fld(i, j, 1) + fld(i, j, k) * fldtmp(i, j, k)
+                fldtmp(i, j, 1) = fldtmp(i, j, 1) + fldtmp(i, j, k)
+              end if
+            end do
+            if (fld(i, j, 1) /= 1e20) &
+              fld(i, j, 1) = fld(i, j, 1) / fldtmp(i, j, 1)
+          end do
+        end do
+
+        ! Average over upper 2000 m
+      case ('dzavg2000')
+        fldtmp = 1e20
+        do j = 1, jj
+          do i = 1, ii
+            if (fld(i, j, 1) /= 1e20) then
+              fldtmp(i, j, 1) = (min(2000., pdepth(i, j), depth_bnds(2, 1)) &
+                - min(2000., pdepth(i, j), depth_bnds(1, 1))) &
+                * pbot(i, j) / pdepth(i, j)
+              fld(i, j, 1) = fld(i, j, 1) * fldtmp(i, j, 1)
+            end if
+            do k = 2, kk
+              if (fld(i, j, k) /= 1e20) then
+                fldtmp(i, j, k) = (min(2000., pdepth(i, j), depth_bnds(2, k)) &
+                  - min(2000., pdepth(i, j), depth_bnds(1, k))) &
+                  * pbot(i, j) / pdepth(i, j)
+                fld(i, j, 1) = fld(i, j, 1) + fld(i, j, k) * fldtmp(i, j, k)
+                fldtmp(i, j, 1) = fldtmp(i, j, 1) + fldtmp(i, j, k)
+              end if
+            end do
+            if (fld(i, j, 1) /= 1e20) &
+              fld(i, j, 1) = fld(i, j, 1) / fldtmp(i, j, 1)
+          end do
+        end do
+
+        ! Unit transformation: mol cfcXX m-3 -> mol cfcXX kg-1
+      case ('cfcunits')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) /= 1e20) fld(i, j, k) = fld(i, j, k) / 1027.
+            end do
+          end do
+        end do
+
+        ! atm to Pa
+      case ('atm2Pa')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) /= 1e20) fld(i, j, k) = fld(i, j, k) * 101325
+            end do
+          end do
+        end do
+
+        ! uatm to Pa
+      case ('uatm2Pa')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) /= 1e20) fld(i, j, k) = fld(i, j, k) * 0.101325
+            end do
+          end do
+        end do
+
+        ! Convert units from [mol P/m3] to [kg Chl/m3] using [60 gC/gChl]
+      case ('mol P m-3 -> kg Chl m-3')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) /= 1e20) &
+                fld(i, j, k) = fld(i, j, k) * 122 * 12 / 60 / 1000
+            end do
+          end do
+        end do
+
+        ! Convert units from [m3] to [1e3 km3]
+      case ('1e3 km3')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) /= 1e20) &
+                fld(i, j, k) = fld(i, j, k) / 1e3 / 1e9
+            end do
+          end do
+        end do
+
+        ! Mask grid points in the southern hemisphere
+      case ('masks')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (plat(i, j) < 0.0) fld(i, j, k) = 1e20
+            end do
+          end do
+        end do
+
+        ! Mask grid points in the southern hemisphere
+      case ('maskn')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (plat(i, j) > 0.0) fld(i, j, k) = 1e20
+            end do
+          end do
+        end do
+
+        ! Multiple parea
+      case ('xparea')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) /= 1e20) fld(i, j, k) = fld(i, j, k) * parea(i, j)
+            end do
+          end do
+        end do
+
+        ! Iron to phosphorous ratio in organic matter
+      case ('fe2ph')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) /= 1e20) &
+                fld(i, j, k) = fld(i, j, k) * 5. * 122. * 1.e-6
+            end do
+          end do
+        end do
+
+        ! Carbon to iron
+      case ('c2fe')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) /= 1e20) fld(i, j, k) = fld(i, j, k) * 5. * 1.e-6
+            end do
+          end do
+        end do
+
+        ! epc100 to epn100
+      case ('epc100toepn100')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) /= 1e20) fld(i, j, k) = fld(i, j, k) / 122. * 16.
+            end do
+          end do
+        end do
+
+        ! epc100 to epp100
+      case ('epc100toepp100')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) /= 1e20) fld(i, j, k) = fld(i, j, k) / 122.
+            end do
+          end do
+        end do
+
+        ! percent
+      case ('percent')
+        do k = 1, kk
+          do j = 1, jj
+            do i = 1, ii
+              if (fld(i, j, k) /= 1e20) fld(i, j, k) = fld(i, j, k) * 100.
+            end do
+          end do
+        end do
+
+      end select
+
+      if (str1 == str2) exit
+    end do
+
+  end subroutine special_post
+
+  ! -----------------------------------------------------------------
+
+  subroutine read_gridinfo_ifile
+
+    implicit none
+
+    logical :: check
+    integer :: i, j, k, n, fid
+    real(kind=8) :: missing, phiu, phil
+
+    ! Open first input file
+    call scan_files(reset=.true.)
+    status = nf90_open(fnm, nf90_nowrite, ncid)
+    call handle_ncerror(status)
+
+    ! Read dimensions
+    status = nf90_inq_dimid(ncid, 'x', dimid)
+    call handle_ncerror(status)
+    status = nf90_inquire_dimension(ncid, dimid, len=idm)
+    call handle_ncerror(status)
+
+    status = nf90_inq_dimid(ncid, 'y', dimid)
+    call handle_ncerror(status)
+    status = nf90_inquire_dimension(ncid, dimid, len=jdm)
+    call handle_ncerror(status)
+
+    status = nf90_inq_dimid(ncid, 'layer', dimid)
+    if (status == nf90_noerr) then
+      status = nf90_inquire_dimension(ncid, dimid, len=kdm)
+      call handle_ncerror(status)
+      allocate(sigma(kdm), sigmahalf(kdm + 1), sigma_bnds(2, kdm), &
+        sigmahalf_bnds(2, kdm + 1), stat=status)
+      if (status /= 0) stop 'cannot ALLOCATE enough memory (1b)'
+      status = nf90_inq_varid(ncid, 'sigma', rhid)
+      call handle_ncerror(status)
+      status = nf90_get_var(ncid, rhid, sigma)
+      call handle_ncerror(status)
+      sigma_bnds(1, 1) = sigma(1) - 0.5 * (sigma(2) - sigma(1))
+      sigma_bnds(2, 1) = 0.5 * (sigma(2) + sigma(1))
+      do k = 2, kdm - 1
+        sigma_bnds(1, k) = 0.5 * (sigma(k) + sigma(k - 1))
+        sigma_bnds(2, k) = 0.5 * (sigma(k) + sigma(k + 1))
+      end do
+      sigma_bnds(1, kdm) = 0.5 * (sigma(kdm) + sigma(kdm - 1))
+      sigma_bnds(2, kdm) = sigma(kdm) + 0.5 * (sigma(kdm) - sigma(kdm - 1))
+      sigmahalf(1:kdm) = sigma_bnds(1, 1:kdm)
+      sigmahalf(kdm + 1) = sigma_bnds(2, kdm)
+      sigmahalf_bnds(1, 2:kdm + 1) = sigma
+      sigmahalf_bnds(2, 1:kdm) = sigma
+      sigmahalf_bnds(1, 1) = sigmahalf(1)
+      sigmahalf_bnds(2, kdm + 1) = sigmahalf(kdm + 1)
+    end if
+
+    status = nf90_inq_dimid(ncid, 'depth', dimid)
+    if (status == nf90_noerr) then
+      status = nf90_inquire_dimension(ncid, dimid, len=ddm)
+      call handle_ncerror(status)
+      allocate(depth(ddm), depth_bnds(2, ddm), stat=status)
+      if (status /= 0) stop 'cannot ALLOCATE enough memory (1c)'
+      status = nf90_inq_varid(ncid, 'depth', rhid)
+      call handle_ncerror(status)
+      status = nf90_get_var(ncid, rhid, depth)
+      call handle_ncerror(status)
+      status = nf90_inq_varid(ncid, 'depth_bnds', rhid)
+      call handle_ncerror(status)
+      status = nf90_get_var(ncid, rhid, depth_bnds)
+      call handle_ncerror(status)
+    end if
+
+    write(*, *) 'read lat'
+    status = nf90_inq_dimid(ncid, 'lat', dimid)
+    if (status == nf90_noerr) then
+      status = nf90_inquire_dimension(ncid, dimid, len=ldm)
+      call handle_ncerror(status)
+      allocate(slat(ldm), slat_bnds(2, ldm), stat=status)
+      if (status /= 0) stop 'cannot ALLOCATE enough memory (1c)'
+      status = nf90_inq_varid(ncid, 'lat', rhid)
+      call handle_ncerror(status)
+      status = nf90_get_var(ncid, rhid, slat)
+      call handle_ncerror(status)
+      slat_bnds(1, 1) = max(-90., slat(1) - 0.5 * (slat(2) - slat(1)))
+      slat_bnds(2, 1) = 0.5 * (slat(2) + slat(1))
+      do j = 2, ldm - 1
+        slat_bnds(1, j) = 0.5 * (slat(j) + slat(j - 1))
+        slat_bnds(2, j) = 0.5 * (slat(j) + slat(j + 1))
+      end do
+      slat_bnds(1, ldm) = 0.5 * (slat(ldm) + slat(ldm - 1))
+      slat_bnds(2, ldm) = min(90., slat(ldm) + 0.5 * (slat(ldm) - slat(ldm - 1)))
+    end if
+
+    write(*, *) 'read region'
+    status = nf90_inq_varid(ncid, 'region', rhid)
+    if (status == nf90_noerr) then
+      status = nf90_inq_dimid(ncid, 'region', dimid)
+      call handle_ncerror(status)
+      status = nf90_inquire_dimension(ncid, dimid, len=rdm)
+      call handle_ncerror(status)
+      status = nf90_inq_dimid(ncid, 'slenmax', dimid)
+      status = nf90_inquire_dimension(ncid, dimid, len=slenmax2)
+      call handle_ncerror(status)
+      allocate(region(slenmax2, rdm), region1(rdm), stat=status)
+      if (status /= 0) stop 'cannot ALLOCATE enough memory (1d)'
+      status = nf90_inq_varid(ncid, 'region', rhid)
+      call handle_ncerror(status)
+      write(*, *) 'read region', slenmax2, rdm, shape(region)
+      status = nf90_get_var(ncid, rhid, region, (/1, 1/), (/slenmax2, rdm/))
+      call handle_ncerror(status)
+      region1 = ' '
+      do i = 1, rdm
+        do j = 1, slenmax2
+          region1(i)(j:j) = region(j, i)
+        end do
+      end do
+    end if
+
+    write(*, *) 'read section'
+    status = nf90_inq_varid(ncid, 'section', rhid)
+    if (status == nf90_noerr) then
+      status = nf90_inq_dimid(ncid, 'section', dimid)
+      call handle_ncerror(status)
+      status = nf90_inquire_dimension(ncid, dimid, len=secdm)
+      call handle_ncerror(status)
+      status = nf90_inq_dimid(ncid, 'slenmax', dimid)
+      status = nf90_inquire_dimension(ncid, dimid, len=slenmax2)
+      call handle_ncerror(status)
+      allocate(section(slenmax2, secdm), section1(secdm), stat=status)
+      if (status /= 0) stop 'cannot ALLOCATE enough memory (1d)'
+      status = nf90_inq_varid(ncid, 'section', rhid)
+      call handle_ncerror(status)
+      write(*, *) 'secdm,slenmax2:', secdm, slenmax2
+      status = nf90_get_var(ncid, rhid, section, (/1, 1/), (/slenmax2, secdm/))
+      call handle_ncerror(status)
+      write(*, *) 'section:', section
+      section1 = ' '
+      do i = 1, secdm
+        write(*, *) 'i:', i
+        s1 = ' '
+        do j = 1, slenmax2
+          s1(j:j) = section(j, i)
+        end do
+        write(*, *) 's1:', s1
+        if (trim(s1) == 'taiwan_and_luzon_straits') then
+          section1(i) = 'taiwan_luzon_straits'
+        else
+          section1(i) = trim(s1)
+        end if
+        k = k + 1
+      end do
+    end if
+
+    write(*, *) 'l1898'
+    ! Read calendar information (change reference year)
+    status = nf90_inq_varid(ncid, 'time', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_att(ncid, rhid, 'calendar', calendar)
+    call handle_ncerror(status)
+    status = nf90_get_att(ncid, rhid, 'units', calunits)
+    call handle_ncerror(status)
+    read(calunits(12:15), '(i4.4)') exprefyear
+
+    ! Close first file
+    status = nf90_close(ncid)
+    call handle_ncerror(status)
+
+    ! Read longitudes, latitudes
+    allocate(parea(idm, jdm), pmask(idm, jdm), pdepth(idm, jdm), &
+      plon(idm, jdm), plat(idm, jdm), bpini(idm, jdm), bpinit(idm, jdm), &
+      ulon(idm, jdm), ulat(idm, jdm), vlon(idm, jdm), vlat(idm, jdm), &
+      plon_crns(idm, jdm, ncrns), plat_crns(idm, jdm, ncrns), &
+      ulon_crns(idm, jdm, ncrns), ulat_crns(idm, jdm, ncrns), &
+      vlon_crns(idm, jdm, ncrns), vlat_crns(idm, jdm, ncrns), &
+      plon_crnsp(ncrns, idm, jdm), plat_crnsp(ncrns, idm, jdm), &
+      ulon_crnsp(ncrns, idm, jdm), ulat_crnsp(ncrns, idm, jdm), &
+      vlon_crnsp(ncrns, idm, jdm), vlat_crnsp(ncrns, idm, jdm), &
+      sealv(idm, jdm), xvec(idm), yvec(jdm), kvec(kdm), pbot(idm, jdm), &
+      dzini(idm, jdm, kdm), sini(idm, jdm, kdm), tini(idm, jdm, kdm), &
+      kvechalf(kdm + 1), uscaley(idm, jdm), vscalex(idm, jdm), &
+      udepth(idm, jdm), vdepth(idm, jdm), basin(idm, jdm), stat=status)
+    if (status /= 0) stop 'cannot ALLOCATE enough memory (1)'
+
+    forall (i = 1:idm) xvec(i) = i
+    forall (j = 1:jdm) yvec(j) = j
+    forall (k = 1:kdm) kvec(k) = k - 0.5
+    forall (k = 1:kdm + 1) kvechalf(k) = k - 1
+
+    ! Open grid file
+    status = nf90_open(trim(griddata)//trim(ocngridfile), nf90_nowrite, ncid)
+    call handle_ncerror(status)
+
+    ! Read grid cell mask, area and bathymetry
+    status = nf90_inq_varid(ncid, 'pdepth', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, pdepth)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'udepth', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, udepth)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'vdepth', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, vdepth)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'pmask', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, pmask)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'parea', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, parea)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'udy', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, uscaley)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'vdx', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, vscalex)
+    call handle_ncerror(status)
+    parea = parea * pmask
+
+    ! Compute global ocean volume and area
+    voglb = sum(parea * pdepth)
+    aoglb = sum(parea)
+
+    ! Read coordinates
+    write(*, *) 'line1974'
+    status = nf90_inq_varid(ncid, 'plon', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, plon)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'plat', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, plat)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'ulon', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, ulon)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'ulat', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, ulat)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'vlon', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, vlon)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'vlat', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, vlat)
+    call handle_ncerror(status)
+
+    ! Read grid cell vertices
+    status = nf90_inq_varid(ncid, 'pclon', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, plon_crns)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'pclat', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, plat_crns)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'uclon', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, ulon_crns)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'uclat', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, ulat_crns)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'vclon', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, vlon_crns)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'vclat', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, vlat_crns)
+    call handle_ncerror(status)
+    write(*, *) 'line2025'
+
+    ! Permute to compensate for dimension bug in CMOR
+    do j = 1, jdm
+      do i = 1, idm
+        do n = 1, ncrns
+          plon_crnsp(n, i, j) = plon_crns(i, j, n)
+          plat_crnsp(n, i, j) = plat_crns(i, j, n)
+          ulon_crnsp(n, i, j) = ulon_crns(i, j, n)
+          ulat_crnsp(n, i, j) = ulat_crns(i, j, n)
+          vlon_crnsp(n, i, j) = vlon_crns(i, j, n)
+          vlat_crnsp(n, i, j) = vlat_crns(i, j, n)
+          if (plon_crnsp(n, i, j) < 0.) &
+            plon_crnsp(n, i, j) = plon_crnsp(n, i, j) + 360
+          if (ulon_crnsp(n, i, j) < 0.) &
+            ulon_crnsp(n, i, j) = ulon_crnsp(n, i, j) + 360
+          if (vlon_crnsp(n, i, j) < 0.) &
+            vlon_crnsp(n, i, j) = vlon_crnsp(n, i, j) + 360
+        end do
+        if (plon(i, j) < 0.) plon(i, j) = plon(i, j) + 360
+        if (ulon(i, j) < 0.) ulon(i, j) = ulon(i, j) + 360
+        if (vlon(i, j) < 0.) vlon(i, j) = vlon(i, j) + 360
+      end do
+    end do
+
+    ! Close grid file
+    status = nf90_close(ncid)
+    call handle_ncerror(status)
+
+    return
+    ! Read initial layer profile from inicon.nc
+    status = nf90_open(trim(griddata)//trim(ocninitfile), nf90_nowrite, ncid)
+    call handle_ncerror(status)
+
+    status = nf90_inq_varid(ncid, 'dz', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, dzini)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'saln', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, sini)
+    call handle_ncerror(status)
+    status = nf90_inq_varid(ncid, 'temp', rhid)
+    call handle_ncerror(status)
+    status = nf90_get_var(ncid, rhid, tini)
+    call handle_ncerror(status)
+
+    status = nf90_close(ncid)
+    call handle_ncerror(status)
+
+    ! Compute initial bottom pressure
+    bpini = 0.
+    bpinit = 0.
+    do j = 1, jdm
+      do i = 1, idm
+        if (pmask(i, j) > 0.5) then
+          phil = 0.
+          do k = 1, kdm
+            phiu = phil
+            phil = phiu - 1e+4 * g * dzini(i, j, k)
+            bpini(i, j) = getlpi(tini(i, j, k), sini(i, j, k), phiu, phil, bpini(i, j))
+            bpinit(i, j) = getlpi(tini(i, j, k), 35., phiu, phil, bpinit(i, j))
+          end do
+        end if
+      end do
+    end do
+
+  end subroutine read_gridinfo_ifile
+
+  ! -----------------------------------------------------------------
+
+  subroutine open_ofile(fx)
+
+    implicit none
+
+    logical, optional, intent(in) :: fx
+    logical :: fxflag
+
+    real :: fac1, fac2, fac3, fac4, fac5, fac6
+    integer, parameter :: ndimmax = 10
+    integer :: i, j, k, n, ndims, dimids(ndimmax), dimlens(ndimmax)
+    character(len=slenmax) :: coord, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
+
+    real(kind=8), allocatable :: tmp1d(:), tmp2d(:, :)
+
+    ! Check if output variable should have time coordinate
+    fxflag = .false.
+    if (present(fx)) then
+      if (fx) fxflag = .true.
+    end if
+
+    ! Inquire variable units and dimensions in input file
+    status = nf90_open(fnm, nf90_nowrite, ncid)
+    call handle_ncerror(status)
+
+    call resolve_vnm(slenmax, ivnm, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6, &
+      fac1, fac2, fac3, fac4, fac5, fac6)
+    if (verbose) then
+      write(*, *) 'Resolve input variable term ', trim(ivnm), ' ='
+      if (len_trim(ivnm1) > 0) write(*, *) ' ', trim(ivnm1), '*', fac1
+      if (len_trim(ivnm2) > 0) write(*, *) ' + ', trim(ivnm2), '*', fac2
+      if (len_trim(ivnm3) > 0) write(*, *) ' + ', trim(ivnm3), '*', fac3
+      if (len_trim(ivnm4) > 0) write(*, *) ' + ', trim(ivnm4), '*', fac4
+      if (len_trim(ivnm5) > 0) write(*, *) ' + ', trim(ivnm5), '*', fac5
+      if (len_trim(ivnm6) > 0) write(*, *) ' + ', trim(ivnm6), '*', fac6
+    end if
+    status = nf90_inq_varid(ncid, trim(ivnm1), rhid)
+    if (status /= nf90_noerr) then
+      write(*, *) 'cannot find input variable ', trim(ivnm1)
+      stop
+    end if
+    status = nf90_inquire_variable(ncid, rhid, ndims=ndims)
+    call handle_ncerror(status)
+    status = nf90_inquire_variable(ncid, rhid, dimids=dimids(1:ndims))
+    call handle_ncerror(status)
+    dimlens = 1
+    do n = 1, ndims
+      status = nf90_inquire_dimension(ncid, dimids(n), len=dimlens(n))
+      call handle_ncerror(status)
+    end do
+    if (.not. allocated(dp)) allocate(dp(idm, jdm, kdm))
+    if (allocated(fld)) deallocate(fld, fld2, fldacc, fldtmp)
+    ii = idm
+    jj = jdm
+    kk = kdm
+    write(*, *) 'dimlens(3):', dimlens(3)
+    write(*, *) 'kdm:', kdm
+    if (dimlens(3) == kdm .and. kdm > 0) then
+      vtype = 'layer'
+    else if (dimlens(3) == ddm .and. ddm > 0 .or. &
+      index(special, 'volcello') > 0 .or. &
+      index(special, 'thkcello') > 0 .or. &
+      index(special, 'masscello') > 0) then
+      vtype = 'level'
+      kk = ddm
+    else if (dimlens(1) == idm .and. dimlens(2) == jdm .and. ndims <= 3) then
+      vtype = '2d'
+      kk = 1
+    else if (dimlens(1) == ldm .and. dimlens(2) == kdm) then
+      vtype = 'merk'
+      ii = ldm
+      jj = kdm
+      kk = rdm
+    else if (dimlens(1) == ldm .and. dimlens(2) == ddm) then
+      vtype = 'merd'
+      ii = ldm
+      jj = ddm
+      kk = rdm
+    else if (dimlens(1) == ldm .and. dimlens(2) == rdm) then
+      vtype = 'mert'
+      ii = ldm
+      jj = rdm
+      kk = 1
+    else if (dimlens(1) == secdm .and. ndims == 2) then
+      vtype = 'sect'
+      ii = secdm
+      jj = 1
+      kk = 1
+    else if (dimlens(1) == 1 .and. ndims == 1) then
+      vtype = '1d'
+      ii = 1
+      jj = 1
+      kk = 1
+    end if
+    allocate(fld(ii, jj, kk), fld2(ii, jj, kk), fldacc(ii, jj, kk), &
+      fldtmp(ii, jj, kk), stat=status)
+    if (status /= 0) stop 'cannot ALLOCATE enough memory (4)'
+    if (index(special, 'half') > 0) then
+      if (allocated(fldhalf)) deallocate(fldhalf)
+      allocate(fldhalf(idm, jdm, kdm + 1), stat=status)
+      if (status /= 0) stop 'cannot ALLOCATE enough memory (5)'
+    end if
+
+    if (len_trim(vunits) == 0) then
+      status = nf90_get_att(ncid, rhid, 'units', vunits)
+      call handle_ncerror(status)
+      if (trim(vunits) == 'mm/s') vunits = 'kg m-2 s-1'
+    end if
+
+    coord = ' '
+    status = nf90_get_att(ncid, rhid, 'coordinates', coord)
+    if (status /= nf90_noerr) coord(1:1) = ivnm(1:1)
+
+    status = nf90_close(ncid)
+    call handle_ncerror(status)
+
+    ! Derive path of CMOR table
+    tablepath = trim(tabledir)//trim(table)
+
+    ! Inquire time dimension of output variable
+    write(*, *) 'tablepath:', trim(tablepath)
+    write(*, *) 'ovm:', trim(ovnm)
+    write(*, *) 'vtype:', trim(vtype)
+    if (.not. fxflag) call get_timecoord(trim(tablepath), ovnm, tcoord)
+
+    ! Call CMOR setup
+    if (verbose) then
+      if (createsubdirs) then
+        error_flag = cmor_setup(inpath=trim(ibasedir), &
+          netcdf_file_action=CMOR_REPLACE_4, set_verbosity=CMOR_NORMAL, &
+          create_subdirectories=1)
+      else
+        error_flag = cmor_setup(inpath=trim(ibasedir), &
+          netcdf_file_action=CMOR_REPLACE_4, set_verbosity=CMOR_NORMAL, &
+          create_subdirectories=0)
+      end if
+    else
+      if (createsubdirs) then
+        error_flag = cmor_setup(inpath=trim(ibasedir), &
+          netcdf_file_action=CMOR_REPLACE_4, set_verbosity=CMOR_QUIET, &
+          create_subdirectories=1)
+      else
+        error_flag = cmor_setup(inpath=trim(ibasedir), &
+          netcdf_file_action=CMOR_REPLACE_4, set_verbosity=CMOR_QUIET, &
+          create_subdirectories=0)
+      end if
+    end if
+    if (error_flag /= 0) stop 'Problem setting up CMOR'
+
+    ! Derive path to CMOR table
+    tablepath = trim(tabledir)//trim(table)
+
+    ! Define output dataset
+    grid_label = ocngrid_label
+    grid = trim(ocngrid)
+    if (trim(vtype) == 'layer' .and. .not. &
+      (lsumz .or. index(special, 'glbave') > 0 &
+      .or. index(special, '2zos') > 0 &
+      .or. index(special, 'level1') > 0)) then
+      grid = trim(ocngrid)//', vertical density coordinate'
+    else
+      if (index(special, 'glbave') > 0 &
+        .or. index(special, '2zos') > 0) then
+        grid_label = 'gm'
+        grid = 'global mean or integral'
+      else
+        if (vtype(1:3) == 'mer' .or. ovnm(1:7) == 'hfbasin') then
+          grid_label = 'grz'
+          grid = 'zonal mean or integral'
+        else if (trim(vtype) == 'level') then
+          grid_label = 'gr'
+          grid = trim(ocngrid)//', interpolated to z-levels'
+        end if
+      end if
+    end if
+    call write_namelist_json(grid, grid_label, ocngrid_resolution, ovnm)
+    error_flag = cmor_dataset_json(namelist_file_json)
+    call system('rm '//trim(namelist_file_json))
+
+    ! Define horizontal axes
+    write(*, *) 'Define horizontal axes'
+    if (vtype(1:3) /= 'mer' .and. vtype(1:3) /= 'sec') then
+      iaxid = cmor_axis( &
+        table=trim(tabledir)//trim(tgrids), &
+        table_entry='i_index', &
+        units='1', &
+        length=idm, &
+        coord_vals=xvec)
+      jaxid = cmor_axis( &
+        table=trim(tabledir)//trim(tgrids), &
+        table_entry='j_index', &
+        units='1', &
+        length=jdm, &
+        coord_vals=yvec)
+
+      write(*, *) 'Define horizontal grid '//coord(1:1)
+      if (coord(1:1) == 'p') then
+        grdid = cmor_grid( &
+          axis_ids=(/iaxid, jaxid/), &
+          latitude=plat, &
+          longitude=plon, &
+          latitude_vertices=plat_crnsp, &
+          longitude_vertices=plon_crnsp)
+      else if (coord(1:1) == 'u') then
+        grdid = cmor_grid( &
+          axis_ids=(/iaxid, jaxid/), &
+          latitude=ulat, &
+          longitude=ulon, &
+          latitude_vertices=ulat_crnsp, &
+          longitude_vertices=ulon_crnsp)
+      else if (coord(1:1) == 'v') then
+        grdid = cmor_grid( &
+          axis_ids=(/iaxid, jaxid/), &
+          latitude=vlat, &
+          longitude=vlon, &
+          latitude_vertices=vlat_crnsp, &
+          longitude_vertices=vlon_crnsp)
+      end if
+    end if
+
+    if (vtype(1:3) == 'mer') then
+      laxid = cmor_axis( &
+        table=trim(tablepath), &
+        table_entry='latitude', &
+        units='degrees_north', &
+        length=ldm, &
+        coord_vals=slat, &
+        cell_bounds=slat_bnds)
+      raxid = cmor_axis( &
+        table=trim(tablepath), &
+        table_entry='basin', &
+        units='1', &
+        coord_vals=region1)
+    end if
+
+    ! Define vertical axis
+    write(*, *) "line 2428"
+    write(*, *) 'vtype:', trim(vtype)
+    if (trim(vtype) == 'layer' .and. .not. &
+      (lsumz .or. index(special, 'glbave') > 0 &
+      .or. index(special, '2zos') > 0 &
+      .or. index(special, 'level1') > 0)) then
+      if (index(special, 'half') > 0) then
+        kaxid = cmor_axis( &
+          table=trim(tablepath), &
+          table_entry='rho', &
+          units='kg m-3', &
+          length=kdm + 1, &
+          coord_vals=1000. + sigmahalf, &
+          cell_bounds=1000. + sigmahalf_bnds)
+      else
+        write(*, *) "line 2451"
+        kaxid = cmor_axis( &
+          table=trim(tablepath), &
+          table_entry='rho', &
+          units='kg m-3', &
+          length=kdm, &
+          coord_vals=1000. + sigma, &
+          cell_bounds=1000. + sigma_bnds)
+        write(*, *) "line 2459"
+      end if
+    else if (index(special, 'level1') > 0) then
+      kaxid = cmor_axis( &
+        table=trim(tablepath), &
+        table_entry='depth0m', &
+        units='m', &
+        length=1, &
+        coord_vals=(/0/))
+    else if (index(special, 'dzavg300') > 0) then
+      kaxid = cmor_axis( &
+        table=trim(tablepath), &
+        table_entry='depth300m', &
+        units='m', &
+        length=1, &
+        coord_vals=(/150./), &
+        cell_bounds=(/0., 300./))
+    else if (index(special, 'dzavg700') > 0) then
+      kaxid = cmor_axis( &
+        table=trim(tablepath), &
+        table_entry='depth700m', &
+        units='m', &
+        length=1, &
+        coord_vals=(/350./), &
+        cell_bounds=(/0., 700./))
+    else if (index(special, 'dzavg2000') > 0) then
+      kaxid = cmor_axis( &
+        table=trim(tablepath), &
+        table_entry='depth2000m', &
+        units='m', &
+        length=1, &
+        coord_vals=(/1000./), &
+        cell_bounds=(/0., 2000./))
+    else if (trim(vtype) == 'level' .or. vtype(1:4) == 'merd') then
+      kaxid = cmor_axis( &
+        table=trim(tablepath), &
+        table_entry='depth_coord', &
+        units='m', &
+        length=ddm, &
+        coord_vals=depth, &
+        cell_bounds=depth_bnds)
+    else if (vtype(1:4) == 'merk') then
+      kaxid = cmor_axis( &
+        table=trim(tablepath), &
+        table_entry='rho', &
+        units='kg m-3', &
+        length=kdm, &
+        coord_vals=sigma + 1000., &
+        cell_bounds=sigma_bnds + 1000.)
+    else if (trim(zcoord) == 'olevel') then
+      allocate(tmp1d(1), tmp2d(2, 1))
+      tmp1d(:) = (/5.d0/)
+      tmp2d(:, 1) = (/0.d0, 10.d0/)
+      kaxid = cmor_axis( &
+        table=trim(tablepath), &
+        table_entry='depth_coord', &
+        units='m', &
+        length=1, &
+        coord_vals=tmp1d, &
+        cell_bounds=tmp2d)
+      deallocate(tmp1d, tmp2d)
+    else if (vtype(1:3) == 'sec') then
+      saxid = cmor_axis( &
+        table=trim(tablepath), &
+        table_entry='oline', &
+        units='1', &
+        coord_vals=section1)
+    end if
+
+    ! Define time axis
+    if (.not. fxflag) then
+      write(*, *) 'Define time axis '
+      write(*, *) 'tcoord:', trim(tcoord)
+      taxid = cmor_axis( &
+        table=trim(tablepath), &
+        table_entry=trim(tcoord), &
+        units=trim(calunits), &
+        length=1)
+    end if
+
+    ! Define output variable
+    write(*, *) 'Define output variable'
+    write(*, *) 'zcoord:', trim(zcoord)
+    if (fxflag) then
+      if ((trim(vtype) == '2d' .and. .not. (trim(zcoord) == 'olevel' .or. &
+        index(special, 'glbave') > 0 .or. index(special, '2zos') > 0.)) &
+        .or. lsumz) then
+        varid = cmor_variable( &
+          table=trim(tablepath), &
+          table_entry=trim(ovnm), &
+          units=trim(vunits), &
+          axis_ids=(/grdid/), &
+          missing_value=1e20, &
+          comment=trim(vcomment), &
+          original_name=trim(ivnm))
+      else if (index(special, 'glbave') > 0 &
+        .or. index(special, '2zos') > 0.) then
+        varid = cmor_variable( &
+          table=trim(tablepath), &
+          table_entry=trim(ovnm), &
+          units=trim(vunits), &
+          axis_ids=(/taxid/), &
+          original_name=trim(ivnm), &
+          missing_value=1e20, &
+          comment=trim(vcomment), &
+          positive=trim(vpositive))
+      else
+        varid = cmor_variable( &
+          table=trim(tablepath), &
+          table_entry=trim(ovnm), &
+          units=trim(vunits), &
+          axis_ids=(/grdid, kaxid/), &
+          missing_value=1e20, &
+          comment=trim(vcomment), &
+          original_name=trim(ivnm))
+      end if
+    else
+      write(*, *) 'vtype:', trim(vtype)
+      write(*, *) 'zcoord:', trim(zcoord)
+      if ((trim(vtype) == '2d' .and. .not. (trim(zcoord) == 'ol' .or. &
+        index(special, 'glbave') > 0 .or. index(special, '2zos') > 0. &
+        )) .or. lsumz .and. .not. index(special, 'glbave') > 0 &
+        .or. index(special, 'lvl2srf') > 0 &
+        .or. index(special, 'locmin') > 0 &
+        .or. index(special, 'dpint') > 0 &
+        .or. index(special, 'dpavg') > 0 &
+        .or. index(special, 'omega2z') > 0) then
+        write(*, *) 'case l2594'
+        varid = cmor_variable( &
+          table=trim(tablepath), &
+          table_entry=trim(ovnm), &
+          units=trim(vunits), &
+          axis_ids=(/grdid, taxid/), &
+          original_name=trim(ivnm), &
+          missing_value=1e20, &
+          comment=trim(vcomment), &
+          positive=trim(vpositive))
+      else if (index(special, 'dzavg') > 0.) then
+        varid = cmor_variable( &
+          table=trim(tablepath), &
+          table_entry=trim(ovnm), &
+          units=trim(vunits), &
+          axis_ids=(/grdid, taxid, kaxid/), &
+          original_name=trim(ivnm), &
+          missing_value=1e20, &
+          comment=trim(vcomment), &
+          positive=trim(vpositive))
+      else if (trim(vtype) == 'layer' .and. .not. (trim(ovnm) == 'zfull' &
+        .or. trim(ovnm) == 'half' .or. index(special, 'glbave') > 0 &
+        .or. index(special, '2zos') > 0.)) then
+        write(*, *) 'case l2617'
+        varid = cmor_variable( &
+          table=trim(tablepath), &
+          table_entry=trim(ovnm), &
+          units=trim(vunits), &
+          axis_ids=(/grdid, kaxid, taxid/), &
+          original_name=trim(ivnm), &
+          missing_value=1e20, &
+          positive=trim(vpositive), &
+          comment='Please note that the layer depth ' &
+          // 'information is stored ' &
+          // 'separately in "zfull" ' &
+          // 'and "zhalf" while approximate layer ' &
+          // 'density values are stored together ' &
+          // 'with "msftmrho". '//trim(vcomment))
+      else if (vtype(1:4) == 'merd' .or. vtype(1:4) == 'merk') then
+        varid = cmor_variable( &
+          table=trim(tablepath), &
+          table_entry=trim(ovnm), &
+          units=trim(vunits), &
+          axis_ids=(/laxid, kaxid, raxid, taxid/), &
+          original_name=trim(ivnm), &
+          missing_value=1e20, &
+          comment=trim(vcomment), &
+          positive=trim(vpositive))
+      else if (vtype(1:4) == 'mert') then
+        varid = cmor_variable( &
+          table=trim(tablepath), &
+          table_entry=trim(ovnm), &
+          units=trim(vunits), &
+          axis_ids=(/laxid, raxid, taxid/), &
+          original_name=trim(ivnm), &
+          missing_value=1e20, &
+          comment=trim(vcomment), &
+          positive=trim(vpositive))
+      else if (vtype(1:4) == 'sect') then
+        varid = cmor_variable( &
+          table=trim(tablepath), &
+          table_entry=trim(ovnm), &
+          units=trim(vunits), &
+          axis_ids=(/saxid, taxid/), &
+          original_name=trim(ivnm), &
+          missing_value=1e20, &
+          comment=trim(vcomment), &
+          positive=trim(vpositive))
+      else if (index(special, 'glbave') > 0 &
+        .or. index(special, '2zos') > 0.) then
+        varid = cmor_variable( &
+          table=trim(tablepath), &
+          table_entry=trim(ovnm), &
+          units=trim(vunits), &
+          axis_ids=(/taxid/), &
+          original_name=trim(ivnm), &
+          missing_value=1e20, &
+          comment=trim(vcomment), &
+          positive=trim(vpositive))
+      else
+        varid = cmor_variable( &
+          table=trim(tablepath), &
+          table_entry=trim(ovnm), &
+          units=trim(vunits), &
+          axis_ids=(/grdid, kaxid, taxid/), &
+          original_name=trim(ivnm), &
+          missing_value=1e20, &
+          comment=trim(vcomment), &
+          positive=trim(vpositive))
+      end if
+    end if
 #ifdef DEFLATE
-      error_flag = cmor_set_deflate(varid,1,1,5)
-#endif 
-c
-      END SUBROUTINE open_ofile
+    error_flag = cmor_set_deflate(varid, 1, 1, 5)
+#endif
 
+  end subroutine open_ofile
 
+  ! -----------------------------------------------------------------
 
-      SUBROUTINE close_ofile
-c
-      IMPLICIT NONE
-c
-      status=cmor_close(varid,fnmo,1)
-      IF (status.NE.0) STOP 'problem closing CMOR output file'
-c
-      END SUBROUTINE close_ofile
+  subroutine close_ofile
 
+    implicit none
 
+    status = cmor_close(varid, fnmo, 1)
+    if (status /= 0) stop 'problem closing CMOR output file'
 
-      SUBROUTINE read_field
-c
-      IMPLICIT NONE
-c
-      REAL :: fac1,fac2,fac3,fac4,fac5,fac6
-      INTEGER :: i,j,k,ind
-      CHARACTER(len=slenmax) :: coord,ivnm1,ivnm2,ivnm3,ivnm4,ivnm5,
-     .  ivnm6
-c
-c --- Open input file 
-      status=nf90_open(fnm,nf90_nowrite,ncid)
-      CALL handle_ncerror(status)
-c
-c --- Read data
-      IF (INDEX(special,'glbave3d').GT.0) THEN 
-        fld=0. 
-        s1='dp'
-        CALL add_fixed(s1,1.,ncid)
-        DO k=1,kk
-          DO j=1,jj
-            DO i=1,ii 
-              IF (fld(i,j,k).EQ.1e20) THEN 
-                dp(i,j,k)=0.
-              ELSE
-                dp(i,j,k)=fld(i,j,k)
-              ENDIF
-            ENDDO
-          ENDDO 
-        ENDDO 
-      ENDIF 
-c
-      CALL resolve_vnm(slenmax,ivnm,ivnm1,ivnm2,ivnm3,ivnm4,ivnm5,ivnm6,
-     .  fac1,fac2,fac3,fac4,fac5,fac6)
-      fld=0.
-      CALL add_fixed(ivnm1,fac1,ncid)
-      IF (INDEX(special,'volcello').GT.0) THEN
-        fld2=fld
-        fld=0. 
-      ENDIF 
-      CALL add_fixed(ivnm2,fac2,ncid)
-      CALL add_fixed(ivnm3,fac3,ncid)
-      CALL add_fixed(ivnm4,fac4,ncid)
-      CALL add_fixed(ivnm5,fac5,ncid)
-      CALL add_fixed(ivnm6,fac6,ncid)
-c
-      status=nf90_close(ncid)
-      CALL handle_ncerror(status)
-c
-      END SUBROUTINE read_field
+  end subroutine close_ofile
 
+  ! -----------------------------------------------------------------
 
+  subroutine read_field
 
-      SUBROUTINE read_tslice(rec,badrec,fname)
-c
-      IMPLICIT NONE
-c
-      REAL :: fac1,fac2,fac3,fac4,fac5,fac6
-      INTEGER :: ind,rec,rec1,i,j,k
-      INTEGER, SAVE :: fid
-      CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: fname
-      CHARACTER(len=slenmax) :: ivnm1,ivnm2,ivnm3,ivnm4,ivnm5,
-     .  ivnm6
-      LOGICAL :: badrec
-c
-c --- Exception for fill day
-      rec1=max(rec,1)
-c
-c --- Open input file 
-      IF (PRESENT(fname)) THEN
-        status=nf90_open(fname,nf90_nowrite,fid)
-        CALL handle_ncerror(status)
-      ELSE
-        status=nf90_open(fnm,nf90_nowrite,fid)
-        CALL handle_ncerror(status)
-      ENDIF
-c
-      IF (.FALSE.) THEN 
-c --- Read time information
-      status=nf90_inq_varid(fid,'time',rhid)
-      IF (status.NE.nf90_noerr) THEN
-        WRITE(*,*) 'cannot find time variable'
-        STOP
-      ENDIF 
-      status=nf90_get_var(fid,rhid,tval,(/rec1/),(/1/))
-      CALL handle_ncerror(status)
-      IF (rec.EQ.0) tval=tval-1
-c 
-c --- Guess time bounds 
-c     IF (itag.EQ.tagoyr.OR.itag.EQ.tagoyrbgc) THEN 
-c       tbnds(1,1)=tval(1)-365*0.5       
-c       tbnds(2,1)=tval(1)+365*0.5       
-c     ELSEIF (itag.EQ.tagomon.OR.itag.EQ.tagomonbgc) THEN 
-c       recompute micom's time stamp 
-c       tval=(year-refyear)*365+days(month)+lom(month)*0.5
-c       tbnds(1,1)=tval(1)-lom(month)*0.5       
-c       tbnds(2,1)=tval(1)+lom(month)*0.5
-c     ELSE
-c       tbnds(1,1)=tval(1)-0.5      
-c       tbnds(2,1)=tval(1)+0.5
-c     ENDIF
-c
-c --- correct erroneous intial time bound
-      tbnds(1,1)=max(0.,tbnds(1,1))
-      tval=0.5*(tbnds(1,1)+tbnds(2,1))
-      END IF
-c
-c --- Read data 
-      IF (INDEX(special,'glbave3d').GT.0.OR.
-     .  (INDEX(special,'2rho').GT.0.AND.vtype.EQ.'layer')
-     .  .OR.INDEX(special,'2zos').GT.0) THEN 
-        fld=0. 
-        s1='dp'
-        CALL add_tslice(s1,1.,rec1,fid)  
-        DO k=1,kk 
-          DO j=1,jj 
-            DO i=1,ii 
-              IF (fld(i,j,k).EQ.1e20) then 
-                dp(i,j,k)=0.
-              ELSE
-                dp(i,j,k)=fld(i,j,k)
-              ENDIF
-            ENDDO
-          ENDDO 
-        ENDDO
-c --- - Compute rescaled dp 
-        IF (INDEX(special,'2zoss').GT.0) THEN
-          DO j=1,jdm
-            DO i=1,idm 
-              IF (pmask(i,j).GT.0.5) 
-     .          dp(i,j,:)=dp(i,j,:)*bpini(i,j)/SUM(dp(i,j,:))
-            ENDDO
-          ENDDO
-        ELSEIF (INDEX(special,'2zost').GT.0) THEN
-          DO j=1,jdm
-            DO i=1,idm 
-              IF (pmask(i,j).GT.0.5) 
-     .          dp(i,j,:)=dp(i,j,:)*bpinit(i,j)/SUM(dp(i,j,:))
-            ENDDO
-          ENDDO
-        ENDIF 
-      ENDIF 
-c
-      CALL resolve_vnm(slenmax,ivnm,ivnm1,ivnm2,ivnm3,ivnm4,ivnm5,ivnm6,
-     .  fac1,fac2,fac3,fac4,fac5,fac6)
-      IF (INDEX(special,'2rho').GT.0.OR.INDEX(special,'2zoss').GT.0.OR.
-     . INDEX(special,'strmf').GT.0.OR.INDEX(special,'Xfield2').GT.0.OR.
-     . INDEX(special,'Dfield2').GT.0.OR.INDEX(special,'dpint').GT.0.OR.
-     . INDEX(special,'dpavg').GT.0) THEN
-        fld=0.
-        CALL add_tslice(ivnm2,fac2,rec1,fid)
-        fld2=fld
-        fld=0.
-        CALL add_tslice(ivnm1,fac1,rec1,fid)
-        IF (INDEX(special,'strmf').GT.0) THEN
-          fldtmp=0.
-          CALL strmf_eval(idm,jdm,kdm,fld,fld2,fldtmp)
-          fld=fldtmp 
-        ENDIF 
-      ELSE
-        fld=0. 
-        CALL add_tslice(ivnm1,fac1,rec1,fid)  
-        CALL add_tslice(ivnm2,fac2,rec1,fid)  
-        CALL add_tslice(ivnm3,fac3,rec1,fid)  
-        CALL add_tslice(ivnm4,fac4,rec1,fid)  
-        CALL add_tslice(ivnm5,fac5,rec1,fid)  
-        CALL add_tslice(ivnm6,fac6,rec1,fid)  
-      ENDIF
-c
-c --- Read sea level height if necessary 
-      IF (INDEX(special,'dz2').GT.0) THEN
-        status=nf90_inq_varid(fid,'sealv',rhid)
-        IF (status.NE.nf90_noerr) THEN
-          WRITE(*,*) 'cannot find input variable sealv '
-          STOP
-        ENDIF
-        status=nf90_get_var(fid,rhid,sealv,(/1,1,rec1/),
-     .    (/idm,jdm,1/))
-        CALL handle_ncerror(status)
-        status=nf90_get_att(fid,rhid,'scale_factor',sfac)
-        IF (status.NE.NF90_NOERR) sfac=1.
-        status=nf90_get_att(fid,rhid,'add_offset',offs)
-        IF (status.NE.NF90_NOERR) offs=0.
-        status=nf90_get_att(fid,rhid,'_FillValue',fill)  
-        DO j=1,jj 
-          DO i=1,ii 
-            IF (sealv(i,j).EQ.fill) THEN
-              sealv(i,j)=1e20
-            ELSE
-              sealv(i,j)=sealv(i,j)*sfac+offs
-            ENDIF
-          ENDDO
-        ENDDO
-      ENDIF
-c
-c --- Read bottom pressure if necessary 
-      IF (INDEX(special,'dzavg').GT.0) THEN
-        status=nf90_inq_varid(fid,'pbot',rhid)
-        IF (status.NE.nf90_noerr) THEN
-          WRITE(*,*) 'cannot find input variable pbot '
-          STOP
-        ENDIF
-        status=nf90_get_var(fid,rhid,pbot,(/1,1,rec1/),
-     .    (/idm,jdm,1/))
-        CALL handle_ncerror(status)
-        status=nf90_get_att(fid,rhid,'scale_factor',sfac)
-        IF (status.NE.NF90_NOERR) sfac=1.
-        status=nf90_get_att(fid,rhid,'add_offset',offs)
-        IF (status.NE.NF90_NOERR) offs=0.
-        status=nf90_get_att(fid,rhid,'_FillValue',fill)  
-        DO j=1,jj 
-          DO i=1,ii 
-            IF (pbot(i,j).EQ.fill) THEN
-              pbot(i,j)=1e20
-            ELSE
-              pbot(i,j)=pbot(i,j)*sfac+offs
-            ENDIF
-          ENDDO
-        ENDDO
-      ENDIF
-c
-      status=nf90_close(fid)
-      CALL handle_ncerror(status)
-c
-      END SUBROUTINE read_tslice
+    implicit none
 
+    real :: fac1, fac2, fac3, fac4, fac5, fac6
+    integer :: i, j, k, ind
+    character(len=slenmax) :: coord, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
 
+    ! Open input file
+    status = nf90_open(fnm, nf90_nowrite, ncid)
+    call handle_ncerror(status)
 
-      SUBROUTINE add_tslice(vnm,fac,rec,fid)
-c
-c --- Description: add one time slice to output variable fld
-c 
-      IMPLICIT NONE 
-c
-      CHARACTER(LEN=slenmax) :: vnm
-      REAL :: fac 
-      INTEGER :: i,j,k,rec,fid
-c
-c --- Return if variable name is empty 
-      IF (LEN(TRIM(vnm)).EQ.0) RETURN 
-c
-c --- Read time sclice  
-      status=nf90_inq_varid(fid,TRIM(vnm),rhid)
-      IF (status.NE.nf90_noerr) THEN
-        WRITE(*,*) 'cannot find input variable ',TRIM(vnm)
-        STOP
-      ENDIF
-      IF (TRIM(vtype).EQ.'2d') THEN
-        status=nf90_get_var(fid,rhid,fldtmp,(/1,1,rec/),
-     .    (/idm,jdm,1/))
-      ELSEIF (TRIM(vtype).EQ.'1d') THEN
-        status=nf90_get_var(fid,rhid,fldtmp,(/1,1,rec/),
-     .    (/1,1,1/))
-      ELSEIF (TRIM(vtype).EQ.'layer') THEN
-        status=nf90_get_var(fid,rhid,fldtmp,(/1,1,1,rec/),
-     .    (/idm,jdm,kdm,1/))
-      ELSEIF (TRIM(vtype).EQ.'level') THEN
-        status=nf90_get_var(fid,rhid,fldtmp,(/1,1,1,rec/),
-     .    (/idm,jdm,ddm,1/))
-      ELSEIF (TRIM(vtype).EQ.'merk') THEN
-        status=nf90_get_var(fid,rhid,fldtmp,(/1,1,1,rec/),
-     .    (/ldm,kdm,rdm,1/))
-      ELSEIF (TRIM(vtype).EQ.'merd') THEN
-        status=nf90_get_var(fid,rhid,fldtmp,(/1,1,1,rec/),
-     .    (/ldm,ddm,rdm,1/))
-      ELSEIF (TRIM(vtype).EQ.'mert') THEN
-        status=nf90_get_var(fid,rhid,fldtmp,(/1,1,rec/),
-     .    (/ldm,rdm,1/))
-      ELSEIF (TRIM(vtype).EQ.'sect') THEN
-        WRITE(*,*) 'read sections ',secdm
-        status=nf90_get_var(fid,rhid,fldtmp,(/1,rec/),
-     .    (/secdm,1/))
-      ENDIF
-      CALL handle_ncerror(status)
-      status=nf90_get_att(fid,rhid,'scale_factor',sfac)
-      IF (status.NE.NF90_NOERR) sfac=1.
-      status=nf90_get_att(fid,rhid,'add_offset',offs)
-      IF (status.NE.NF90_NOERR) offs=0.
-      status=nf90_get_att(fid,rhid,'_FillValue',fill)
-      IF (status.NE.NF90_NOERR) THEN 
-        DO k=1,kk
-          DO j=1,jj
-            DO i=1,ii
-              fld(i,j,k)=fld(i,j,k)+(fldtmp(i,j,k)*sfac+offs)*fac
-            ENDDO 
-          ENDDO 
-        ENDDO 
-      ELSE
-        DO k=1,kk
-          DO j=1,jj
-            DO i=1,ii
-              IF (fldtmp(i,j,k).EQ.fill) THEN 
-                fld(i,j,k)=1e20 
-              ELSE 
-                fld(i,j,k)=fld(i,j,k)+(fldtmp(i,j,k)*sfac+offs)*fac
-              ENDIF 
-            ENDDO 
-          ENDDO 
-        ENDDO 
-      ENDIF
-c
-      END SUBROUTINE add_tslice
+    ! Read data
+    if (index(special, 'glbave3d') > 0) then
+      fld = 0.
+      s1 = 'dp'
+      call add_fixed(s1, 1., ncid)
+      do k = 1, kk
+        do j = 1, jj
+          do i = 1, ii
+            if (fld(i, j, k) == 1e20) then
+              dp(i, j, k) = 0.
+            else
+              dp(i, j, k) = fld(i, j, k)
+            end if
+          end do
+        end do
+      end do
+    end if
 
+    call resolve_vnm(slenmax, ivnm, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6, &
+      fac1, fac2, fac3, fac4, fac5, fac6)
+    fld = 0.
+    call add_fixed(ivnm1, fac1, ncid)
+    if (index(special, 'volcello') > 0) then
+      fld2 = fld
+      fld = 0.
+    end if
+    call add_fixed(ivnm2, fac2, ncid)
+    call add_fixed(ivnm3, fac3, ncid)
+    call add_fixed(ivnm4, fac4, ncid)
+    call add_fixed(ivnm5, fac5, ncid)
+    call add_fixed(ivnm6, fac6, ncid)
 
+    status = nf90_close(ncid)
+    call handle_ncerror(status)
 
-      SUBROUTINE add_fixed(vnm,fac,fid)
-c
-c --- Description: add one time slice to output variable fld
-c 
-      IMPLICIT NONE
-c
-      CHARACTER(LEN=slenmax) :: vnm
-      REAL :: fac
-      INTEGER :: i,j,k,rec,fid
-c
-c --- Return if variable name is empty 
-      IF (LEN(TRIM(vnm)).EQ.0) RETURN
-c
-c --- Read time sclice  
-      status=nf90_inq_varid(fid,TRIM(vnm),rhid)
-      IF (status.NE.nf90_noerr) THEN
-        WRITE(*,*) 'cannot find input variable ',TRIM(vnm)
-        STOP
-      ENDIF
-      status=nf90_get_var(fid,rhid,fldtmp)
-      CALL handle_ncerror(status)
-      status=nf90_get_att(fid,rhid,'scale_factor',sfac)
-      IF (status.NE.NF90_NOERR) sfac=1.
-      status=nf90_get_att(fid,rhid,'add_offset',offs)
-      IF (status.NE.NF90_NOERR) offs=0.
-      status=nf90_get_att(fid,rhid,'_FillValue',fill)
-      IF (status.NE.NF90_NOERR) THEN
-        DO k=1,kk
-          DO j=1,jj
-            DO i=1,ii
-              fld(i,j,k)=fld(i,j,k)+(fldtmp(i,j,k)*sfac+offs)*fac
-            ENDDO
-          ENDDO
-        ENDDO
-      ELSE
-        DO k=1,kk
-          DO j=1,jj
-            DO i=1,ii
-              IF (fldtmp(i,j,k).EQ.fill) THEN
-                fld(i,j,k)=1e20
-              ELSE
-                fld(i,j,k)=fld(i,j,k)+(fldtmp(i,j,k)*sfac+offs)*fac
-              ENDIF
-            ENDDO
-          ENDDO
-        ENDDO
-      ENDIF
-c
-      END SUBROUTINE add_fixed
+  end subroutine read_field
 
+  ! -----------------------------------------------------------------
 
+  subroutine read_tslice(rec, badrec, fname)
 
-      SUBROUTINE write_field
-c
-      IMPLICIT NONE
-c
-      INTEGER :: i,j,k 
-c
-c --- Set zero on ocean grid cells
-      DO k=1,kk
-        DO j=1,jj
-          DO i=1,ii
-            IF (ABS(fld(i,j,k)).GT.2e20) fld(i,j,k)=0. 
-          ENDDO
-        ENDDO
-      ENDDO
-c      
-c --- Store variable
-      IF (INDEX(special,'glbave')
-     .  .GT.0.OR.INDEX(special,'2zos').GT.0.) THEN
-        error_flag=cmor_write(
-     .    var_id         = varid,
-     .    data           = (/fld(1,1,1)/))
-      ELSEIF (VTYPE.EQ.'2d') THEN
-        error_flag=cmor_write(
-     .    var_id         = varid,
-     .    data           = reshape(fld,(/idm,jdm/)))
-      ELSE
-        error_flag=cmor_write(
-     .    var_id         = varid,
-     .    data           = fld)
-      ENDIF
-c
-      END SUBROUTINE write_field
+    implicit none
 
+    real :: fac1, fac2, fac3, fac4, fac5, fac6
+    integer, intent(in) :: rec
+    logical, intent(out) :: badrec
+    character(len=*), intent(in), optional :: fname
+    integer, save :: fid
+    integer :: i, j, k, rec1
+    character(len=slenmax) :: ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
 
+    ! Exception for fill day
+    rec1 = max(rec, 1)
 
-      SUBROUTINE write_tslice
-c
-      IMPLICIT NONE
-c
-      INTEGER :: i,j,k 
-c
-c --- Populate field defined at interface level 
-      IF (INDEX(special,'zhalf').GT.0) THEN 
-        fldhalf(:,:,1)=sealv 
-        fldhalf(:,:,2:kdm+1)=fld
-        DO k=1,kk+1
-          DO j=1,jj
-            DO i=1,ii
-              IF (ABS(fldhalf(i,j,k)).GT.2e20) fldhalf(i,j,k)=0. 
-            ENDDO
-          ENDDO
-        ENDDO
-      ELSEIF (INDEX(special,'halfl').GT.0) THEN
-        fldhalf(:,:,2:kdm+1)=fld
-        DO j=1,jj
-          DO i=1,ii
-            IF (ABS(fldhalf(i,j,2)).GE.1e20) THEN 
-              fldhalf(i,j,1)=1e20 
-            ELSE
-              fldhalf(i,j,1)=0. 
-            ENDIF
-          ENDDO
-        ENDDO
-      ENDIF
-c
-c --- Set missing on land grid cells
-      IF (INDEX(special,'glbave').LE.0) THEN 
-        DO k=1,kk
-          DO j=1,jj
-            DO i=1,ii
-              IF (ABS(fld(i,j,k)).GT.1e20) fld(i,j,k)=1e20
-            ENDDO 
-          ENDDO 
-        ENDDO
-      ENDIF 
-c
-c --- Store variable
-      IF (INDEX(special,'half').GT.0) THEN
-        IF (TRIM(tcoord).NE.'time1') THEN
-          error_flag=cmor_write(
-     .      var_id         = varid,
-     .      data           = fldhalf,
-     .      ntimes_passed  = 1,
-     .      time_vals      = tval,
-     .      time_bnds      = tbnds)
-        ELSE
-          error_flag=cmor_write(
-     .      var_id         = varid,
-     .      data           = fldhalf,
-     .      ntimes_passed  = 1,
-     .      time_vals      = tval)
-        ENDIF
-      ELSE
-        IF (TRIM(tcoord).EQ.'time1') THEN
-          error_flag=cmor_write(
-     .      var_id         = varid,
-     .      data           = fld,
-     .      ntimes_passed  = 1,
-     .      time_vals      = tval)
-        ELSE
-          IF ((lsumz.OR.INDEX(special,'level1').GT.0).AND.
-     .      .NOT.INDEX(special,'glbave').GT.0
-     .      .OR.INDEX(special,'lvl2srf').GT.0
-     .      .OR.INDEX(special,'dpint').GT.0
-     .      .OR.INDEX(special,'dpavg').GT.0
-     .      .OR.INDEX(special,'locmin').GT.0
-     .      .OR.INDEX(special,'omega2z').GT.0) THEN
-            error_flag=cmor_write(
-     .        var_id         = varid,
-     .        data           = fld(:,:,1),
-     .        ntimes_passed  = 1,
-     .        time_vals      = tval,
-     .        time_bnds      = tbnds)
-          ELSEIF (INDEX(special,'glbave').GT.0
-     .     .OR.INDEX(special,'2zos').GT.0.) THEN
-            error_flag=cmor_write(
-     .        var_id         = varid,
-     .        data           = (/fld(1,1,1)/),
-     .        ntimes_passed  = 1,
-     .        time_vals      = tval,
-     .        time_bnds      = tbnds)
-          ELSEIF (INDEX(special,'dzavg').GT.0) THEN
-            error_flag=cmor_write(
-     .        var_id         = varid,
-     .        data           = (reshape(fld(:,:,1),(/idm,jdm,1/))),
-     .        ntimes_passed  = 1,
-     .        time_vals      = tval,
-     .        time_bnds      = tbnds)
-          ELSEIF (vtype(1:4).EQ.'sect') THEN
-            error_flag=cmor_write(
-     .        var_id         = varid,
-     .        data           = fld(:,1,1),
-     .        ntimes_passed  = 1,
-     .        time_vals      = tval,
-     .        time_bnds      = tbnds)
-          ELSE
-            error_flag=cmor_write(
-     .        var_id         = varid,
-     .        data           = fld,
-     .        ntimes_passed  = 1,
-     .        time_vals      = tval,
-     .        time_bnds      = tbnds)
-          ENDIF
-        ENDIF
-      ENDIF
-c
-      END SUBROUTINE write_tslice
+    ! Open input file
+    if (present(fname)) then
+      status = nf90_open(fname, nf90_nowrite, fid)
+      call handle_ncerror(status)
+    else
+      status = nf90_open(fnm, nf90_nowrite, fid)
+      call handle_ncerror(status)
+    end if
 
+    if (.false.) then
+      ! Read time information
+      status = nf90_inq_varid(fid, 'time', rhid)
+      if (status /= nf90_noerr) then
+        write(*, *) 'cannot find time variable'
+        stop
+      end if
+      status = nf90_get_var(fid, rhid, tval, (/rec1/), (/1/))
+      call handle_ncerror(status)
+      if (rec == 0) tval = tval - 1
 
-      END MODULE m_modelsocn
+      tbnds(1, 1) = max(0., tbnds(1, 1))
+      tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
+    end if
+
+    ! Read data
+    if (index(special, 'glbave3d') > 0 .or. &
+      (index(special, '2rho') > 0 .and. vtype == 'layer') &
+      .or. index(special, '2zos') > 0) then
+      fld = 0.
+      s1 = 'dp'
+      call add_tslice(s1, 1., rec1, fid)
+      do k = 1, kk
+        do j = 1, jj
+          do i = 1, ii
+            if (fld(i, j, k) == 1e20) then
+              dp(i, j, k) = 0.
+            else
+              dp(i, j, k) = fld(i, j, k)
+            end if
+          end do
+        end do
+      end do
+      ! Compute rescaled dp
+      if (index(special, '2zoss') > 0) then
+        do j = 1, jdm
+          do i = 1, idm
+            if (pmask(i, j) > 0.5) &
+              dp(i, j, :) = dp(i, j, :) * bpini(i, j) / sum(dp(i, j, :))
+          end do
+        end do
+      else if (index(special, '2zost') > 0) then
+        do j = 1, jdm
+          do i = 1, idm
+            if (pmask(i, j) > 0.5) &
+              dp(i, j, :) = dp(i, j, :) * bpinit(i, j) / sum(dp(i, j, :))
+          end do
+        end do
+      end if
+    end if
+
+    call resolve_vnm(slenmax, ivnm, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6, &
+      fac1, fac2, fac3, fac4, fac5, fac6)
+    if (index(special, '2rho') > 0 .or. index(special, '2zoss') > 0 .or. &
+      index(special, 'strmf') > 0 .or. index(special, 'Xfield2') > 0 .or. &
+      index(special, 'Dfield2') > 0 .or. index(special, 'dpint') > 0 .or. &
+      index(special, 'dpavg') > 0) then
+      fld = 0.
+      call add_tslice(ivnm2, fac2, rec1, fid)
+      fld2 = fld
+      fld = 0.
+      call add_tslice(ivnm1, fac1, rec1, fid)
+      if (index(special, 'strmf') > 0) then
+        fldtmp = 0.
+        call strmf_eval(idm, jdm, kdm, fld, fld2, fldtmp)
+        fld = fldtmp
+      end if
+    else
+      fld = 0.
+      call add_tslice(ivnm1, fac1, rec1, fid)
+      call add_tslice(ivnm2, fac2, rec1, fid)
+      call add_tslice(ivnm3, fac3, rec1, fid)
+      call add_tslice(ivnm4, fac4, rec1, fid)
+      call add_tslice(ivnm5, fac5, rec1, fid)
+      call add_tslice(ivnm6, fac6, rec1, fid)
+    end if
+
+    ! Read sea level height if necessary
+    if (index(special, 'dz2') > 0) then
+      status = nf90_inq_varid(fid, 'sealv', rhid)
+      if (status /= nf90_noerr) then
+        write(*, *) 'cannot find input variable sealv '
+        stop
+      end if
+      status = nf90_get_var(fid, rhid, sealv, (/1, 1, rec1/), (/idm, jdm, 1/))
+      call handle_ncerror(status)
+      status = nf90_get_att(fid, rhid, 'scale_factor', sfac)
+      if (status /= nf90_noerr) sfac = 1.
+      status = nf90_get_att(fid, rhid, 'add_offset', offs)
+      if (status /= nf90_noerr) offs = 0.
+      status = nf90_get_att(fid, rhid, '_FillValue', fill)
+      do j = 1, jj
+        do i = 1, ii
+          if (sealv(i, j) == fill) then
+            sealv(i, j) = 1e20
+          else
+            sealv(i, j) = sealv(i, j) * sfac + offs
+          end if
+        end do
+      end do
+    end if
+
+    ! Read bottom pressure if necessary
+    if (index(special, 'dzavg') > 0) then
+      status = nf90_inq_varid(fid, 'pbot', rhid)
+      if (status /= nf90_noerr) then
+        write(*, *) 'cannot find input variable pbot '
+        stop
+      end if
+      status = nf90_get_var(fid, rhid, pbot, (/1, 1, rec1/), (/idm, jdm, 1/))
+      call handle_ncerror(status)
+      status = nf90_get_att(fid, rhid, 'scale_factor', sfac)
+      if (status /= nf90_noerr) sfac = 1.
+      status = nf90_get_att(fid, rhid, 'add_offset', offs)
+      if (status /= nf90_noerr) offs = 0.
+      status = nf90_get_att(fid, rhid, '_FillValue', fill)
+      do j = 1, jj
+        do i = 1, ii
+          if (pbot(i, j) == fill) then
+            pbot(i, j) = 1e20
+          else
+            pbot(i, j) = pbot(i, j) * sfac + offs
+          end if
+        end do
+      end do
+    end if
+
+    status = nf90_close(fid)
+    call handle_ncerror(status)
+
+  end subroutine read_tslice
+
+  ! -----------------------------------------------------------------
+
+  subroutine add_tslice(vnm, fac, rec, fid)
+
+    ! Description: add one time slice to output variable fld
+
+    implicit none
+
+    character(len=slenmax), intent(in) :: vnm
+    real, intent(in) :: fac
+    integer, intent(in) :: rec, fid
+    integer :: i, j, k
+
+    ! Return if variable name is empty
+    if (len(trim(vnm)) == 0) return
+
+    ! Read time slice
+    status = nf90_inq_varid(fid, trim(vnm), rhid)
+    if (status /= nf90_noerr) then
+      write(*, *) 'cannot find input variable ', trim(vnm)
+      stop
+    end if
+    if (trim(vtype) == '2d') then
+      status = nf90_get_var(fid, rhid, fldtmp, (/1, 1, rec/), (/idm, jdm, 1/))
+    else if (trim(vtype) == '1d') then
+      status = nf90_get_var(fid, rhid, fldtmp, (/1, 1, rec/), (/1, 1, 1/))
+    else if (trim(vtype) == 'layer') then
+      status = nf90_get_var(fid, rhid, fldtmp, (/1, 1, 1, rec/), (/idm, jdm, kdm, 1/))
+    else if (trim(vtype) == 'level') then
+      status = nf90_get_var(fid, rhid, fldtmp, (/1, 1, 1, rec/), (/idm, jdm, ddm, 1/))
+    else if (trim(vtype) == 'merk') then
+      status = nf90_get_var(fid, rhid, fldtmp, (/1, 1, 1, rec/), (/ldm, kdm, rdm, 1/))
+    else if (trim(vtype) == 'merd') then
+      status = nf90_get_var(fid, rhid, fldtmp, (/1, 1, 1, rec/), (/ldm, ddm, rdm, 1/))
+    else if (trim(vtype) == 'mert') then
+      status = nf90_get_var(fid, rhid, fldtmp, (/1, 1, rec/), (/ldm, rdm, 1/))
+    else if (trim(vtype) == 'sect') then
+      write(*, *) 'read sections ', secdm
+      status = nf90_get_var(fid, rhid, fldtmp, (/1, rec/), (/secdm, 1/))
+    end if
+    call handle_ncerror(status)
+    status = nf90_get_att(fid, rhid, 'scale_factor', sfac)
+    if (status /= nf90_noerr) sfac = 1.
+    status = nf90_get_att(fid, rhid, 'add_offset', offs)
+    if (status /= nf90_noerr) offs = 0.
+    status = nf90_get_att(fid, rhid, '_FillValue', fill)
+    if (status /= nf90_noerr) then
+      do k = 1, kk
+        do j = 1, jj
+          do i = 1, ii
+            fld(i, j, k) = fld(i, j, k) + (fldtmp(i, j, k) * sfac + offs) * fac
+          end do
+        end do
+      end do
+    else
+      do k = 1, kk
+        do j = 1, jj
+          do i = 1, ii
+            if (fldtmp(i, j, k) == fill) then
+              fld(i, j, k) = 1e20
+            else
+              fld(i, j, k) = fld(i, j, k) + (fldtmp(i, j, k) * sfac + offs) * fac
+            end if
+          end do
+        end do
+      end do
+    end if
+
+  end subroutine add_tslice
+
+  ! -----------------------------------------------------------------
+
+  subroutine add_fixed(vnm, fac, fid)
+
+    ! Description: add one time slice to output variable fld
+
+    implicit none
+
+    character(len=slenmax), intent(in) :: vnm
+    real, intent(in) :: fac
+    integer, intent(in) :: fid
+    integer :: i, j, k
+
+    ! Return if variable name is empty
+    if (len(trim(vnm)) == 0) return
+
+    ! Read time slice
+    status = nf90_inq_varid(fid, trim(vnm), rhid)
+    if (status /= nf90_noerr) then
+      write(*, *) 'cannot find input variable ', trim(vnm)
+      stop
+    end if
+    status = nf90_get_var(fid, rhid, fldtmp)
+    call handle_ncerror(status)
+    status = nf90_get_att(fid, rhid, 'scale_factor', sfac)
+    if (status /= nf90_noerr) sfac = 1.
+    status = nf90_get_att(fid, rhid, 'add_offset', offs)
+    if (status /= nf90_noerr) offs = 0.
+    status = nf90_get_att(fid, rhid, '_FillValue', fill)
+    if (status /= nf90_noerr) then
+      do k = 1, kk
+        do j = 1, jj
+          do i = 1, ii
+            fld(i, j, k) = fld(i, j, k) + (fldtmp(i, j, k) * sfac + offs) * fac
+          end do
+        end do
+      end do
+    else
+      do k = 1, kk
+        do j = 1, jj
+          do i = 1, ii
+            if (fldtmp(i, j, k) == fill) then
+              fld(i, j, k) = 1e20
+            else
+              fld(i, j, k) = fld(i, j, k) + (fldtmp(i, j, k) * sfac + offs) * fac
+            end if
+          end do
+        end do
+      end do
+    end if
+
+  end subroutine add_fixed
+
+  ! -----------------------------------------------------------------
+
+  subroutine write_field
+
+    implicit none
+
+    integer :: i, j, k
+
+    ! Set zero on ocean grid cells
+    do k = 1, kk
+      do j = 1, jj
+        do i = 1, ii
+          if (abs(fld(i, j, k)) > 2e20) fld(i, j, k) = 0.
+        end do
+      end do
+    end do
+
+    ! Store variable
+    if (index(special, 'glbave') > 0 .or. index(special, '2zos') > 0.) then
+      error_flag = cmor_write( &
+        var_id=varid, &
+        data=(/fld(1, 1, 1)/))
+    else if (vtype == '2d') then
+      error_flag = cmor_write( &
+        var_id=varid, &
+        data=reshape(fld, (/idm, jdm/)))
+    else
+      error_flag = cmor_write( &
+        var_id=varid, &
+        data=fld)
+    end if
+
+  end subroutine write_field
+
+  ! -----------------------------------------------------------------
+
+  subroutine write_tslice
+
+    implicit none
+
+    integer :: i, j, k
+
+    ! Populate field defined at interface level
+    if (index(special, 'zhalf') > 0) then
+      fldhalf(:, :, 1) = sealv
+      fldhalf(:, :, 2:kdm + 1) = fld
+      do k = 1, kk + 1
+        do j = 1, jj
+          do i = 1, ii
+            if (abs(fldhalf(i, j, k)) > 2e20) fldhalf(i, j, k) = 0.
+          end do
+        end do
+      end do
+    else if (index(special, 'halfl') > 0) then
+      fldhalf(:, :, 2:kdm + 1) = fld
+      do j = 1, jj
+        do i = 1, ii
+          if (abs(fldhalf(i, j, 2)) >= 1e20) then
+            fldhalf(i, j, 1) = 1e20
+          else
+            fldhalf(i, j, 1) = 0.
+          end if
+        end do
+      end do
+    end if
+
+    ! Set missing on land grid cells
+    if (index(special, 'glbave') <= 0) then
+      do k = 1, kk
+        do j = 1, jj
+          do i = 1, ii
+            if (abs(fld(i, j, k)) > 1e20) fld(i, j, k) = 1e20
+          end do
+        end do
+      end do
+    end if
+
+    ! Store variable
+    if (index(special, 'half') > 0) then
+      if (trim(tcoord) /= 'time1') then
+        error_flag = cmor_write( &
+          var_id=varid, &
+          data=fldhalf, &
+          ntimes_passed=1, &
+          time_vals=tval, &
+          time_bnds=tbnds)
+      else
+        error_flag = cmor_write( &
+          var_id=varid, &
+          data=fldhalf, &
+          ntimes_passed=1, &
+          time_vals=tval)
+      end if
+    else
+      if (trim(tcoord) == 'time1') then
+        error_flag = cmor_write( &
+          var_id=varid, &
+          data=fld, &
+          ntimes_passed=1, &
+          time_vals=tval)
+      else
+        if ((lsumz .or. index(special, 'level1') > 0) .and. &
+          .not. index(special, 'glbave') > 0 &
+          .or. index(special, 'lvl2srf') > 0 &
+          .or. index(special, 'dpint') > 0 &
+          .or. index(special, 'dpavg') > 0 &
+          .or. index(special, 'locmin') > 0 &
+          .or. index(special, 'omega2z') > 0) then
+          error_flag = cmor_write( &
+            var_id=varid, &
+            data=fld(:, :, 1), &
+            ntimes_passed=1, &
+            time_vals=tval, &
+            time_bnds=tbnds)
+        else if (index(special, 'glbave') > 0 &
+          .or. index(special, '2zos') > 0.) then
+          error_flag = cmor_write( &
+            var_id=varid, &
+            data=(/fld(1, 1, 1)/), &
+            ntimes_passed=1, &
+            time_vals=tval, &
+            time_bnds=tbnds)
+        else if (index(special, 'dzavg') > 0) then
+          error_flag = cmor_write( &
+            var_id=varid, &
+            data=(reshape(fld(:, :, 1), (/idm, jdm, 1/))), &
+            ntimes_passed=1, &
+            time_vals=tval, &
+            time_bnds=tbnds)
+        else if (vtype(1:4) == 'sect') then
+          error_flag = cmor_write( &
+            var_id=varid, &
+            data=fld(:, 1, 1), &
+            ntimes_passed=1, &
+            time_vals=tval, &
+            time_bnds=tbnds)
+        else
+          error_flag = cmor_write( &
+            var_id=varid, &
+            data=fld, &
+            ntimes_passed=1, &
+            time_vals=tval, &
+            time_bnds=tbnds)
+        end if
+      end if
+    end if
+
+  end subroutine write_tslice
+
+end module m_modelsocn

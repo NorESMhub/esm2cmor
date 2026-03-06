@@ -47,24 +47,24 @@ $(TARGET): $(OBJ)
 	mv $(TARGET) $(BINDIR)
 	rm -f *.o *.h *.inc m_*.mod
 
-esm2cmor.o: $(SRCDIR)/esm2cmor.F
-	$(FC) $(FFLAGS) -c $(SRCDIR)/esm2cmor.F
+esm2cmor.o: $(SRCDIR)/esm2cmor.F90
+	$(FC) $(FFLAGS) -c $(SRCDIR)/esm2cmor.F90
 
-m_modelsatm.o: $(SRCDIR)/m_modelsatm.F
-	$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelsatm.F
+m_modelsatm.o: $(SRCDIR)/m_modelsatm.F90
+	$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelsatm.F90
 
-m_modelsice.o: $(SRCDIR)/m_modelsice.F
-	$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelsice.F
+m_modelsice.o: $(SRCDIR)/m_modelsice.F90
+	$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelsice.F90
 
-m_modelslnd.o: $(SRCDIR)/m_modelslnd.F
-	$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelslnd.F
+m_modelslnd.o: $(SRCDIR)/m_modelslnd.F90
+	$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelslnd.F90
 
-m_modelsocn.o: $(SRCDIR)/m_modelsocn.F
-	$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelsocn.F
+m_modelsocn.o: $(SRCDIR)/m_modelsocn.F90
+	$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelsocn.F90
 
-m_namelists.o: $(SRCDIR)/m_namelists.F
-	$(FC) $(FFLAGS) -c $(SRCDIR)/m_namelists.F
+m_namelists.o: $(SRCDIR)/m_namelists.F90
+	$(FC) $(FFLAGS) -c $(SRCDIR)/m_namelists.F90
 
-m_utilities.o: $(SRCDIR)/m_utilities.F
-	$(FC) $(FFLAGS) -c $(SRCDIR)/m_utilities.F
+m_utilities.o: $(SRCDIR)/m_utilities.F90
+	$(FC) $(FFLAGS) -c $(SRCDIR)/m_utilities.F90
 

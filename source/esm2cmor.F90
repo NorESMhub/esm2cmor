@@ -1,74 +1,74 @@
-      PROGRAM main 
-c
-      USE m_namelists, ONLY: verbose, read_namelists, print_namelists,
-     .  ibasedir, casename, forcefilescan,membertag
-      USE m_modelsatm, ONLY: atm2cmor
-      USE m_modelslnd, ONLY: lnd2cmor
-      USE m_modelsice, ONLY: ice2cmor
-      USE m_modelsocn, ONLY: ocn2cmor
-c
-      IMPLICIT NONE
-c
-      LOGICAL :: fileexists 
+program main
+   
+  use m_namelists, only: verbose, read_namelists, print_namelists, &
+    ibasedir, casename, forcefilescan, membertag
+  use m_modelsatm, only: atm2cmor
+  use m_modelslnd, only: lnd2cmor
+  use m_modelsice, only: ice2cmor
+  use m_modelsocn, only: ocn2cmor
+   
+  implicit none
+   
+  logical :: fileexists
 #ifdef MPI
-      INCLUDE 'mpif.h' 
-      INTEGER :: mpierror,mpirank  
-c
-c --- Initialise mpi 
-      CALL MPI_INIT(mpierror) 
-#endif 
-c
-c --- Read namelists 
-      CALL read_namelists
-c
-c --- Create file list if it does not exist
+  include 'mpif.h'
+  integer :: mpierror, mpirank
+   
+  ! --- Initialise mpi
+  call MPI_INIT(mpierror)
+#endif
+   
+  ! --- Read namelists
+  call read_namelists
+   
+  ! --- Create file list if it does not exist
 #ifdef MPI
-      CALL MPI_COMM_RANK(MPI_COMM_WORLD, mpirank, mpierror)
-      IF (mpirank.EQ.0) THEN 
-#endif 
-      IF (verbose) CALL print_namelists
-      INQUIRE(FILE='filelist_'//TRIM(casename)//TRIM(membertag),
-     .       EXIST=fileexists)
-      IF (.NOT.fileexists.OR.forcefilescan) THEN
-        WRITE(*,*) 'get_file_info: create new file list '
-     .    //TRIM('filelist_'//casename)//TRIM(membertag)
-        if (len_trim(membertag).gt.0) then
-            CALL SYSTEM('find '//trim(ibasedir)//'/'//trim(casename)
-     .          //' -path "*/hist/*" -name "*.*_'//trim(membertag)
-     .          //'.h*.nc" | sort > '//TRIM('filelist_'//casename)
-     .          //trim(membertag))
-        else
-            CALL SYSTEM('find '//trim(ibasedir)//'/'//trim(casename)
-     .          //'/{atm,ice,lnd,ocn,rof}'
-     .          //' \( -path "*/hist/*" -or '
-     .          //'    -path "*/hist_true/*" \)' 
-     .          //' -name "*.nc"'
-     .          //' | sort > '//TRIM('filelist_'//casename))
-        end if
-      ELSE
-        WRITE(*,*) 'get_file_info: read existing file list '//
-     .      TRIM('filelist_'//casename)//trim(membertag)
-      ENDIF
+  call MPI_COMM_RANK(MPI_COMM_WORLD, mpirank, mpierror)
+  if (mpirank .eq. 0) then
+#endif
+    if (verbose) call print_namelists
+    inquire(file='filelist_'//trim(casename)//trim(membertag), &
+      exist=fileexists)
+    if (.not. fileexists .or. forcefilescan) then
+      write(*,*) 'get_file_info: create new file list ' &
+        //trim('filelist_'//casename)//trim(membertag)
+      if (len_trim(membertag) .gt. 0) then
+        call SYSTEM('find '//trim(ibasedir)//'/'//trim(casename) &
+          //' -path "*/hist/*" -name "*.*_'//trim(membertag) &
+          //'.h*.nc" | sort > '//trim('filelist_'//casename) &
+          //trim(membertag))
+      else
+        call SYSTEM('find '//trim(ibasedir)//'/'//trim(casename) &
+          //'/{atm,ice,lnd,ocn,rof}' &
+          //' \( -path "*/hist/*" -or ' &
+          //'    -path "*/hist_true/*" \)' &
+          //' -name "*.nc"' &
+          //' | sort > '//trim('filelist_'//casename))
+      end if
+    else
+      write(*,*) 'get_file_info: read existing file list ' &
+        //trim('filelist_'//casename)//trim(membertag)
+    end if
 #ifdef MPI
-      ENDIF 
-      CALL MPI_BARRIER(MPI_COMM_WORLD,mpierror)
-#endif 
-c
-c --- Run cmor processing for individual components
-c     call atm2cmor 
-c      call lnd2cmor 
-      call ice2cmor
-c     call ocn2cmor 
-c      call glc2cmor 
-c
+  end if
+  call MPI_BARRIER(MPI_COMM_WORLD, mpierror)
+#endif
+   
+  ! --- Run cmor processing for individual components
+  ! call atm2cmor
+  ! call lnd2cmor
+  call ice2cmor
+  ! call ocn2cmor
+  ! call glc2cmor
+   
 #ifdef MPI
-c --- Finalise mpi 
-      call MPI_FINALIZE(mpierror) 
-c
-#endif 
-      WRITE(*,*)
-      WRITE(*,*) '===================='   
-      WRITE(*,*) '   ALL JOBS DONE'   
-      WRITE(*,*) '===================='   
-      WRITE(*,*)
-      END PROGRAM main
+  ! --- Finalise mpi
+  call MPI_FINALIZE(mpierror)
+   
+#endif
+  write(*,*)
+  write(*,*) '===================='
+  write(*,*) '   ALL JOBS DONE'
+  write(*,*) '===================='
+  write(*,*)
+end program main
