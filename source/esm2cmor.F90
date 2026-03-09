@@ -58,7 +58,7 @@ program main
   ! call atm2cmor
   ! call lnd2cmor
   call ice2cmor
-  ! call ocn2cmor
+  call ocn2cmor
   ! call glc2cmor
    
 #ifdef MPI

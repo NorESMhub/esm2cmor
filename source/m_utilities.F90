@@ -687,22 +687,22 @@ contains
 
     character(len=1024), intent(in)     :: idir, cnam, ftag
     character(len=1024), intent(out)    :: fnam
-    integer, intent(in) :: y1, m1, y2, m2, yr
-    logical, intent(in) :: lreset
-    integer, intent(out) :: irec
-    real(kind=8), intent(out) :: tval, tbnd(2), mbnd(2)
-    integer, intent(out) :: year, month
+    integer, intent(in)     :: y1, m1, y2, m2, yr
+    logical, intent(in)     :: lreset
+    integer, intent(out)    :: irec
+    real(kind=8), intent(out)   :: tval, tbnd(2), mbnd(2)
+    integer, intent(out)        :: year, month
 
     character(len=1024) :: fpre, str1, str2
-    integer, save :: y1old = 0, m1old = 0, y2old = 0, m2old = 0
+    integer, save       :: y1old = 0, m1old = 0, y2old = 0, m2old = 0
     integer             :: idx, yyyy, yref, mref, dref
 
-    character(len=1024), save :: fpreold = 'xxx'
-    character(len=1024) :: units, calendar
-    integer, save :: fstat, n, nrec, unlimdimid, ncid, rhid, rhid2, &
-      status, sstartend(2,10), nskip, irecold, toff, ndays
-    real(kind=8), save :: dnumlo, dnumhi, tbndold(2) = (/-999999., -999999./)
-    logical, save :: ltimebnds, ldone
+    character(len=1024), save   :: fpreold = 'xxx'
+    character(len=1024)         :: units, calendar
+    integer, save       :: fstat, n, nrec, unlimdimid, ncid, rhid, rhid2, &
+                           status, sstartend(2,10), nskip, irecold, toff, ndays
+    real(kind=8), save  :: dnumlo, dnumhi, tbndold(2) = (/-999999., -999999./)
+    logical, save       :: ltimebnds, ldone
 
     ! check whether to start file list read from beginning or to resume
     idx = index(ftag, '.')

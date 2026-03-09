@@ -8,31 +8,30 @@ module m_modelslnd
   implicit none
 
   ! Netcdf variables
-  integer :: ncid, rhid, dimid, status
+  integer               :: ncid, rhid, dimid, status
 
   ! Grid dimensions and variables
-  integer, save :: ii, jj, idm, jdm, kdm, idmrof, jdmrof, ldm
-  real(kind=8), allocatable, save, dimension(:) :: lon, lat, lev, &
-    lonrof, latrof
-  real(kind=8), allocatable, save, dimension(:, :) :: &
-    lon_bnds, lat_bnds, lev_bnds, lonrof_bnds, latrof_bnds
-  character(len=slenmax), allocatable, save, dimension(:) :: ltype
-  character(len=slenmax), save :: zcoord, tcoord
+  integer, save         :: ii, jj, idm, jdm, kdm, idmrof, jdmrof, ldm
+  real(kind=8), allocatable, save, dimension(:) :: lon, lat, lev, lonrof, latrof
+  real(kind=8), allocatable, save, dimension(:, :)  :: lon_bnds, lat_bnds,&
+    lev_bnds, lonrof_bnds, latrof_bnds
+  character(len=slenmax), allocatable, save, dimension(:)   :: ltype
+  character(len=slenmax), save                              :: zcoord, tcoord
 
   ! Dataset related variables
-  character(len=slenmax), save :: ivnm, ovnm, vunits, vpositive
+  character(len=slenmax), save  :: ivnm, ovnm, vunits, vpositive
 
   ! Table related variables
-  character(len=lenmax) :: table
+  character(len=lenmax)         :: table
 
   ! Cmor parameters
   integer, save :: iaxid, jaxid, kaxid, taxid, varid, table_id, error_flag
 
   ! Data fields
-  real(kind=8), allocatable, save, dimension(:, :, :) :: fld, fld2, fldacc
+  real(kind=8), allocatable, save, dimension(:, :, :)   :: fld, fld2, fldacc
 
   ! Auxillary variables for special operations
-  character(len=slenmax), save :: special, str1, str2
+  character(len=slenmax), save                          :: special, str1, str2
 
 contains
 
@@ -79,11 +78,11 @@ contains
 
       ! Skip variable?
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (trim(zcoord) == 'sdepth') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (trim(zcoord) == 'sdepth') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Check if input variable is present
       if (len_trim(pfx) == 0) cycle
@@ -198,11 +197,11 @@ contains
 
       ! Skip variable?
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (trim(zcoord) == 'sdepth') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (trim(zcoord) == 'sdepth') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       select case (trim(special))
@@ -283,11 +282,11 @@ contains
 
       ! Skip variable?
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (trim(zcoord) == 'sdepth') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (trim(zcoord) == 'sdepth') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       select case (trim(special))
@@ -368,11 +367,11 @@ contains
 
       ! Skip variable?
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (trim(zcoord) == 'sdepth') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (trim(zcoord) == 'sdepth') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       select case (trim(special))
@@ -453,11 +452,11 @@ contains
 
       ! Skip variable?
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (trim(zcoord) == 'sdepth') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (trim(zcoord) == 'sdepth') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = taglday
@@ -520,11 +519,11 @@ contains
 
       ! Skip variable?
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (trim(zcoord) == 'sdepth') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (trim(zcoord) == 'sdepth') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = taglday
@@ -587,11 +586,11 @@ contains
 
       ! Skip variable?
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (trim(zcoord) == 'sdepth') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (trim(zcoord) == 'sdepth') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = tagl3hr
@@ -654,11 +653,11 @@ contains
 
       ! Skip variable?
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (trim(zcoord) == 'sdepth') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (trim(zcoord) == 'sdepth') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = tagl3hri
@@ -722,11 +721,11 @@ contains
 
       ! Skip variable?
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (trim(zcoord) == 'sdepth') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (trim(zcoord) == 'sdepth') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = tagl3hr
@@ -840,8 +839,8 @@ contains
 
     implicit none
 
-    integer :: i, j, k
-    integer, dimension(12) :: ndays
+    integer                 :: i, j, k
+    integer, dimension(12)  :: ndays
 
     data ndays /31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31/
 
@@ -928,7 +927,7 @@ contains
 
     logical :: check
     integer :: i, j, k
-    real :: missing
+    real    :: missing
 
     ! Open first input file
     call scan_files(reset=.true.)
@@ -1111,14 +1110,14 @@ contains
 
     implicit none
 
-    logical, optional, intent(in) :: fx
-    logical :: fxflag
+    logical, optional, intent(in)   :: fx
+    logical                         :: fxflag
 
-    real :: fac1, fac2, fac3, fac4, fac5, fac6
-    integer, parameter :: ndimmax = 10
-    integer :: n, ndims, dimids(ndimmax), dimlens(ndimmax)
-    integer :: physics_version = 1, initialization_method = 1
-    character(len=slenmax) :: ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
+    real                            :: fac1, fac2, fac3, fac4, fac5, fac6
+    integer, parameter              :: ndimmax = 10
+    integer                         :: n, ndims, dimids(ndimmax), dimlens(ndimmax)
+    integer                         :: physics_version = 1, initialization_method = 1
+    character(len=slenmax)          :: ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
 
     ! Check if output variable should have time coordinate
     fxflag = .false.
@@ -1344,9 +1343,9 @@ contains
 
     implicit none
 
-    real :: fac1, fac2, fac3, fac4, fac5, fac6
-    integer :: ind
-    character(len=slenmax) :: ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
+    real                    :: fac1, fac2, fac3, fac4, fac5, fac6
+    integer                 :: ind
+    character(len=slenmax)  :: ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
 
     ! Open input file
     status = nf90_open(fnm, nf90_nowrite, ncid)
@@ -1437,12 +1436,12 @@ contains
 
     implicit none
 
-    real :: fac1, fac2, fac3, fac4, fac5, fac6
-    integer, intent(in) :: rec
-    logical, intent(out) :: badrec
+    real                    :: fac1, fac2, fac3, fac4, fac5, fac6
+    integer, intent(in)     :: rec
+    logical, intent(out)    :: badrec
     character(len=*), intent(in), optional :: fname
-    integer, save :: fid
-    character(len=slenmax) :: ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
+    integer, save           :: fid
+    character(len=slenmax)  :: ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
 
     ! Open input file
     if (present(fname)) then

@@ -8,56 +8,53 @@ module m_modelsocn
   implicit none
 
   ! Netcdf variables
-  integer, save :: ii, jj, kk, ncid, rhid, dimid, status
+  integer, save         :: ii, jj, kk, ncid, rhid, dimid, status
 
   ! Grid dimensions and variables
-  real(kind=8), save :: voglb, aoglb
-  integer, save :: idm, jdm, kdm = 0, ddm = 0, ldm = 0, rdm = 0, secdm = 0, slenmax2
-  integer, parameter :: ncrns = 4
-  integer, allocatable, save, dimension(:, :) :: basin
-  real(kind=8), allocatable, save, dimension(:) :: xvec, yvec, kvec, &
-    kvechalf, sigma, sigmahalf, depth, slat
-  real(kind=8), allocatable, save, dimension(:, :) :: parea, pmask, &
-    pdepth, plon, plat, ulon, ulat, vlon, vlat, slat_bnds, sigma_bnds, &
-    sigmahalf_bnds, depth_bnds, bpini, bpinit, uscaley, vscalex, udepth, &
-    vdepth
-  real(kind=8), allocatable, save, dimension(:, :, :) :: &
-    plon_crns, plat_crns, ulon_crns, ulat_crns, vlon_crns, vlat_crns, &
-    plon_crnsp, plat_crnsp, ulon_crnsp, ulat_crnsp, vlon_crnsp, &
-    vlat_crnsp, dzini, sini, tini
-  character(len=slenmax), allocatable, save, dimension(:) :: &
-    region1, section1
-  character, allocatable, save, dimension(:, :) :: region, section
-  character(len=slenmax), save :: tcoord, zcoord, s1
-  character(len=slenmax), save :: grid, grid_label
+  real(kind=8), save                                :: voglb, aoglb
+  integer, save                                     :: idm, jdm, kdm = 0, ddm = 0, ldm = 0, rdm = 0, secdm = 0, slenmax2
+  integer, parameter                                :: ncrns = 4
+  integer, allocatable, save, dimension(:, :)       :: basin
+  real(kind=8), allocatable, save, dimension(:)     :: xvec, yvec, kvec, kvechalf,&
+    sigma, sigmahalf, depth, slat
+  real(kind=8), allocatable, save, dimension(:, :)  :: parea, pmask, pdepth, plon,&
+    plat, ulon, ulat, vlon, vlat, slat_bnds, sigma_bnds, sigmahalf_bnds, &
+    depth_bnds, bpini, bpinit, uscaley, vscalex, udepth, vdepth
+  real(kind=8), allocatable, save, dimension(:, :, :)   :: plon_crns, plat_crns, &
+    ulon_crns, ulat_crns, vlon_crns, vlat_crns, plon_crnsp, plat_crnsp, &
+    ulon_crnsp, ulat_crnsp, vlon_crnsp, vlat_crnsp, dzini, sini, tini
+  character(len=slenmax), allocatable, save, dimension(:)   :: region1, section1
+  character, allocatable, save, dimension(:, :)             :: region, section
+  character(len=slenmax), save                              :: tcoord, zcoord, s1
+  character(len=slenmax), save                              :: grid, grid_label
 
   ! Gravity
   real(kind=8), parameter :: g = 9.80665, ginv = 1.d0 / g
 
   ! Dataset related variables
-  character(len=slenmax), save :: ivnm, ovnm, vunits, vpositive, vtype
-  character(len=slenmax * 10), save :: vcomment
+  character(len=slenmax), save          :: ivnm, ovnm, vunits, vpositive, vtype
+  character(len=slenmax * 10), save     :: vcomment
   logical, save :: lsumz
 
   ! Table related variables
-  character(len=slenmax), save :: table, tablepath
+  character(len=slenmax), save          :: table, tablepath
 
   ! Cmor parameters
-  character(len=1024) :: fnmo
-  integer, save :: iaxid, jaxid, kaxid, laxid, raxid, saxid, taxid, grdid, &
-    varid, table_id, table_id_grid, error_flag
+  character(len=1024)   :: fnmo
+  integer, save         :: iaxid, jaxid, kaxid, laxid, raxid, saxid, taxid, &
+    grdid, varid, table_id, table_id_grid, error_flag
 
   ! String for module special
-  character(len=slenmax), save :: special
+  character(len=slenmax), save          :: special
 
   ! Data fields
-  real(kind=8), allocatable, save, dimension(:, :, :) :: fld, fld2, &
-    fldtmp, fldacc, fldhalf, dp
-  real(kind=8), allocatable, save, dimension(:, :) :: sealv, pbot
-  real(kind=8) :: sfac, offs, fill
+  real(kind=8), allocatable, save, dimension(:, :, :)   :: fld, fld2, fldtmp, &
+    fldacc, fldhalf, dp
+  real(kind=8), allocatable, save, dimension(:, :)      :: sealv, pbot
+  real(kind=8)                                          :: sfac, offs, fill
 
   ! Auxillary variables for special operations
-  character(len=slenmax), save :: str1, str2
+  character(len=slenmax), save                          :: str1, str2
 
 contains
 
@@ -367,18 +364,18 @@ contains
       write(*, *) 'l382,zcoord:', trim(zcoord)
 
       ! Check if we should skip variable
-      write(*, *) trim(ovnm), trim(zcoord), do_3d, do_xd
-      if (.not. do_3d .and. do_xd) then
-        if (zcoord(1:6) == 'olevel' .and. ovnm(1:5) /= 'mmflx' &
-          .and. ovnm(1:8) /= 'ficeberg' .and. &
-          ovnm(1:11) /= 'hfsithermds') cycle
-      else if (do_3d .and. .not. do_xd) then
-        if (zcoord(1:6) /= 'olevel' .or. ovnm(1:5) == 'mmflx' &
-          .or. ovnm(1:8) == 'ficeberg' .or. &
-          ovnm(1:11) == 'hfsithermds') cycle
-      else if (.not. do_3d .and. .not. do_xd) then
-        cycle
-      end if
+      !write(*, *) trim(ovnm), trim(zcoord), do_3d, do_xd
+      !if (.not. do_3d .and. do_xd) then
+        !if (zcoord(1:6) == 'olevel' .and. ovnm(1:5) /= 'mmflx' &
+          !.and. ovnm(1:8) /= 'ficeberg' .and. &
+          !ovnm(1:11) /= 'hfsithermds') cycle
+      !else if (do_3d .and. .not. do_xd) then
+        !if (zcoord(1:6) /= 'olevel' .or. ovnm(1:5) == 'mmflx' &
+          !.or. ovnm(1:8) == 'ficeberg' .or. &
+          !ovnm(1:11) == 'hfsithermds') cycle
+      !else if (.not. do_3d .and. .not. do_xd) then
+        !cycle
+      !end if
 
       ! Choose history file
       if (index(special, 'day2mon') > 0) then
@@ -462,18 +459,18 @@ contains
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
 
       ! Check if we should skip variable
-      write(*, *) trim(ovnm), trim(zcoord), do_3d, do_xd
-      if (.not. do_3d .and. do_xd) then
-        if (zcoord(1:6) == 'olevel' .and. ovnm(1:5) /= 'mmflx' &
-          .and. ovnm(1:8) /= 'ficeberg' .and. &
-          ovnm(1:11) /= 'hfsithermds') cycle
-      else if (do_3d .and. .not. do_xd) then
-        if (zcoord(1:6) /= 'olevel' .or. ovnm(1:5) == 'mmflx' &
-          .or. ovnm(1:8) == 'ficeberg' .or. &
-          ovnm(1:11) == 'hfsithermds') cycle
-      else if (.not. do_3d .and. .not. do_xd) then
-        cycle
-      end if
+      !write(*, *) trim(ovnm), trim(zcoord), do_3d, do_xd
+      !if (.not. do_3d .and. do_xd) then
+        !if (zcoord(1:6) == 'olevel' .and. ovnm(1:5) /= 'mmflx' &
+          !.and. ovnm(1:8) /= 'ficeberg' .and. &
+          !ovnm(1:11) /= 'hfsithermds') cycle
+      !else if (do_3d .and. .not. do_xd) then
+        !if (zcoord(1:6) /= 'olevel' .or. ovnm(1:5) == 'mmflx' &
+          !.or. ovnm(1:8) == 'ficeberg' .or. &
+          !ovnm(1:11) == 'hfsithermds') cycle
+      !else if (.not. do_3d .and. .not. do_xd) then
+        !cycle
+      !end if
 
       ! Choose history file
       if (index(special, 'day2mon') > 0) then
@@ -558,14 +555,14 @@ contains
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
 
       ! Check if we should skip variable
-      write(*, *) trim(ovnm), trim(zcoord), do_3d, do_xd
-      if (.not. do_3d .and. do_xd) then
-        if (zcoord(1:6) == 'olevel') cycle
-      else if (do_3d .and. .not. do_xd) then
-        if (zcoord(1:6) /= 'olevel') cycle
-      else if (.not. do_3d .and. .not. do_xd) then
-        cycle
-      end if
+      !write(*, *) trim(ovnm), trim(zcoord), do_3d, do_xd
+      !if (.not. do_3d .and. do_xd) then
+        !if (zcoord(1:6) == 'olevel') cycle
+      !else if (do_3d .and. .not. do_xd) then
+        !if (zcoord(1:6) /= 'olevel') cycle
+      !else if (.not. do_3d .and. .not. do_xd) then
+        !cycle
+      !end if
 
       ! Choose history file
       if (index(special, 'day2mon') > 0) then
@@ -1091,8 +1088,8 @@ contains
 
     implicit none
 
-    integer :: i, j, k
-    real(kind=8) :: r, rd, p, ptoptmp, pbottmp, sref = 35.
+    integer         :: i, j, k
+    real(kind=8)    :: r, rd, p, ptoptmp, pbottmp, sref = 35.
 
     str2 = special
     do
@@ -1692,9 +1689,9 @@ contains
 
     implicit none
 
-    logical :: check
-    integer :: i, j, k, n, fid
-    real(kind=8) :: missing, phiu, phil
+    logical         :: check
+    integer         :: i, j, k, n, fid
+    real(kind=8)    :: missing, phiu, phil
 
     ! Open first input file
     call scan_files(reset=.true.)
@@ -2037,15 +2034,15 @@ contains
 
     implicit none
 
-    logical, optional, intent(in) :: fx
-    logical :: fxflag
+    logical, optional, intent(in)   :: fx
+    logical                         :: fxflag
 
-    real :: fac1, fac2, fac3, fac4, fac5, fac6
-    integer, parameter :: ndimmax = 10
-    integer :: i, j, k, n, ndims, dimids(ndimmax), dimlens(ndimmax)
-    character(len=slenmax) :: coord, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
+    real                            :: fac1, fac2, fac3, fac4, fac5, fac6
+    integer, parameter              :: ndimmax = 10
+    integer                 :: i, j, k, n, ndims, dimids(ndimmax), dimlens(ndimmax)
+    character(len=slenmax)  :: coord, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
 
-    real(kind=8), allocatable :: tmp1d(:), tmp2d(:, :)
+    real(kind=8), allocatable       :: tmp1d(:), tmp2d(:, :)
 
     ! Check if output variable should have time coordinate
     fxflag = .false.
@@ -2532,9 +2529,9 @@ contains
 
     implicit none
 
-    real :: fac1, fac2, fac3, fac4, fac5, fac6
-    integer :: i, j, k, ind
-    character(len=slenmax) :: coord, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
+    real                    :: fac1, fac2, fac3, fac4, fac5, fac6
+    integer                 :: i, j, k, ind
+    character(len=slenmax)  :: coord, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
 
     ! Open input file
     status = nf90_open(fnm, nf90_nowrite, ncid)
@@ -2583,13 +2580,13 @@ contains
 
     implicit none
 
-    real :: fac1, fac2, fac3, fac4, fac5, fac6
-    integer, intent(in) :: rec
-    logical, intent(out) :: badrec
-    character(len=*), intent(in), optional :: fname
-    integer, save :: fid
-    integer :: i, j, k, rec1
-    character(len=slenmax) :: ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
+    real                            :: fac1, fac2, fac3, fac4, fac5, fac6
+    integer, intent(in)             :: rec
+    logical, intent(out)            :: badrec
+    character(len=*), intent(in), optional  :: fname
+    integer, save                   :: fid
+    integer                         :: i, j, k, rec1
+    character(len=slenmax)          :: ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
 
     ! Exception for fill day
     rec1 = max(rec, 1)
@@ -2743,10 +2740,10 @@ contains
 
     implicit none
 
-    character(len=slenmax), intent(in) :: vnm
-    real, intent(in) :: fac
-    integer, intent(in) :: rec, fid
-    integer :: i, j, k
+    character(len=slenmax), intent(in)  :: vnm
+    real, intent(in)                    :: fac
+    integer, intent(in)                 :: rec, fid
+    integer                             :: i, j, k
 
     ! Return if variable name is empty
     if (len(trim(vnm)) == 0) return
@@ -2813,10 +2810,10 @@ contains
 
     implicit none
 
-    character(len=slenmax), intent(in) :: vnm
-    real, intent(in) :: fac
-    integer, intent(in) :: fid
-    integer :: i, j, k
+    character(len=slenmax), intent(in)  :: vnm
+    real, intent(in)                    :: fac
+    integer, intent(in)                 :: fid
+    integer                             :: i, j, k
 
     ! Return if variable name is empty
     if (len(trim(vnm)) == 0) return

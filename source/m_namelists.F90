@@ -7,13 +7,13 @@ module m_namelists
   integer, parameter :: slenmax = 1024, smax = 10
 
   ! System namelist
-  character(len=slenmax), save :: ibasedir, obasedir, tabledir, griddata
-  logical, save :: createsubdirs, forcefilescan, verbose
+  character(len=slenmax), save  :: ibasedir, obasedir, tabledir, griddata
+  logical, save                 :: createsubdirs, forcefilescan, verbose
   namelist /sys/ ibasedir, obasedir, tabledir, griddata, createsubdirs, &
     forcefilescan, verbose
 
   ! Model namelist
-  character(len=slenmax), save :: model_id, institute_id
+  character(len=slenmax), save                  :: model_id, institute_id
   character(len=slenmax), dimension(smax), save :: institution, source, &
     references, contact
   character(len=(slenmax+1)*smax), save :: institution1, source1, references1, contact1
@@ -22,53 +22,71 @@ module m_namelists
     taga3hri, taglmon, taglday, tagl3hr, tagl3hri, taglyr
   character(len=slenmax), save :: secindexfile, ocngridfile, ocninitfile, ocnmertfile, &
     rhotablesuff, atmgridfile, ocnregnfile
-  logical, save :: linebreaks
-  character(len=slenmax), save :: parent_source_id, coordtable, namelist_file_json, &
+  logical, save                 :: linebreaks
+  character(len=slenmax), save  :: parent_source_id, coordtable, namelist_file_json, &
     atmgrid, atmgrid_label, atmgrid_resolution, ocngrid, ocngrid_label, ocngrid_resolution, &
     icegrid, icegrid_label, icegrid_resolution, lndgrid, lndgrid_label, lndgrid_resolution
-  namelist /model/ parent_source_id, atmgrid, atmgrid_label, atmgrid_resolution, &
-    ocngrid, ocngrid_label, ocngrid_resolution, icegrid, icegrid_label, icegrid_resolution, &
-    lndgrid, lndgrid_label, lndgrid_resolution, model_id, source, institution, institute_id, &
-    references, contact, tagoyr, tagoyrbgc, tagomon, tagomonbgc, tagoday, tagodaybgc, tagimon, &
-    tagiday, tagamon, tagaday, taga6hr, taga6hri, taga3hr, taga3hri, taglyr, taglmon, taglday, &
-    tagl3hr, tagl3hri, rhotablesuff, coordtable, secindexfile, atmgridfile, ocngridfile, &
-    ocninitfile, ocnmertfile, ocnregnfile, linebreaks
+
+  namelist /model/  model_id, institute_id, &
+                    institution, source, references, contact, &
+                    tagoyr, tagoyrbgc, tagomon, tagomonbgc, tagoday, tagodaybgc, &
+                    tagimon, tagiday, tagamon, tagaday, taga6hr, taga6hri, taga3hr, &
+                    taga3hri, taglmon, taglday, tagl3hr, tagl3hri, taglyr, &
+                    secindexfile, ocngridfile, ocninitfile, ocnmertfile, &
+                    rhotablesuff, atmgridfile, ocnregnfile, &
+                    linebreaks, &
+                    parent_source_id, coordtable, namelist_file_json, &
+                    atmgrid, atmgrid_label, atmgrid_resolution, &
+                    ocngrid, ocngrid_label, ocngrid_resolution, &
+                    icegrid, icegrid_label, icegrid_resolution, &
+                    lndgrid, lndgrid_label, lndgrid_resolution
 
   ! Experiment namelist
   character(len=slenmax), save :: casename, experiment_id, parent_experiment_id, &
     parent_experiment_rip, isubdir, osubdir, membertag
   character(len=slenmax), dimension(smax), save :: history, comment, forcing
-  character(len=(slenmax+1)*smax), save :: history1, comment1, forcing1
-  integer, save :: realization, exprefyear, year1, yearn, month1, monthn
-  real(kind=8), save :: branch_time
-  logical, save :: dry_run, plevdummy, readdummy, add_fill_day, do_fx, do_oyr, do_oyrbgc, &
-    do_amon, do_omon, do_omonbgc, do_oimon, do_lmon, do_limon, do_aero, do_day, do_6hrlev, &
-    do_6hrlevi, do_6hrplev, do_3hr, do_3hri, do_2d, do_3d, do_xd, do_bgc, newcolumnorder, &
+  character(len=(slenmax+1)*smax), save         :: history1, comment1, forcing1
+  integer, save                                 :: realization, exprefyear, year1, yearn, month1, monthn
+  real(kind=8), save                            :: branch_time
+  logical, save :: dry_run, plevdummy, readdummy, add_fill_day, newcolumnorder, &
     scanallfiles
   integer, save :: physics_version = 1, initialization_method = 1, ivnmpos = 1, ovnmpos = 2
-  logical, save :: do_ofx, do_6hrPlevPt, do_AERday, do_AERhr, do_AERmonZ, do_CF3hr, do_CFday, &
-    do_CFmon, do_CFsubhr, do_E1hrClimMon, do_E1hr, do_E3hr, do_E3hrPt, do_E6hrZ, do_Eday, &
-    do_EdayZ, do_Efx, do_Emon, do_EmonZ, do_Esubhr, do_Eyr, do_Oclim, do_Oday, do_Odaybgc, &
-    do_Odec, do_COfx, do_SIday
-  character(len=slenmax), save :: activity_id, parent_variant_label, parent_mip_era, mip_era, &
-    sub_experiment_id, parent_sub_experiment, parent_activity_id, branch_method, &
-    parent_time_units, tracking_prefix, variant_label, source_type
-  real(kind=8), save :: branch_time_in_child, branch_time_in_parent
-  character(len=slenmax), save :: forcing_index, physics_index, realization_index, &
+  !logical, save :: do_3hr, do_6hrLev, do_6hrPlev, do_6hrPlevPt, &
+                   !do_AERday, do_AERmonZ, do_Amon, &
+                   !do_CF3hr, do_CFday, do_CFmon, &
+                   !do_E1hr, do_E3hr, do_E3hrPt, do_E6hrZ, do_Eday, do_EdayZ, do_Efx, &
+                   !do_Emon, do_EmonZ, do_Esubhr, do_Eyr, &
+                   !do_LImon, do_Lmon, &
+                   !do_Oclim, do_Oday, do_Odec, do_Ofx, do_Omon, do_Omonbgc, do_Oyr, do_Oyrbgc, &
+                   !do_SIday, do_SImon, &
+                   !do_day, do_fx
+  character(len=slenmax), save  :: activity_id, parent_variant_label, &
+    parent_mip_era, mip_era, sub_experiment_id, parent_sub_experiment, &
+    parent_activity_id, branch_method, parent_time_units, tracking_prefix, &
+    variant_label, source_type
+  real(kind=8), save            :: branch_time_in_child, branch_time_in_parent
+  character(len=slenmax), save  :: forcing_index, physics_index, realization_index, &
     initialization_index
-  namelist /experiment/ activity_id, variant_label, parent_variant_label, parent_mip_era, &
-    mip_era, sub_experiment_id, parent_sub_experiment, parent_activity_id, &
-    branch_time_in_child, branch_time_in_parent, branch_method, parent_time_units, &
-    tracking_prefix, physics_index, initialization_index, realization_index, forcing_index, &
-    source_type, casename, experiment_id, history, comment, forcing, realization, branch_time, &
-    exprefyear, parent_experiment_id, parent_experiment_rip, year1, month1, yearn, monthn, &
-    do_fx, do_amon, do_oyr, do_oyrbgc, do_omon, do_omonbgc, do_oimon, do_lmon, do_limon, &
-    do_aero, do_day, do_6hrlev, do_6hrlevi, do_6hrplev, do_3hr, do_3hri, do_2d, do_3d, do_xd, &
-    do_bgc, do_ofx, do_6hrPlevPt, do_AERday, do_AERhr, do_AERmonZ, do_CF3hr, do_CFday, do_CFmon, &
-    do_CFsubhr, do_E1hrClimMon, do_E1hr, do_E3hr, do_E3hrPt, do_E6hrZ, do_Eday, do_EdayZ, do_Efx, &
-    do_Eyr, do_Emon, do_EmonZ, do_Esubhr, do_Oclim, do_Oday, do_Odaybgc, do_Odec, do_COfx, &
-    do_SIday, dry_run, plevdummy, readdummy, add_fill_day, newcolumnorder, isubdir, osubdir, &
-    scanallfiles, membertag
+  namelist /experiment/ casename, experiment_id, parent_experiment_id, &
+                        parent_experiment_rip, isubdir, osubdir, membertag, &
+                        history, comment, forcing, &
+                        realization, exprefyear, year1, yearn, month1, monthn, &
+                        branch_time, &
+                        dry_run, plevdummy, readdummy, add_fill_day, newcolumnorder, scanallfiles, &
+                        activity_id, parent_variant_label, parent_mip_era, mip_era, &
+                        sub_experiment_id, parent_sub_experiment, parent_activity_id, branch_method, &
+                        parent_time_units, tracking_prefix, variant_label, source_type, &
+                        branch_time_in_child, branch_time_in_parent, &
+                        forcing_index, physics_index, realization_index, initialization_index
+                        !do_3hr, do_6hrLev, do_6hrPlev, do_6hrPlevPt, &
+                        !do_AERday, do_AERmonZ, do_Amon, &
+                        !do_CF3hr, do_CFday, do_CFmon, &
+                        !do_E1hr, do_E3hr, do_E3hrPt, do_E6hrZ, do_Eday, do_EdayZ, do_Efx, &
+                        !do_Emon, do_EmonZ, do_Esubhr, do_Eyr, &
+                        !do_LImon, do_Lmon, &
+                        !do_Oclim, do_Oday, do_Odec, do_Ofx, do_Omon, do_Omonbgc, do_Oyr, do_Oyrbgc, &
+                        !do_SIday, do_SImon, &
+                        !do_day, do_fx
 
   ! Tables
   logical, save :: dfx, damon, domon, doimon, daero, dday, d6hrlev, d6hrlevi, d6hrplev, &
@@ -210,53 +228,47 @@ contains
     createsubdirs = .true.
     forcefilescan = .true.
     verbose       = .true.
-    do_fx         = .true.
-    do_oyr        = .true.
-    do_oyrbgc     = .true.
-    do_omon       = .true.
-    do_omonbgc    = .true.
-    do_oimon      = .true.
-    do_amon       = .true.
-    do_aero       = .true.
-    do_lmon       = .true.
-    do_limon      = .true.
-    do_day        = .true.
-    do_6hrlev     = .true.
-    do_6hrlevi    = .true.
-    do_6hrplev    = .true.
-    do_3hr        = .true.
-    do_3hri       = .true.
-    do_2d         = .true.
-    do_3d         = .true.
-    do_xd         = .true.
-    do_bgc        = .true.
-    do_ofx        = .true.
-    do_6hrPlevPt  = .true.
-    do_AERday     = .true.
-    do_AERhr      = .true.
-    do_AERmonZ    = .true.
-    do_CF3hr      = .true.
-    do_CFday      = .true.
-    do_CFmon      = .true.
-    do_CFsubhr    = .true.
-    do_E1hrClimMon= .true.
-    do_E1hr       = .true.
-    do_E3hr       = .true.
-    do_E3hrPt     = .true.
-    do_E6hrZ      = .true.
-    do_Eday       = .true.
-    do_EdayZ      = .true.
-    do_Efx        = .true.
-    do_Emon       = .true.
-    do_EmonZ      = .true.
-    do_Esubhr     = .true.
-    do_Eyr        = .true.
-    do_Oclim      = .true.
-    do_Oday       = .true.
-    do_Odaybgc    = .true.
-    do_Odec       = .true.
-    do_COfx       = .true.
-    do_SIday      = .true.
+    !do_fx         = .true.
+    !do_oyr        = .true.
+    !do_oyrbgc     = .true.
+    !do_omon       = .true.
+    !do_omonbgc    = .true.
+    !do_oimon      = .true.
+    !do_amon       = .true.
+    !do_lmon       = .true.
+    !do_limon      = .true.
+    !do_day        = .true.
+    !do_6hrlev     = .true.
+    !do_6hrlevi    = .true.
+    !do_6hrplev    = .true.
+    !do_3hr        = .true.
+    !do_ofx        = .true.
+    !do_6hrPlevPt  = .true.
+    !do_AERday     = .true.
+    !do_AERhr      = .true.
+    !do_AERmonZ    = .true.
+    !do_CF3hr      = .true.
+    !do_CFday      = .true.
+    !do_CFmon      = .true.
+    !do_CFsubhr    = .true.
+    !do_E1hrClimMon= .true.
+    !do_E1hr       = .true.
+    !do_E3hr       = .true.
+    !do_E3hrPt     = .true.
+    !do_E6hrZ      = .true.
+    !do_Eday       = .true.
+    !do_EdayZ      = .true.
+    !do_Efx        = .true.
+    !do_Emon       = .true.
+    !do_EmonZ      = .true.
+    !do_Esubhr     = .true.
+    !do_Eyr        = .true.
+    !do_Oclim      = .true.
+    !do_Oday       = .true.
+    !do_Odaybgc    = .true.
+    !do_Odec       = .true.
+    !do_COfx       = .true.
+    !do_SIday      = .true.
     dry_run       = .false.
     plevdummy     = .false.
     readdummy     = .false.
@@ -295,14 +307,12 @@ contains
     dlimon        = .false.
     dday          = .false.
     d6hrlev       = .false.
-    d6hrlevi      = .false.
     d6hrplev      = .false.
     d3hr          = .false.
     d3hri         = .false.
     dofx          = .false.
     d6hrPlevPt    = .false.
     dAERday       = .false.
-    dAERhr        = .false.
     dAERmonZ      = .false.
     dCF3hr        = .false.
     dCFday        = .false.
@@ -339,7 +349,6 @@ contains
     vlimon        = ' '
     vday          = ' '
     v6hrlev       = ' '
-    v6hrlevi      = ' '
     v6hrplev      = ' '
     v3hr          = ' '
     v3hri         = ' '
@@ -1005,49 +1014,47 @@ contains
     end if
 
     ! Skip deselected namelists
-    if (.not. do_fx)      nfx = 0
-    if (.not. do_oyr)     noyr = 0
-    if (.not. do_oyrbgc .or. .not. do_bgc)  noyrbgc = 0
-    if (.not. do_omon)    nomon = 0
-    if (.not. do_omonbgc .or. .not. do_bgc) nomonbgc = 0
-    if (.not. do_oimon)   noimon = 0
-    if (.not. do_amon)    namon = 0
-    if (.not. do_aero)    naero = 0
-    if (.not. do_lmon)    nlmon = 0
-    if (.not. do_limon)   nlimon = 0
-    if (.not. do_day)     nday = 0
-    if (.not. do_6hrlev)  n6hrlev = 0
-    if (.not. do_6hrlevi) n6hrlevi = 0
-    if (.not. do_6hrplev) n6hrplev = 0
-    if (.not. do_3hr)     n3hr = 0
-    if (.not. do_3hri)    n3hri = 0
-    if (.not. do_ofx)         nofx = 0
-    if (.not. do_6hrPlevPt)   n6hrPlevPt = 0
-    if (.not. do_AERday)      nAERday = 0
-    if (.not. do_AERhr)       nAERhr = 0
-    if (.not. do_AERmonZ)     nAERmonZ = 0
-    if (.not. do_CF3hr)       nCF3hr = 0
-    if (.not. do_CFday)       nCFday = 0
-    if (.not. do_CFmon)       nCFmon = 0
-    if (.not. do_CFsubhr)     nCFsubhr = 0
-    if (.not. do_E1hrClimMon) nE1hrClimMon = 0
-    if (.not. do_E1hr)        nE1hr = 0
-    if (.not. do_E3hr)        nE3hr = 0
-    if (.not. do_E3hrPt)      nE3hrPt = 0
-    if (.not. do_E6hrZ)       nE6hrZ = 0
-    if (.not. do_Eday)        nEday = 0
-    if (.not. do_EdayZ)       nEdayZ = 0
-    if (.not. do_Efx)         nEfx = 0
-    if (.not. do_Emon)        nEmon = 0
-    if (.not. do_EmonZ)       nEmonZ = 0
-    if (.not. do_Esubhr)      nEsubhr = 0
-    if (.not. do_Eyr)         nEyr = 0
-    if (.not. do_Oclim)       nOclim = 0
-    if (.not. do_Oday)        nOday = 0
-    if (.not. do_Odaybgc .or. .not. do_bgc) nOdaybgc = 0
-    if (.not. do_Odec)        nOdec = 0
-    if (.not. do_COfx)        nCOfx = 0
-    if (.not. do_SIday)       nSIday = 0
+    !if (.not. do_fx)      nfx = 0
+    !if (.not. do_oyr)     noyr = 0
+    !if (.not. do_oyrbgc .or. .not. do_bgc)  noyrbgc = 0
+    !if (.not. do_omon)    nomon = 0
+    !if (.not. do_omonbgc .or. .not. do_bgc) nomonbgc = 0
+    !if (.not. do_oimon)   noimon = 0
+    !if (.not. do_amon)    namon = 0
+    !if (.not. do_lmon)    nlmon = 0
+    !if (.not. do_limon)   nlimon = 0
+    !if (.not. do_day)     nday = 0
+    !if (.not. do_6hrlev)  n6hrlev = 0
+    !if (.not. do_6hrlevi) n6hrlevi = 0
+    !if (.not. do_6hrplev) n6hrplev = 0
+    !if (.not. do_3hr)     n3hr = 0
+    !if (.not. do_3hri)    n3hri = 0
+    !if (.not. do_ofx)         nofx = 0
+    !if (.not. do_6hrPlevPt)   n6hrPlevPt = 0
+    !if (.not. do_AERday)      nAERday = 0
+    !if (.not. do_AERhr)       nAERhr = 0
+    !if (.not. do_AERmonZ)     nAERmonZ = 0
+    !if (.not. do_CF3hr)       nCF3hr = 0
+    !if (.not. do_CFday)       nCFday = 0
+    !if (.not. do_CFmon)       nCFmon = 0
+    !if (.not. do_CFsubhr)     nCFsubhr = 0
+    !if (.not. do_E1hrClimMon) nE1hrClimMon = 0
+    !if (.not. do_E1hr)        nE1hr = 0
+    !if (.not. do_E3hr)        nE3hr = 0
+    !if (.not. do_E3hrPt)      nE3hrPt = 0
+    !if (.not. do_E6hrZ)       nE6hrZ = 0
+    !if (.not. do_Eday)        nEday = 0
+    !if (.not. do_EdayZ)       nEdayZ = 0
+    !if (.not. do_Efx)         nEfx = 0
+    !if (.not. do_Emon)        nEmon = 0
+    !if (.not. do_EmonZ)       nEmonZ = 0
+    !if (.not. do_Esubhr)      nEsubhr = 0
+    !if (.not. do_Eyr)         nEyr = 0
+    !if (.not. do_Oclim)       nOclim = 0
+    !if (.not. do_Oday)        nOday = 0
+    !if (.not. do_Odec)        nOdec = 0
+    !if (.not. do_COfx)        nCOfx = 0
+    !if (.not. do_SIday)       nSIday = 0
 
     ! Extend input path if necessary
     if (len_trim(isubdir) > 0) &

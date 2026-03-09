@@ -15,7 +15,7 @@ module m_modelsatm
   real(kind=8), save :: p0 = 1000.d0
   real(kind=8), allocatable, save, dimension(:) :: lon, slon, lat, slat, lev, &
     ilev, hyam, hybm, hyai, hybi, plevs, iilev, hyaii, hybii
-  real(kind=8), allocatable, save, dimension(:, :) :: lon_bnds, lat_bnds
+  real(kind=8), allocatable, save, dimension(:,:) :: lon_bnds, lat_bnds
   character(len=slenmax), save :: zcoord, tcoord
 
   ! Dataset related variables
@@ -34,8 +34,8 @@ module m_modelsatm
   integer, save :: iaxid, jaxid, kaxid, taxid, varid, zfacid, table_id, error_flag
 
   ! Data fields
-  real(kind=8), allocatable, save, dimension(:, :) :: ps, phis, sst, tbot
-  real(kind=8), allocatable, save, dimension(:, :, :) :: ifld, ifld2, ofld, ifldacc
+  real(kind=8), allocatable, save, dimension(:,:)   :: ps, phis, sst, tbot
+  real(kind=8), allocatable, save, dimension(:,:,:) :: ifld, ifld2, ofld, ifldacc
 
   ! Gravity (same as in nco_lifetimes_A2.csh by Alf Kirkevaag)
   real(kind=8), parameter :: g = 9.80665, ginv = 1.d0 / g
@@ -99,12 +99,12 @@ contains
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
       write(*, *) 'zcoord:', trim(zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Check if input variable is present
       if (len_trim(pfx) == 0) then
@@ -162,17 +162,17 @@ contains
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
       write(*, *) 'zcoord(1:4):', zcoord(1:4)
-      write(*, *) trim(ovnm), trim(zcoord), do_3d
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
+      !write(*, *) trim(ovnm), trim(zcoord), do_3d
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
         ! Read pressure levels from table
         if (lreadplev .and. zcoord(1:4) == 'plev') then
           call read_gridinfo_plev(trim(zcoord))
         end if
-      else
-        if (.not. do_2d) cycle
-      end if
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       select case (trim(special))
@@ -267,15 +267,15 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
         ! Read pressure levels from table
         if (lreadplev .and. zcoord(1:4) == 'plev') then
           call read_gridinfo_plev(trim(zcoord))
         end if
-      else
-        if (.not. do_2d) cycle
-      end if
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       select case (trim(special))
@@ -367,16 +367,16 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
         ! Read pressure levels from table
         if (lreadplev .and. zcoord(1:4) == 'plev') then
           call read_gridinfo_plev(trim(zcoord))
         end if
-      else
-        if (.not. do_2d) cycle
-      end if
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       select case (trim(special))
@@ -468,16 +468,16 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
         ! Read pressure levels from table
         if (lreadplev .and. zcoord(1:4) == 'plev') then
           call read_gridinfo_plev(trim(zcoord))
         end if
-      else
-        if (.not. do_2d) cycle
-      end if
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       select case (trim(special))
@@ -567,16 +567,16 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
         ! Read pressure levels from table
         if (lreadplev .and. zcoord(1:4) == 'plev') then
           call read_gridinfo_plev(trim(zcoord))
         end if
-      else
-        if (.not. do_2d) cycle
-      end if
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       select case (trim(special))
@@ -663,16 +663,16 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
         ! Read pressure levels from table
         if (lreadplev .and. zcoord(1:4) == 'plev') then
           call read_gridinfo_plev(trim(zcoord))
         end if
-      else
-        if (.not. do_2d) cycle
-      end if
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = tagaday
@@ -751,16 +751,16 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
         ! Read pressure levels from table
         if (lreadplev .and. zcoord(1:4) == 'plev') then
           call read_gridinfo_plev(trim(zcoord))
         end if
-      else
-        if (.not. do_2d) cycle
-      end if
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = tagaday
@@ -839,16 +839,16 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
         ! Read pressure levels from table
         if (lreadplev .and. zcoord(1:4) == 'plev') then
           call read_gridinfo_plev(trim(zcoord))
         end if
-      else
-        if (.not. do_2d) cycle
-      end if
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = tagaday
@@ -927,16 +927,16 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
         ! Read pressure levels from table
         if (lreadplev .and. zcoord(1:4) == 'plev') then
           call read_gridinfo_plev(trim(zcoord))
         end if
-      else
-        if (.not. do_2d) cycle
-      end if
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = tagaday
@@ -1017,12 +1017,12 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = taga6hr
@@ -1091,12 +1091,12 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = taga6hri
@@ -1163,16 +1163,16 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
         ! Read pressure levels from table
         if (lreadplev .and. zcoord(1:4) == 'plev') then
           call read_gridinfo_plev(trim(zcoord))
         end if
-      else
-        if (.not. do_2d) cycle
-      end if
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = taga6hr
@@ -1243,16 +1243,16 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
         ! Read pressure levels from table
         if (lreadplev .and. zcoord(1:4) == 'plev') then
           call read_gridinfo_plev(trim(zcoord))
         end if
-      else
-        if (.not. do_2d) cycle
-      end if
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = taga6hri
@@ -1322,12 +1322,12 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = taga3hr
@@ -1392,12 +1392,12 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = taga3hri
@@ -1463,12 +1463,12 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = taga3hr
@@ -1533,12 +1533,12 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = taga3hri
@@ -1603,12 +1603,12 @@ contains
 
       ! Check if 2d and/or 3d fields are to be written
       call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-      if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
-        zcoord(2:5) == 'levh') then
-        if (.not. do_3d) cycle
-      else
-        if (.not. do_2d) cycle
-      end if
+      !if (zcoord(1:4) == 'plev' .or. zcoord(2:5) == 'leve' .or. &
+        !zcoord(2:5) == 'levh') then
+        !if (.not. do_3d) cycle
+      !else
+        !if (.not. do_2d) cycle
+      !end if
 
       ! Choose history file
       itag = taga3hri
@@ -1888,8 +1888,8 @@ contains
 
     implicit none
 
-    real(kind=8) :: pt, pb, ps1, fldint
-    integer :: i, j, k
+    real(kind=8)    :: pt, pb, ps1, fldint
+    integer         :: i, j, k
 
     ! Compute dp and dz
     do j = 1, jdm
@@ -2068,15 +2068,15 @@ contains
 
     implicit none
 
-    character(len=*), intent(in) :: str
-    integer, parameter :: kmax = 200
-    real(kind=8) :: kvec(kmax)
-    character(len=200) :: c200
-    logical :: fexists
-    type(json_file) :: json
-    logical :: found
-    integer :: k
-    character(len=10), dimension(:), allocatable :: cval
+    character(len=*), intent(in)                    :: str
+    integer, parameter                              :: kmax = 200
+    real(kind=8)                                    :: kvec(kmax)
+    character(len=200)                              :: c200
+    logical                                         :: fexists
+    type(json_file)                                 :: json
+    logical                                         :: found
+    integer                                         :: k
+    character(len=10), dimension(:), allocatable    :: cval
 
     inquire(file=trim(tabledir)//trim(coordtable), exist=fexists)
     if (.not. fexists) then
@@ -2113,8 +2113,8 @@ contains
 
     real :: fac1, fac2, fac3, fac4, fac5, fac6
     real :: fac7, fac8, fac9, fac10, fac11, fac12
-    integer, parameter :: ndimmax = 10
-    integer :: n, ndims, dimids(ndimmax), dimlens(ndimmax)
+    integer, parameter  :: ndimmax = 10
+    integer             :: n, ndims, dimids(ndimmax), dimlens(ndimmax)
     character(len=slenmax) :: ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6, str
     character(len=slenmax) :: ivnm7, ivnm8, ivnm9, ivnm10, ivnm11, ivnm12
     real(kind=8), dimension(:), allocatable :: tmp1d, tmp1d_2
@@ -2542,9 +2542,9 @@ contains
 
     implicit none
 
-    real :: fac1, fac2, fac3, fac4, fac5, fac6
-    integer :: ind
-    character(len=slenmax) :: ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
+    real                    :: fac1, fac2, fac3, fac4, fac5, fac6
+    integer                 :: ind
+    character(len=slenmax)  :: ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
 
     ! Open input file
     status = nf90_open(fnm, nf90_nowrite, ncid)
@@ -2639,14 +2639,14 @@ contains
 
     implicit none
 
-    real :: fac1, fac2, fac3, fac4, fac5, fac6
-    real :: fac7, fac8, fac9, fac10, fac11, fac12
+    real                :: fac1, fac2, fac3, fac4, fac5, fac6
+    real                :: fac7, fac8, fac9, fac10, fac11, fac12
     integer, intent(in) :: rec
-    logical, intent(out) :: badrec
+    logical, intent(out):: badrec
     character(len=*), intent(in), optional :: fname
-    integer, save :: fid, fidphis
-    character(len=slenmax) :: ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6, str
-    character(len=slenmax) :: ivnm7, ivnm8, ivnm9, ivnm10, ivnm11, ivnm12
+    integer, save           :: fid, fidphis
+    character(len=slenmax)  :: ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6, str
+    character(len=slenmax)  :: ivnm7, ivnm8, ivnm9, ivnm10, ivnm11, ivnm12
     integer :: i, j
 
     ! Open input file
@@ -2714,7 +2714,7 @@ contains
               (/idm, jdm, 1/))
           else
             if (index(table, 'EmonZ') > 0) then
-              status = nf90_get_var(fid, rhid, ifld(1, :, :), &
+              status = nf90_get_var(fid, rhid, ifld(1,:,:), &
                 (/1, 1, 1, rec/), &
                 (/1, jdm, kdm, 1/))
             else
@@ -2750,7 +2750,7 @@ contains
           if (.not. readdummy) then
             status = nf90_get_var(fid, rhid, ps, (/1, 1, rec/), &
               (/idm, jdm, 1/))
-            ifld(:, :, i) = ps
+            ifld(:,:, i) = ps
           else
             ifld = 0.
           end if
@@ -3096,7 +3096,7 @@ contains
         index(special, 'calcload') > 0) then
         error_flag = cmor_write( &
           var_id=varid, &
-          data=reshape(ofld(:, :, kdm:kdm), (/idm, jdm/)), &
+          data=reshape(ofld(:,:, kdm:kdm), (/idm, jdm/)), &
           ntimes_passed=1, &
           time_vals=tval, &
           time_bnds=tbnds)
@@ -3110,7 +3110,7 @@ contains
       else if (index(table, 'EmonZ') > 0) then
         error_flag = cmor_write( &
           var_id=varid, &
-          data=reshape(ofld(1, :, :), (/jdm, pdm/)), &
+          data=reshape(ofld(1,:,:), (/jdm, pdm/)), &
           ntimes_passed=1, &
           time_vals=tval, &
           time_bnds=tbnds)
@@ -3127,7 +3127,7 @@ contains
         index(special, 'calcload') > 0) then
         error_flag = cmor_write( &
           var_id=varid, &
-          data=reshape(ofld(:, :, kdm:kdm), (/idm, jdm/)), &
+          data=reshape(ofld(:,:, kdm:kdm), (/idm, jdm/)), &
           ntimes_passed=1, &
           time_vals=tval)
       else

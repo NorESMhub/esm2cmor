@@ -11,41 +11,43 @@ module m_modelsice
   integer :: ncid, rhid, dimid, status
 
   ! Grid dimensions and variables
-  integer, save :: idm, jdm
-  integer, parameter :: ncrns = 4
-  real(kind=8), allocatable, save, dimension(:)         :: xvec, yvec
-  real(kind=8), allocatable, save, dimension(:, :)      :: angle, tlon, tlat, ulon, ulat, vlon, vlat, uvlon, uvlat, tarea, uarea, &
-                                                           tlon2, tlat2, ulon2, ulat2, vlon2, vlat2, uvlon2, uvlat2
-  real(kind=8), allocatable, save, dimension(:, :, :)   :: tlon_crns, tlat_crns, tlon_crnsp, tlat_crnsp, &
-                                                           ulon_crns, ulat_crns, ulon_crnsp, ulat_crnsp, &
-                                                           vlon_crns, vlat_crns, vlon_crnsp, vlat_crnsp, &
-                                                           uvlon_crns, uvlat_crns, uvlon_crnsp, uvlat_crnsp
-  character(len=slenmax), save :: tcoord, zcoord
+  integer, save                                     :: idm, jdm
+  integer, parameter                                :: ncrns = 4
+  real(kind=8), allocatable, save, dimension(:)     :: xvec, yvec
+  real(kind=8), allocatable, save, dimension(:, :)  :: &
+    angle, tlon, tlat, ulon, ulat, vlon, vlat, uvlon, uvlat, tarea, uarea, &
+    tlon2, tlat2, ulon2, ulat2, vlon2, vlat2, uvlon2, uvlat2
+  real(kind=8), allocatable, save, dimension(:, :, :)   :: &
+    tlon_crns, tlat_crns, tlon_crnsp, tlat_crnsp, ulon_crns, ulat_crns, &
+    ulon_crnsp, ulat_crnsp, vlon_crns, vlat_crns, vlon_crnsp, vlat_crnsp, &
+    uvlon_crns, uvlat_crns, uvlon_crnsp, uvlat_crnsp
+  character(len=slenmax), save                          :: tcoord, zcoord
 
   ! Fram Strait grid info
-  integer :: seclen
-  integer, parameter :: maxseclen = 100
+  integer                       :: seclen
+  integer, parameter            :: maxseclen = 100
   integer, dimension(maxseclen) :: iind, jind, iflg, jflg
-  logical, save :: lsecindex
+  logical, save                 :: lsecindex
 
   ! Dataset related variables
-  character(len=slenmax), save :: ivnm, ovnm, vunits, vpositive, vcomment
+  character(len=slenmax), save  :: ivnm, ovnm, vunits, vpositive, vcomment
 
   ! Table related variables
-  character(len=lenmax) :: table
+  character(len=lenmax)         :: table
 
   ! String for module special
-  character(len=slenmax), save :: special
+  character(len=slenmax), save  :: special
 
   ! Cmor parameters
-  integer, save :: iaxid, jaxid, kaxid, taxid, grdid, varid, table_id, table_id_grid, error_flag
+  integer, save :: iaxid, jaxid, kaxid, taxid, grdid, varid, table_id, &
+    table_id_grid, error_flag
 
   ! Data fields
-  real(kind=8), allocatable, save, dimension(:, :) :: fld, fld2, fld3, fldacc
-  real(kind=8), allocatable, save, dimension(:, :, :) :: fld3d
+  real(kind=8), allocatable, save, dimension(:, :)      :: fld, fld2, fld3, fldacc
+  real(kind=8), allocatable, save, dimension(:, :, :)   :: fld3d
 
   ! Auxillary variables for special operations
-  character(len=slenmax), save :: str1, str2
+  character(len=slenmax), save                          :: str1, str2
 
 contains
 
@@ -645,9 +647,9 @@ contains
 
     implicit none
 
-    logical :: check
-    integer :: i, j, n
-    real(kind=8) :: missing, theta, lambda
+    logical         :: check
+    integer         :: i, j, n
+    real(kind=8)    :: missing, theta, lambda
 
     ! Open first input file
     call scan_files(reset=.true.)
@@ -879,8 +881,8 @@ contains
 
     implicit none
 
-    logical, optional, intent(in) :: fx
-    logical :: fxflag
+    logical, optional, intent(in)   :: fx
+    logical                         :: fxflag
 
     real :: fac1, fac2
     integer, parameter :: ndimmax = 10
@@ -1238,14 +1240,14 @@ contains
 
     implicit none
 
-    real :: fac1, fac2
-    integer, intent(in) :: rec
-    logical, intent(out) :: badrec
-    character(len=*), intent(in), optional :: fname
-    integer, save :: fid
-    integer :: i, j, i1, j1
-    integer :: nc
-    character(len=slenmax) :: ivnm1a, ivnm2a, ivnm1b, ivnm2b
+    real                                    :: fac1, fac2
+    integer, intent(in)                     :: rec
+    logical, intent(out)                    :: badrec
+    character(len=*), intent(in), optional  :: fname
+    integer, save                           :: fid
+    integer                                 :: i, j, i1, j1
+    integer                                 :: nc
+    character(len=slenmax)                  :: ivnm1a, ivnm2a, ivnm1b, ivnm2b
 
     ! Open input file
     if (present(fname)) then
