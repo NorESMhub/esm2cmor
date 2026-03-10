@@ -15,7 +15,7 @@ FC=ifx
 LD=$(FC)
 
 # Libraries
-CMOR=/diagnostics/CMOR/cmorlib/3.13.0/intel
+CMOR=/diagnostics/CMOR/cmorlib/3.14.0/intel
 JSONF=/diagnostics/CMOR/json-fortran/jsonfortran-intelllvm-9.2.1
 NETCDFF=$(EBROOTNETCDFMINFORTRAN)
 #NETCDF=$(EBROOTNETCDF)
