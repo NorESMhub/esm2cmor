@@ -1,0 +1,104 @@
+{
+    "Header": {
+        "Description": "mapping of NorESM3 model output to CMIP7 data request v1.2.2.3",
+        "model": "NorESM3",
+        "formula":"variables(1)*factors(1)+variables(2)*factors(2)+...+variables(n)*factors(n)",
+        "comment":"default factors equals one if not set explicitly"
+    },
+    "entry": {
+        "atmos.tas.tavg-h2m-hxy-u.mon.glb": {
+            "original_name":"TREFHT"
+        },
+        "atmos.ta.tavg-al-hxy-u.mon.glb": {
+            "original_name":"T"
+        },
+        "ocean.thetao.tavg-ol-hxy-sea.mon.glb": {
+            "original_name":"temp"
+        },
+        "ocean.tos.tavg-u-hxy-sea.mon.glb": {
+            "original_name":"tos"
+        },
+        "ocean.wfo.tavg-u-hxy-sea.mon.glb": {
+            "original_name":"lip+sop+eva+rnf+rfi+fmltfz",
+            "sources":{
+                "variables":["lip", "sop", "eva", "rnf", "rfi", "fmltfz"],
+                "factors"  :[1.0  , 1.0  , 1.0  , 1.0  , 1.0  , 1.0     ]
+            },
+            "preproc":{
+                "units":"kg m-2 s-1",
+                "comment":"sum of lip, sop, eva, rnf, rfi, fmltfz"
+            },
+            "history":"sum of lip, sop, eva, rnf, rfi, fmltfz"
+        },
+        "ocnBgchem.intpoc.tavg-u-hxy-sea.mon.30S-90S":{
+            "original_name":"vint(detoclvl*122*12/1000)",
+            "sources":{
+                "variables":["detoclvl"],
+                "factors"    :[1.464   ]
+            },
+            "preproc":{
+                "comment":"vertical integration of detoclvl*122*12/1000"
+            },
+            "postproc":{
+                "sumz":true
+            },
+            "history":""
+        },
+        "ocnBgchem.chl.tavg-d0m-hxy-sea.day.glb":{
+            "original_name":"srfphyc*122*12/60/1000",
+            "sources":{
+                "variables":["srfphyc"],
+                "factors"  :[0.0244   ]
+            },
+            "preproc":{
+                "comment":"conversion from [mol P/m3] to [kg Chl/m3] using [60 gC/gChl]"
+            }
+        },
+        "ocnBgchem.frn.tavg-u-hxy-sea.mon.glb":{
+            "original_name":"carflx_bot/122*16+dnitint",
+            "sources":{
+                "variables":["carflx_bot, dnitint"],
+                "factors"  :[0.131147541, 1.0     ]
+            },
+            "preproc":{
+                "comment":"(how this is derived?)"
+            }
+        },
+        "ocnBgchem.spco2.tavg-u-hxy-sea.mon.glb":{
+            "original_name":"pco2*muatm2pa",
+            "sources":{
+                "variables":["pco2"  ],
+                "factors"  :[0.101325]
+            },
+            "preproc":{
+                "comment":"pco2*muatm2pa,where muatm2pa is 0.101325"
+            }
+        },
+        "seaIce.siconc.tavg-u-hxy-u.mon.glb": {
+            "original_name":"aice"
+        },
+        "seaIce.sithick.tavg-u-hxy-si.mon.glb": {
+            "original_name":"hi"
+        },
+        "seaIce.sidmasstranx.tavg-u-hxy-u.mon.glb": {
+            "original_name":"sidmasstranx"
+        },
+        "seaIce.siitdconc.tavg-u-hxy-si.mon.glb":{
+            "orginal_name":"aicen*100",
+            "sources":{
+                "variables":["aicen"],
+                "factors"    :[100.0]
+            }
+        },
+        "seaIce.simpconc.tavg-u-hxy-si.mon.glb":{
+            "orginal_name":"apeff_ai/aice",
+            "sources":{
+                "variables":["apeff_ai"],
+                "factors"    :[1.0]
+            },
+            "postproc":{
+                "divided by aice":true
+            }
+        }
+    }
+}
