@@ -585,10 +585,19 @@ contains
     integer :: k, pdm
     character(len=10), dimension(:), allocatable :: cval
 
+    cnm = ''
+
+    write(*,*) 'subroutine: get_vertcoord'
     call json%initialize()
     call json%load_file(filename=trim(tnm))
     call json%get('variable_entry.' // trim(vnm) // '.dimensions', cval, found)
     call json%destroy()
+
+    !if (.not. found) return
+    if (.not. found) then
+      write(*,*) 'dimension not found, return'
+      return
+    end if
 
     write(*, *) 'tnm:', trim(tnm)
     write(*, *) 'vnm:', trim(vnm)
@@ -596,7 +605,8 @@ contains
 
     pdm = size(cval)
     do k = 1, pdm
-      if (cval(k) == 'alevel' .or. cval(k)(1:4) == 'plev') then
+      if (cval(k) == 'alevel' .or. cval(k)(1:4) == 'plev' .or. &
+          cval(k) == 'olevel') then
         cnm = cval(k)
         exit
       end if
@@ -647,7 +657,7 @@ contains
     logical :: isloop, isflag
 
     isloop = .true.
-    isflag = .true.
+    !isflag = .true.
 
     do while (isloop)
       if (present(reset)) then
@@ -660,20 +670,27 @@ contains
           mbnd, year, month)
       end if
 
-      if (len_trim(fnm) == 0 .and. index(itag, 'micom.') > 0 .and. isflag) then
-        itag = "blom." // itag(7:)
-        isflag = .false.
+      !if (len_trim(fnm) == 0 .and. index(itag, 'micom.') > 0 .and. isflag) then
+      if (len_trim(fnm) == 0) then
+        !itag = "blom." // itag(7:)
+        !isflag = .false.
+        if (verbose) write(*, *) &
+          'WARNING: no file found for case dir|tag|year1|month1|yearn|monthn: ', &
+          trim(ibasedir) // '/' // trim(casename), '|', trim(itag), '|', &
+          year1, '|', month1, '|', yearn, '|', monthn
       else
-        isloop = .false.
+        
+      isloop = .false.
+        !end if
       end if
     end do
 
-    if (len_trim(fnm) == 0) then
-      if (verbose) write(*, *) &
-        'WARNING: no file found for case dir|tag|year1|month1|yearn|monthn: ', &
-        trim(ibasedir) // '/' // trim(casename), '|', trim(itag), '|', year1, '|', &
-        month1, '|', yearn, '|', monthn
-    end if
+    !if (len_trim(fnm) == 0) then
+      !if (verbose) write(*, *) &
+        !'WARNING: no file found for case dir|tag|year1|month1|yearn|monthn: ', &
+        !trim(ibasedir) // '/' // trim(casename), '|', trim(itag), '|', year1, '|', &
+        !month1, '|', yearn, '|', monthn
+    !end if
 
   end subroutine scan_files
 

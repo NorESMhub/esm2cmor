@@ -397,7 +397,10 @@ contains
         m = m + 1
 
         ! Open output file
-        if (mod(m - 1, romon) == 0) call open_ofile
+        if (mod(m - 1, romon) == 0) then
+            call open_ofile
+            write(*,*) 'm:',m
+        end if
 
         ! Read variable into buffer (average if necessary)
         rec = 0
@@ -411,6 +414,7 @@ contains
             exit
           end if
           nrec = nrec + 1
+          write(*,*) 'nrec:',nrec
           call read_tslice(rec, badrec, fnm)
           fldacc = fldacc + fld
           if (index(special, 'day2mon') > 0) then
@@ -723,6 +727,8 @@ contains
       m = 0
       do
         m = m + 1
+
+        !write(*,*) 'm:',m
 
         ! Open output file
         if (mod(m - 1, rOday) == 0) call open_ofile
@@ -1812,13 +1818,13 @@ contains
       if (status /= 0) stop 'cannot ALLOCATE enough memory (1d)'
       status = nf90_inq_varid(ncid, 'section', rhid)
       call handle_ncerror(status)
-      write(*, *) 'secdm,slenmax2:', secdm, slenmax2
+      !write(*, *) 'secdm,slenmax2:', secdm, slenmax2
       status = nf90_get_var(ncid, rhid, section, (/1, 1/), (/slenmax2, secdm/))
       call handle_ncerror(status)
-      write(*, *) 'section:', section
+      !write(*, *) 'section:', section
       section1 = ' '
       do i = 1, secdm
-        write(*, *) 'i:', i
+        !write(*, *) 'i:', i
         s1 = ' '
         do j = 1, slenmax2
           s1(j:j) = section(j, i)
@@ -2206,7 +2212,7 @@ contains
     end if
     call write_namelist_json(grid, grid_label, ocngrid_resolution, ovnm)
     error_flag = cmor_dataset_json(namelist_file_json)
-    call system('rm '//trim(namelist_file_json))
+    !call system('rm '//trim(namelist_file_json))
 
     ! Define horizontal axes
     write(*, *) 'Define horizontal axes'
@@ -2360,7 +2366,9 @@ contains
     ! Define time axis
     if (.not. fxflag) then
       write(*, *) 'Define time axis '
+      write(*, *) 'tablepath:table_entry:', trim(tablepath),':',trim(tcoord)
       write(*, *) 'tcoord:', trim(tcoord)
+      write(*, *) 'calunits:', trim(calunits)
       taxid = cmor_axis( &
         table=trim(tablepath), &
         table_entry=trim(tcoord), &
@@ -2416,6 +2424,7 @@ contains
         .or. index(special, 'dpavg') > 0 &
         .or. index(special, 'omega2z') > 0) then
         write(*, *) 'case l2594'
+        write(*, *) 'vunits:',trim(vunits)
         varid = cmor_variable( &
           table=trim(tablepath), &
           table_entry=trim(ovnm), &
@@ -2992,6 +3001,10 @@ contains
             time_vals=tval, &
             time_bnds=tbnds)
         else
+          !write(*,*) 'write tslice'
+          !write(*,*) 'tval:',tval
+          !write(*,*) 'tnbds:',tbnds
+          !write(*,*) 'shape fld:',shape(fld)
           error_flag = cmor_write( &
             var_id=varid, &
             data=fld, &

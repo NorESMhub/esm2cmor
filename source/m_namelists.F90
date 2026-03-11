@@ -1472,6 +1472,8 @@ contains
     type(json_core) :: json
     type(json_value), pointer :: p
 
+
+    write(*,*) 'varname:',trim(varname)
     call json%initialize()
     call json%create_object(p, '')
 

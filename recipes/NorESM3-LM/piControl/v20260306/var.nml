@@ -13,14 +13,32 @@
                  'ta_tavg-al-hxy-u          ','T                    ','          ',
 /
 
+&table_Oday
+ dOday         = .true.
+ tOday         = 'CMIP7_ocean.json',
+ rOday         = 1000000,
+ vOday         =
+!                'tos        ','sst        ','          ',
+                 'tos_tavg-u-hxy-sea        ','sst        ','          ',
+/
+
 &table_omon
  domon         = .true.,
  romon         = 100000,
  tomon         = 'CMIP7_ocean.json',
  vomon         =
-                 'thetao_tavg-ol-hxy-sea    ','temp             ','           ',
-                 'tos_tavg-u-hxy-sea        ','sst              ','           ',
+!                'thetao_tavg-ol-hxy-sea    ','temp             ','           ',
+!                'tos_tavg-u-hxy-sea        ','sst              ','           ',
 /
+
+&table_oyrbgc
+ doyrbgc       = .true.,
+ royrbgc       = 100000,
+ toyrbgc       = 'CMIP7_ocnBgchem.json',
+ voyrbgc       =
+!                'fgco2_tavg-u-hxy-sea ','co2fxd-co2fxu','positivedo;kg m-2 s-1  ',
+/
+
 &table_oimon
  doimon        = .true.,
  roimon        = 100000,

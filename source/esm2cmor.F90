@@ -57,7 +57,7 @@ program main
   ! --- Run cmor processing for individual components
   ! call atm2cmor
   ! call lnd2cmor
-  call ice2cmor
+  ! call ice2cmor
   call ocn2cmor
   ! call glc2cmor
    
