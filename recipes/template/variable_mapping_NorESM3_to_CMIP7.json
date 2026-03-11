@@ -1,9 +1,19 @@
 {
     "Header": {
-        "Description": "mapping of NorESM3 model output to CMIP7 data request v1.2.2.3",
-        "model": "NorESM3",
-        "formula":"variables(1)*factors(1)+variables(2)*factors(2)+...+variables(n)*factors(n)",
-        "comment":"default factors equals one if not set explicitly"
+        "description": "mapping of NorESM3 model output to CMIP7 data request v1.2.2.3",
+        "entry": "a list of variables as CMIP7 compound names",
+        "original_name":"the orginal name of the model output or a simple derivation formula for the requested variable",
+        "sources":{
+          "description":[
+            "if it requires deviation, a list of variables and factors are given",
+            "derivation formula: variables(1)*factors(1)+variables(2)*factors(2)+...+variables(n)*factors(n)",
+            "factors will be set to one if not explicitly specified here"
+          ],
+          "variables":"list of variables which are used to derive the requested CMIP7 variable",
+          "factors":"factors that apply to each of the variable"
+        },
+        "preproc":"special preprocess before model data ingestion",
+        "postproc":"special postprocess after model data is ingested and before written as NetCDF file"
     },
     "entry": {
         "atmos.tas.tavg-h2m-hxy-u.mon.glb": {
