@@ -1,0 +1,9 @@
+&sys
+ ibasedir      = '/nird/datalake/NS9560K/noresm3/cases',
+ obasedir      = '/scratch/yanchun/cmorout',
+ griddata      = '/projects/NS9560K/cmor/griddata',
+ tabledir      = '/diagnostics/CMOR/esm2cmor/tables',
+ createsubdirs = .false.,
+ forcefilescan = .false.,  
+ verbose       = .true.,
+/
