@@ -2,7 +2,8 @@
 TARGET=esm2cmor
 
 # Objects
-OBJ=m_namelists.o m_utilities.o m_modelsice.o m_modelslnd.o m_modelsatm.o m_modelsocn.o esm2cmor.o
+#OBJ=m_namelists.o m_utilities.o m_modelsice.o m_modelslnd.o m_modelsatm.o m_modelsocn.o esm2cmor.o
+OBJ=m_namelists.o m_utilities.o m_jsons.o m_modelsocn.o esm2cmor.o
 
 # Paths 
 SRCDIR=../source
@@ -27,7 +28,7 @@ NETCDFF=$(EBROOTNETCDFMINFORTRAN)
 LIBS=-L$(CMOR)/lib -L$(JSONF)/lib -Wl,-rpath=$(JSONF)/lib -lcmor -lnetcdff -lnetcdf -luuid -ludunits2 -ljson-c -ljsonfortran
 
 # Compiler flags
-FFLAGS=-O2 -fdefault-real-8 -I$(SRCDIR) -I$(CMOR)/include -I$(NETCDFF)/include -I$(JSONF)/include -DDEFLATE
+FFLAGS=-g -fdefault-real-8 -I$(SRCDIR) -I$(CMOR)/include -I$(NETCDFF)/include -I$(JSONF)/include -DDEFLATE
 # for debug
 #FFLAGS:=$(FFLAGS) -g -Wall -Wextra -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow
 
@@ -45,19 +46,19 @@ $(TARGET): $(OBJ)
 	$(LD) -o $(TARGET) $(OBJ) $(LDFLAGS)
 	mkdir -p $(BINDIR) 
 	mv $(TARGET) $(BINDIR)
-	rm -f *.o *.h *.inc m_*.mod
+	#rm -f *.o *.h *.inc m_*.mod
 
 esm2cmor.o: $(SRCDIR)/esm2cmor.F90
 	$(FC) $(FFLAGS) -c $(SRCDIR)/esm2cmor.F90
 
-m_modelsatm.o: $(SRCDIR)/m_modelsatm.F90
-	$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelsatm.F90
+#m_modelsatm.o: $(SRCDIR)/m_modelsatm.F90
+	#$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelsatm.F90
 
-m_modelsice.o: $(SRCDIR)/m_modelsice.F90
-	$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelsice.F90
+#m_modelsice.o: $(SRCDIR)/m_modelsice.F90
+	#$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelsice.F90
 
-m_modelslnd.o: $(SRCDIR)/m_modelslnd.F90
-	$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelslnd.F90
+#m_modelslnd.o: $(SRCDIR)/m_modelslnd.F90
+	#$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelslnd.F90
 
 m_modelsocn.o: $(SRCDIR)/m_modelsocn.F90
 	$(FC) $(FFLAGS) -c $(SRCDIR)/m_modelsocn.F90
@@ -67,4 +68,7 @@ m_namelists.o: $(SRCDIR)/m_namelists.F90
 
 m_utilities.o: $(SRCDIR)/m_utilities.F90
 	$(FC) $(FFLAGS) -c $(SRCDIR)/m_utilities.F90
+
+m_jsons.o: $(SRCDIR)/m_jsons.F90
+	$(FC) $(FFLAGS) -c $(SRCDIR)/m_jsons.F90
 

@@ -4,6 +4,7 @@ module m_modelsocn
   use cmor_users_functions
   use m_utilities
   use m_namelists
+  use m_jsons
 
   implicit none
 
@@ -33,11 +34,15 @@ module m_modelsocn
 
   ! Dataset related variables
   character(len=slenmax), save          :: ivnm, ovnm, vunits, vpositive, vtype
+  character(len=slenmax), save          :: bvnm, cvnm
   character(len=slenmax * 10), save     :: vcomment
+  character(len=:), allocatable         :: key_json, value_json
   logical, save :: lsumz
+  logical       :: found
 
   ! Table related variables
   character(len=slenmax), save          :: table, tablepath
+  character(len=slenmax), save          :: tabledir_mapping, table_mapping
 
   ! Cmor parameters
   character(len=1024)   :: fnmo
@@ -66,6 +71,12 @@ contains
 
     logical :: badrec, last, first
     integer :: k, m, n, nrec
+    integer :: romon = 365*10*2
+    !character(len=slenmax) :: realm, frequency
+
+    character(len=slenmax), dimension(:), allocatable  :: variables,preproc
+    integer, dimension(:), allocatable                 :: idx
+    real(kind=8), dimension(:), allocatable            :: factors
 
     badrec = .false.
 
@@ -78,816 +89,291 @@ contains
       write(*, *)
     end if
 
+!   ! Process table Omon
+!   write(*, *) 'Process table Omon'
+    pomon = ''
+    fnm = pomon
+
+    tabledir_mapping='/diagnostics/CMOR/esm2cmor/recipes/template/'
+    table_mapping='variable_mapping_NorESM3_to_CMIP7.json'
+
+    ! filter only ocean variables, facilitate parallisation
+    n = count(realms == 'ocean' .or. realms == 'ocnBgchem')
+    allocate(idx(n))
+    k=1
+    do n = 1, n_variables
+      if (trim(realms(n)) == 'ocean' .or. trim(realms(n)) == 'ocnBgchem' ) then
+        idx(k) = n
+        k = k + 1
+      end if
+    end do
+    write(*,*) 'idx:',idx
+
+    write(*,*) 'realms:'
+    do n = 1, size(idx)
+      write(*,*) trim(realms(idx(n)))
+    end do
+    !do n = 1, n_variables
+    do n = 1, size(idx)
+      realm = trim(realms(idx(n)))
+      write(*,*) 'realm:',trim(realm)
+      !if (realm /= 'ocean') cycle
+!     !if (skip_variable(n, nomon, domon)) cycle
+      if (skip_variable(n, n_variables)) cycle
+
+!     ! Map namelist variables
+      bvnm = trim(branded_names(idx(n)))
+      cvnm = trim(compound_names(idx(n)))
+      frequency = trim(frequencies(idx(n)))
+      ovnm = bvnm
+      table = 'CMIP7_'//trim(realm)//'.json'
+      select case (frequency)
+      case('mon')
+        if (realm == 'ocean') then
+          itag = tagomon
+        else
+          itag = tagomonbgc
+        end if
+      case('day')
+        if (realm == 'ocean') then
+          itag = tagoday
+        else
+          itag = tagodaybgc
+        endif
+      case('yr')
+        if (realm == 'ocean') then
+          itag = tagoyr
+        else
+          itag = tagoyrbgc
+        end if
+      end select
+      write(*,*) 'itag:',trim(itag)
+
+
+      !! STORE file list for each tag
     ! Read grid information from input files
     write(*, *) 'Read grid information from input files'
-    itag = tagomon
     call scan_files(reset=.true.)
-    if (len_trim(fnm) == 0) return
+    !if (len_trim(fnm) == 0) return
+    if (len_trim(fnm) == 0) cycle
     call read_gridinfo_ifile
 
-    ! Process table fx
-    write(*, *) 'Process table fx'
-    fnm = trim(griddata)//trim(ocngridfile)
-    table = tfx
-    do n = 1, nfx
-      if (skip_variable(n, nfx, dfx)) cycle
+      !stop
 
-      ! Map namelist variables
-      ovnm = vfx(ovnmpos, n)
-      ivnm = vfx(ivnmpos, n)
-      special = vfx(3, n)
-      vunits = ' '
-      vpositive = ' '
-      vcomment = ' '
 
-      ! Check if input variable is present
-      if (.not. var_in_file(fnm, ivnm)) cycle
+      !ivnm = 
+!     special = vomon(3, n)
+      !vunits = ' '
+      call json_get_vunits(trim(tabledir)//trim(table),ovnm,vunits)
+      call json_get_value(trim(tabledir)//trim(table), &
+           'variable_entry.' // trim(ovnm) // '.units',vunits)
+      write(*,*) 'get_vunits:',trim(vunits)
+      !stop
+!     vpositive = ' '
+!     vcomment = ' '
 
-      ! Check if vertical coordinate required
-      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-
-      ! Prepare output file
-      call special_pre
-      call open_ofile(fx=.true.)
-
-      ! Read field
-      call read_field
-
-      ! Post Processing
-      call special_post
-
-      ! Write field
-      call write_field
-
-      ! Close output file
-      call close_ofile
-
-    end do
-
-    ! Process table Ofx
-    write(*, *) 'Process table Ofx'
-    fnm = trim(griddata)//trim(ocngridfile)
-    table = tofx
-    do n = 1, nofx
-      if (skip_variable(n, nofx, dofx)) cycle
-
-      ! Map namelist variables
-      ovnm = vofx(ovnmpos, n)
-      ivnm = vofx(ivnmpos, n)
-      special = vofx(3, n)
-      vunits = ' '
-      vpositive = ' '
-      vcomment = ' '
-
-      ! Use oceanregnfile for region
-      if (ovnm == 'basin') then
-        fnm = trim(griddata)//trim(ocnregnfile)
-      else
-        fnm = trim(griddata)//trim(ocngridfile)
-      end if
-
-      ! Check if input variable is present
-      if (.not. var_in_file(fnm, ivnm)) cycle
-
-      ! Check if vertical coordinate required
-      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-
-      ! Prepare output file
-      call special_pre
-      call open_ofile(fx=.true.)
-
-      ! Read field
-      call read_field
-
-      ! Post Processing
-      call special_post
-
-      ! Write field
-      call write_field
-
-      ! Close output file
-      call close_ofile
-
-    end do
-
-    ! Process table Oyr
-    write(*, *) 'Process table Oyr'
-    fnm = poyr
-    table = toyr
-    do n = 1, noyr
-      if (skip_variable(n, noyr, doyr)) cycle
-
-      ! Map namelist variables
-      ovnm = voyr(ovnmpos, n)
-      ivnm = voyr(ivnmpos, n)
-      special = voyr(3, n)
-      vunits = ' '
-      vpositive = ' '
-      vcomment = ' '
-
-      ! Check if vertical coordinate required
-      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-
-      ! Choose history file
-      if (index(special, 'mon2yr') > 0) then
-        itag = tagomon
-      else
-        itag = tagoyr
-      end if
-
-      ! Check if input variable is present
-      if (len_trim(poyr) == 0) call scan_files(reset=.true.)
-      if (.not. var_in_file(fnm, ivnm)) cycle
-
-      ! Prepare output file
-      call special_pre
-
-      ! Loop over input files
-      m = 0
-      do
-        m = m + 1
-
-        ! Open output file
-        if (mod(m - 1, royr) == 0) call open_ofile
-
-        ! Read variable into buffer (average if necessary)
-        rec = 0
-        nrec = 0
-        fldacc = 0.
-        last = .false.
-        first = .true.
-        do
-          if (len_trim(poyr) == 0) call scan_files(reset=.false.)
-          if (rec == 0) then
-            last = .true.
-            exit
-          end if
-          nrec = nrec + 1
-          call read_tslice(rec, badrec, fnm)
-          fldacc = fldacc + fld
-          if (index(special, 'mon2yr') > 0) then
-            if (first) tbnds(1, 1) = mbnd(1)
-            tbnds(2, 1) = mbnd(2)
-          else
-            tbnds(1, 1) = tval(1) - 365. / 2.
-            tbnds(2, 1) = tval(1) + 365. / 2.
-            exit
-          end if
-          first = .false.
-          if (month == 12) exit
-        end do
-        if (last) exit
-        fld = fldacc / real(nrec)
-        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
-
-        ! Post processing
-        call special_post
-
-        ! Write time slice to output file
-        call write_tslice
-
-        ! Close output file if max rec has been reached
-        if (mod(m, royr) == 0) call close_ofile
-
-      end do
-
-      ! Close output file if still open
-      if (mod(m, royr) > 0) call close_ofile
-
-    end do
-
-    ! Process table oyr (bgc)
-    write(*, *) 'Process table oyr (bgc)'
-    fnm = poyrbgc
-    table = toyrbgc
-    do n = 1, noyrbgc
-      if (skip_variable(n, noyrbgc, doyrbgc)) cycle
-
-      ! Map namelist variables
-      ovnm = voyrbgc(ovnmpos, n)
-      ivnm = voyrbgc(ivnmpos, n)
-      special = voyrbgc(3, n)
-      vunits = ' '
-      vpositive = ' '
-      vcomment = ' '
-
-      ! Choose history file
-      if (index(special, 'mon2yr') > 0) then
-        itag = tagomonbgc
-      else
-        itag = tagoyrbgc
-      end if
-
-      ! Check if input variable is present
-      if (len_trim(poyrbgc) == 0) call scan_files(reset=.true.)
-      if (.not. var_in_file(fnm, ivnm)) cycle
-
-      ! Check if vertical coordinate required
-      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-
-      ! Prepare output file
-      call special_pre
-
-      ! Loop over input files
-      m = 0
-      do
-        m = m + 1
-
-        ! Open output file
-        if (mod(m - 1, royrbgc) == 0) call open_ofile
-
-        ! Read variable into buffer (average if necessary)
-        rec = 0
-        nrec = 0
-        fldacc = 0.
-        last = .false.
-        first = .true.
-        do
-          if (len_trim(poyrbgc) == 0) call scan_files(reset=.false.)
-          if (rec == 0) then
-            last = .true.
-            exit
-          end if
-          nrec = nrec + 1
-          call read_tslice(rec, badrec, fnm)
-          fldacc = fldacc + fld
-          if (index(special, 'mon2yr') > 0) then
-            if (first) tbnds(1, 1) = mbnd(1)
-            tbnds(2, 1) = mbnd(2)
-          else
-            tbnds(1, 1) = tval(1) - 365. / 2.
-            tbnds(2, 1) = tval(1) + 365. / 2.
-            exit
-          end if
-          first = .false.
-          if (month == 12) exit
-        end do
-        if (last) exit
-        fld = fldacc / real(nrec)
-        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
-
-        ! Post processing
-        call special_post
-
-        ! Write time slice to output file
-        call write_tslice
-
-        ! Close output file if max rec has been reached
-        if (mod(m, royrbgc) == 0) call close_ofile
-
-      end do
-
-      ! Close output file if still open
-      if (mod(m, royrbgc) > 0) call close_ofile
-
-    end do
-
-    ! Process table Omon
-    write(*, *) 'Process table Omon'
-    fnm = pomon
-    table = tomon
-    do n = 1, nomon
-      if (skip_variable(n, nomon, domon)) cycle
-
-      ! Map namelist variables
-      ovnm = vomon(ovnmpos, n)
-      ivnm = vomon(ivnmpos, n)
-      special = vomon(3, n)
-      vunits = ' '
-      vpositive = ' '
-      vcomment = ' '
-
-      ! Check if vertical coordinate required
-      write(*, *) 'l381,tabledir/table:', trim(tabledir)//trim(table)
-      write(*, *) 'ovnm:', trim(ovnm)
-      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
+!     ! Check if vertical coordinate required
+      !write(*, *) 'l381,tabledir/table:', trim(tabledir)//trim(table)
+      !write(*, *) 'ovnm:', trim(ovnm)
+      call json_get_vertcoord(trim(tabledir)//trim(table), bvnm, zcoord)
       write(*, *) 'l382,zcoord:', trim(zcoord)
 
-      ! Check if we should skip variable
-      !write(*, *) trim(ovnm), trim(zcoord), do_3d, do_xd
-      !if (.not. do_3d .and. do_xd) then
-        !if (zcoord(1:6) == 'olevel' .and. ovnm(1:5) /= 'mmflx' &
-          !.and. ovnm(1:8) /= 'ficeberg' .and. &
-          !ovnm(1:11) /= 'hfsithermds') cycle
-      !else if (do_3d .and. .not. do_xd) then
-        !if (zcoord(1:6) /= 'olevel' .or. ovnm(1:5) == 'mmflx' &
-          !.or. ovnm(1:8) == 'ficeberg' .or. &
-          !ovnm(1:11) == 'hfsithermds') cycle
-      !else if (.not. do_3d .and. .not. do_xd) then
-        !cycle
-      !end if
+!     ! Choose history file
+!     !if (index(special, 'day2mon') > 0) then
+        !itag = tagoday
+!     !else
+!       itag = tagomon
+!     !end if
 
-      ! Choose history file
-      if (index(special, 'day2mon') > 0) then
-        itag = tagoday
+!     ! Check if input variable is present
+      if (len_trim(pomon) == 0) call scan_files(reset=.true.)
+      !if (.not. var_in_file(fnm, ivnm)) cycle
+
+      write(*,*) 'cvnm:',trim(cvnm)
+      call json_get_array_string(trim(tabledir_mapping)//trim(table_mapping),&
+        'variable_entry:'//trim(cvnm)//':sources:variables',&
+       variables,found) 
+      if (found) then
+        !write(*,*) 'size(variables):',size(variables)
+        !write(*,*) 'variables:',variables
+        do k =1, size(variables)
+          write(*,*) 'variables(k):',trim(variables(k))
+          if (.not. var_in_file(fnm, variables(k))) cycle
+        end do
+        ivnm = variables(1)
       else
-        itag = tagomon
+        call json_get_value(trim(tabledir_mapping)//trim(table_mapping),&
+          'variable_entry:'//trim(cvnm)//':original_name',&
+          value_json,found) 
+        if (.not. found) cycle
+        write(*,*) 'original_name:',trim(value_json)
+        ivnm = value_json
+        if (.not. var_in_file(fnm, value_json)) cycle
       end if
 
-      ! Check if input variable is present
-      if (len_trim(pomon) == 0) call scan_files(reset=.true.)
-      if (.not. var_in_file(fnm, ivnm)) cycle
-
-      ! Prepare output file
+!     ! Prepare output file
       call special_pre
 
-      ! Loop over input files
+!     ! Loop over input files
       m = 0
       do
         m = m + 1
 
-        ! Open output file
+!       ! Open output file
         if (mod(m - 1, romon) == 0) then
-            call open_ofile
+            call open_ofile(ivnm,ovnm)
             write(*,*) 'm:',m
         end if
 
-        ! Read variable into buffer (average if necessary)
+!       ! Read variable into buffer (average if necessary)
         rec = 0
-        nrec = 0
-        fldacc = 0.
-        last = .false.
-        do
+        !nrec = 0
+        !fldacc = 0.
+        !last = .false.
+        !do
           if (len_trim(pomon) == 0) call scan_files(reset=.false.)
-          if (rec == 0) then
-            last = .true.
-            exit
-          end if
-          nrec = nrec + 1
-          write(*,*) 'nrec:',nrec
+          if (rec == 0) exit
+          !write(*,*) 'rec:',rec
+          !if (rec == 0) then
+            !last = .true.
+            !exit
+          !end if
+          !nrec = nrec + 1
+          !write(*,*) 'nrec:',nrec
+          !write(*,*) 'fnm:',fnm
           call read_tslice(rec, badrec, fnm)
-          fldacc = fldacc + fld
-          if (index(special, 'day2mon') > 0) then
-            if (tbnd(2) + 0.5 >= mbnd(2)) exit
-          else
-            exit
-          end if
-        end do
-        if (last) exit
-        fld = fldacc / real(nrec)
+          !fldacc = fldacc + fld
+          !if (index(special, 'day2mon') > 0) then
+            !if (tbnd(2) + 0.5 >= mbnd(2)) exit
+          !else
+            !exit
+          !end if
+          !write(*,*) 'last:',last
+        !end do
+        !if (last) exit
+        !fld = fldacc / real(nrec)
+
+        !! for monthly
+      select case (frequency)
+      case('mon')
         tbnds(:, 1) = mbnd
         tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
+      case('day')
+        tbnds(1, 1) = tval(1) - 0.5
+        tbnds(2, 1) = tval(1) + 0.5
+      case('yr')
+         tbnds(1, 1) = tval(1) - 365. / 2.
+         tbnds(2, 1) = tval(1) + 365. / 2.
+      end select
+
+        write(*,*) 'tval:',tval
+        write(*,*) 'tbnds:',tbnds
 
         ! Post processing
         call special_post
 
-        ! Write time slice to output file
+!       ! Write time slice to output file
         call write_tslice
 
-        ! Close output file if max rec has been reached
+!       ! Close output file if max rec has been reached
         if (mod(m, romon) == 0) call close_ofile
 
       end do
 
-      ! Close output file if still open
+!     ! Close output file if still open
       if (mod(m, romon) > 0) call close_ofile
 
     end do
 
-    ! Process table Emon
-    write(*, *) 'Process table Emon'
-    fnm = pEmon
-    table = tEmon
-    do n = 1, nEmon
-      if (skip_variable(n, nEmon, dEmon)) cycle
-
-      ! Map namelist variables
-      ovnm = vEmon(ovnmpos, n)
-      ivnm = vEmon(ivnmpos, n)
-      special = vEmon(3, n)
-      vunits = ' '
-      vpositive = ' '
-      vcomment = ' '
-
-      ! Check if vertical coordinate required
-      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-
-      ! Check if we should skip variable
-      !write(*, *) trim(ovnm), trim(zcoord), do_3d, do_xd
-      !if (.not. do_3d .and. do_xd) then
-        !if (zcoord(1:6) == 'olevel' .and. ovnm(1:5) /= 'mmflx' &
-          !.and. ovnm(1:8) /= 'ficeberg' .and. &
-          !ovnm(1:11) /= 'hfsithermds') cycle
-      !else if (do_3d .and. .not. do_xd) then
-        !if (zcoord(1:6) /= 'olevel' .or. ovnm(1:5) == 'mmflx' &
-          !.or. ovnm(1:8) == 'ficeberg' .or. &
-          !ovnm(1:11) == 'hfsithermds') cycle
-      !else if (.not. do_3d .and. .not. do_xd) then
-        !cycle
-      !end if
-
-      ! Choose history file
-      if (index(special, 'day2mon') > 0) then
-        itag = tagoday
-      else
-        itag = tagomon
-      end if
-
-      ! Check if input variable is present
-      if (len_trim(pEmon) == 0) call scan_files(reset=.true.)
-      if (.not. var_in_file(fnm, ivnm)) cycle
-
-      ! Prepare output file
-      call special_pre
-
-      ! Loop over input files
-      m = 0
-      do
-        m = m + 1
-
-        ! Open output file
-        if (mod(m - 1, rEmon) == 0) call open_ofile
-
-        ! Read variable into buffer (average if necessary)
-        rec = 0
-        nrec = 0
-        fldacc = 0.
-        last = .false.
-        do
-          if (len_trim(pEmon) == 0) call scan_files(reset=.false.)
-          if (rec == 0) then
-            last = .true.
-            exit
-          end if
-          nrec = nrec + 1
-          call read_tslice(rec, badrec, fnm)
-          fldacc = fldacc + fld
-          if (index(special, 'day2mon') > 0) then
-            if (tbnd(2) + 0.5 >= mbnd(2)) exit
-          else
-            exit
-          end if
-        end do
-        if (last) exit
-        fld = fldacc / real(nrec)
-        tbnds(:, 1) = mbnd
-        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
-
-        ! Post processing
-        call special_post
-
-        ! Write time slice to output file
-        call write_tslice
-
-        ! Close output file if max rec has been reached
-        if (mod(m, rEmon) == 0) call close_ofile
-
-      end do
-
-      ! Close output file if still open
-      if (mod(m, rEmon) > 0) call close_ofile
-
-    end do
-
-    ! Process table omon (bgc)
-    write(*, *) 'Process table omon (bgc)'
-    fnm = pomonbgc
-    table = tomonbgc
-    do n = 1, nomonbgc
-      if (skip_variable(n, nomonbgc, domonbgc)) cycle
-
-      ! Map namelist variables
-      ovnm = vomonbgc(ovnmpos, n)
-      ivnm = vomonbgc(ivnmpos, n)
-      special = vomonbgc(3, n)
-      vunits = ' '
-      vpositive = ' '
-      vcomment = ' '
-
-      ! Check if vertical coordinate required
-      write(*, *) trim(ovnm)
-      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-
-      ! Check if we should skip variable
-      !write(*, *) trim(ovnm), trim(zcoord), do_3d, do_xd
-      !if (.not. do_3d .and. do_xd) then
-        !if (zcoord(1:6) == 'olevel') cycle
-      !else if (do_3d .and. .not. do_xd) then
-        !if (zcoord(1:6) /= 'olevel') cycle
-      !else if (.not. do_3d .and. .not. do_xd) then
-        !cycle
-      !end if
-
-      ! Choose history file
-      if (index(special, 'day2mon') > 0) then
-        itag = tagodaybgc
-      else
-        itag = tagomonbgc
-      end if
-
-      ! Check if input variable is present
-      if (len_trim(pomonbgc) == 0) call scan_files(reset=.true.)
-      if (.not. var_in_file(fnm, ivnm)) cycle
-
-      ! Prepare output file
-      call special_pre
-
-      ! Loop over input files
-      m = 0
-      do
-        m = m + 1
-
-        ! Open output file
-        if (mod(m - 1, romonbgc) == 0) call open_ofile
-
-        ! Read variable into buffer (average if necessary)
-        rec = 0
-        nrec = 0
-        fldacc = 0.
-        last = .false.
-        do
-          if (len_trim(pomonbgc) == 0) call scan_files(reset=.false.)
-          if (rec == 0) then
-            last = .true.
-            exit
-          end if
-          nrec = nrec + 1
-          call read_tslice(rec, badrec, fnm)
-          fldacc = fldacc + fld
-          if (index(special, 'day2mon') > 0) then
-            if (tbnd(2) + 0.5 >= mbnd(2)) exit
-          else
-            exit
-          end if
-        end do
-        if (last) exit
-        fld = fldacc / real(nrec)
-        tbnds(:, 1) = mbnd
-        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
-
-        ! Post processing
-        call special_post
-
-        ! Write time slice to output file
-        call write_tslice
-
-        ! Close output file if max rec has been reached
-        if (mod(m, romonbgc) == 0) call close_ofile
-
-      end do
-
-      ! Close output file if still open
-      if (mod(m, romonbgc) > 0) call close_ofile
-
-    end do
-
-    ! Process table day
-    write(*, *) 'Process table day'
-    fnm = pday
-    table = tday
-    do n = 1, nday
-      if (skip_variable(n, nday, dday)) cycle
-
-      ! Map namelist variables
-      ovnm = vday(ovnmpos, n)
-      ivnm = vday(ivnmpos, n)
-      special = vday(3, n)
-      vunits = ' '
-      vpositive = ' '
-      vcomment = ' '
-
-      ! Check if vertical coordinate required
-      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-
-      ! Choose history file
-      itag = tagoday
-
-      ! Check if input variable is present
-      if (len_trim(pday) == 0) call scan_files(reset=.true.)
-      if (.not. var_in_file(fnm, ivnm)) cycle
-
-      ! Prepare output file
-      call special_pre
-
-      ! Loop over input files
-      m = 0
-      do
-        m = m + 1
-
-        ! Open output file
-        if (mod(m - 1, rday) == 0) call open_ofile
-
-        ! Read variable into buffer
-        rec = 0
-        if (len_trim(pday) == 0) call scan_files(reset=.false.)
-        if (rec == 0) exit
-        tbnds(1, 1) = tval(1) - 0.5
-        tbnds(2, 1) = tval(1) + 0.5
-        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
-
-        ! Read data
-        call read_tslice(rec, badrec, fnm)
-
-        ! Post processing
-        call special_post
-
-        ! Write time slice to output file
-        if (badrec) fld = 1e20
-        call write_tslice
-
-        ! Close output file if max rec has been reached
-        if (mod(m, rday) == 0) call close_ofile
-
-      end do
-
-      ! Close output file if still open
-      if (mod(m, rday) > 0) call close_ofile
-
-    end do
-
-    ! Process table Oday
-    write(*, *) 'Process table Oday'
-    fnm = pOday
-    table = tOday
-    do n = 1, nOday
-      if (skip_variable(n, nOday, dOday)) cycle
-
-      ! Map namelist variables
-      ovnm = vOday(ovnmpos, n)
-      ivnm = vOday(ivnmpos, n)
-      special = vOday(3, n)
-      vunits = ' '
-      vpositive = ' '
-      vcomment = ' '
-
-      ! Check if vertical coordinate required
-      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-
-      ! Choose history file
-      itag = tagoday
-
-      ! Check if input variable is present
-      if (len_trim(pOday) == 0) call scan_files(reset=.true.)
-      if (.not. var_in_file(fnm, ivnm)) cycle
-
-      ! Prepare output file
-      call special_pre
-
-      ! Loop over input files
-      m = 0
-      do
-        m = m + 1
-
-        !write(*,*) 'm:',m
-
-        ! Open output file
-        if (mod(m - 1, rOday) == 0) call open_ofile
-
-        ! Read variable into buffer
-        rec = 0
-        if (len_trim(pOday) == 0) call scan_files(reset=.false.)
-        if (rec == 0) exit
-        tbnds(1, 1) = tval(1) - 0.5
-        tbnds(2, 1) = tval(1) + 0.5
-        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
-
-        ! Read data
-        call read_tslice(rec, badrec, fnm)
-
-        ! Post processing
-        call special_post
-
-        ! Write time slice to output file
-        if (badrec) fld = 1e20
-        call write_tslice
-
-        ! Close output file if max rec has been reached
-        if (mod(m, rOday) == 0) call close_ofile
-
-      end do
-
-      ! Close output file if still open
-      if (mod(m, rOday) > 0) call close_ofile
-
-    end do
-
-    ! Process table Odaybgc
-    write(*, *) 'Process table Odaybgc'
-    fnm = pOdaybgc
-    table = tOdaybgc
-    do n = 1, nOdaybgc
-      if (skip_variable(n, nOdaybgc, dOdaybgc)) cycle
-
-      ! Map namelist variables
-      ovnm = vOdaybgc(ovnmpos, n)
-      ivnm = vOdaybgc(ivnmpos, n)
-      special = vOdaybgc(3, n)
-      vunits = ' '
-      vpositive = ' '
-      vcomment = ' '
-
-      ! Check if vertical coordinate required
-      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-
-      ! Choose history file
-      itag = tagodaybgc
-
-      ! Check if input variable is present
-      if (len_trim(pOdaybgc) == 0) call scan_files(reset=.true.)
-      if (.not. var_in_file(fnm, ivnm)) cycle
-
-      ! Prepare output file
-      call special_pre
-
-      ! Loop over input files
-      m = 0
-      do
-        m = m + 1
-
-        ! Open output file
-        if (mod(m - 1, rOdaybgc) == 0) call open_ofile
-
-        ! Read variable into buffer
-        rec = 0
-        if (len_trim(pOdaybgc) == 0) call scan_files(reset=.false.)
-        if (rec == 0) exit
-        tbnds(1, 1) = tval(1) - 0.5
-        tbnds(2, 1) = tval(1) + 0.5
-        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
-
-        ! Read data
-        call read_tslice(rec, badrec, fnm)
-
-        ! Post processing
-        call special_post
-
-        ! Write time slice to output file
-        if (badrec) fld = 1e20
-        call write_tslice
-
-        ! Close output file if max rec has been reached
-        if (mod(m, rOdaybgc) == 0) call close_ofile
-
-      end do
-
-      ! Close output file if still open
-      if (mod(m, rOdaybgc) > 0) call close_ofile
-
-    end do
-
-    ! Process table Eday
-    write(*, *) 'Process table Eday'
-    fnm = pEday
-    table = tEday
-    do n = 1, nEday
-      if (skip_variable(n, nEday, dEday)) cycle
-
-      ! Map namelist variables
-      ovnm = vEday(ovnmpos, n)
-      ivnm = vEday(ivnmpos, n)
-      special = vEday(3, n)
-      vunits = ' '
-      vpositive = ' '
-      vcomment = ' '
-
-      ! Check if vertical coordinate required
-      call get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-
-      ! Choose history file
-      itag = tagoday
-
-      ! Check if input variable is present
-      if (len_trim(pEday) == 0) call scan_files(reset=.true.)
-      if (.not. var_in_file(fnm, ivnm)) cycle
-
-      ! Prepare output file
-      call special_pre
-
-      ! Loop over input files
-      m = 0
-      do
-        m = m + 1
-
-        ! Open output file
-        if (mod(m - 1, rEday) == 0) call open_ofile
-
-        ! Read variable into buffer
-        rec = 0
-        if (len_trim(pEday) == 0) call scan_files(reset=.false.)
-        if (rec == 0) exit
-        tbnds(1, 1) = tval(1) - 0.5
-        tbnds(2, 1) = tval(1) + 0.5
-        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
-
-        ! Read data
-        call read_tslice(rec, badrec, fnm)
-
-        ! Post processing
-        call special_post
-
-        ! Write time slice to output file
-        if (badrec) fld = 1e20
-        call write_tslice
-
-        ! Close output file if max rec has been reached
-        if (mod(m, rEday) == 0) call close_ofile
-
-      end do
-
-      ! Close output file if still open
-      if (mod(m, rEday) > 0) call close_ofile
-
-    end do
+    if (allocated(variables)) deallocate(variables)
+    if (allocated(factors)) deallocate(factors)
+    if (allocated (preproc)) deallocate(preproc)
+    if (allocated(idx)) deallocate(idx)
+
+!   ! Process table fx
+!   write(*, *) 'Process table fx'
+!   fnm = trim(griddata)//trim(ocngridfile)
+!   table = tfx
+!   do n = 1, nfx
+!     if (skip_variable(n, nfx, dfx)) cycle
+
+!     ! Map namelist variables
+!     ovnm = vfx(ovnmpos, n)
+!     ivnm = vfx(ivnmpos, n)
+!     special = vfx(3, n)
+!     vunits = ' '
+!     vpositive = ' '
+!     vcomment = ' '
+
+!     ! Check if input variable is present
+!     if (.not. var_in_file(fnm, ivnm)) cycle
+
+!     ! Check if vertical coordinate required
+!     call json_get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
+
+!     ! Prepare output file
+!     call special_pre
+!     call open_ofile(fx=.true.)
+
+!     ! Read field
+!     call read_field
+
+!     ! Post Processing
+!     call special_post
+
+!     ! Write field
+!     call write_field
+
+!     ! Close output file
+!     call close_ofile
+
+!   end do
+
+!   ! Process table Ofx
+!   write(*, *) 'Process table Ofx'
+!   fnm = trim(griddata)//trim(ocngridfile)
+!   table = tofx
+!   do n = 1, nofx
+!     if (skip_variable(n, nofx, dofx)) cycle
+
+!     ! Map namelist variables
+!     ovnm = vofx(ovnmpos, n)
+!     ivnm = vofx(ivnmpos, n)
+!     special = vofx(3, n)
+!     vunits = ' '
+!     vpositive = ' '
+!     vcomment = ' '
+
+!     ! Use oceanregnfile for region
+!     if (ovnm == 'basin') then
+!       fnm = trim(griddata)//trim(ocnregnfile)
+!     else
+!       fnm = trim(griddata)//trim(ocngridfile)
+!     end if
+
+!     ! Check if input variable is present
+!     if (.not. var_in_file(fnm, ivnm)) cycle
+
+!     ! Check if vertical coordinate required
+!     call json_get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
+
+!     ! Prepare output file
+!     call special_pre
+!     call open_ofile(fx=.true.)
+
+!     ! Read field
+!     call read_field
+
+!     ! Post Processing
+!     call special_post
+
+!     ! Write field
+!     call write_field
+
+!     ! Close output file
+!     call close_ofile
+
+!   end do
 
   end subroutine ocn2cmor
 
@@ -897,18 +383,45 @@ contains
 
     implicit none
 
-    integer :: i, j, k
+    integer :: i, j, k, n
+
+    character(len=slenmax), dimension(:), allocatable  :: preproc
+    character(len=:), allocatable  :: preproc_key, preproc_value
 
     lsumz = .false.
-    str2 = special
-    do
-      if (index(str2, ';') > 0) then
-        str1 = str2(1:index(str2, ';') - 1)
-        str2 = str2(index(str2, ';') + 1:)
+    !str2 = special
+      !tabledir='/diagnostics/CMOR/esm2cmor/recipes/template/'
+    !table='variable_mapping_NorESM3_to_CMIP7.json'
+    call json_get_keys(trim(tabledir_mapping)//trim(table_mapping),&
+        'variable_entry:'//cvnm//':preproc',&
+        preproc,found)
+    !write(*,*) 'preproc:'
+    !write(*,*) 'len_trim(preproc):',len_trim(preproc)
+    !write(*,*) 'size(preproc):',size(preproc)
+
+    if (.not. found) return
+
+    do n=1,size(preproc)
+      preproc_key = preproc(n)
+      call json_get_value(trim(tabledir_mapping)//trim(table_mapping),&
+          'variable_entry:'//cvnm//':preproc:'//preproc_key,&
+          preproc_value,found)
+      if (found) then
+      !if (len_trim(preproc_value) >0 ) then
+        write(*,*) trim(preproc(n)),":",trim(preproc_value)
       else
-        str1 = str2
+        cycle
       end if
-      select case (str1)
+
+    !do
+      !if (index(str2, ';') > 0) then
+        !str1 = str2(1:index(str2, ';') - 1)
+        !str2 = str2(index(str2, ';') + 1:)
+      !else
+        !str1 = str2
+      !end if
+      !select case (str1)
+      select case (preproc_value)
 
         ! atm to Pa
       case ('atm2Pa')
@@ -1094,18 +607,42 @@ contains
 
     implicit none
 
-    integer         :: i, j, k
+    integer         :: i, j, k, n
     real(kind=8)    :: r, rd, p, ptoptmp, pbottmp, sref = 35.
 
-    str2 = special
-    do
-      if (index(str2, ';') > 0) then
-        str1 = str2(1:index(str2, ';') - 1)
-        str2 = str2(index(str2, ';') + 1:)
+    character(len=slenmax), dimension(:), allocatable  :: preproc
+    character(len=:), allocatable  :: preproc_key, preproc_value
+
+    call json_get_keys(trim(tabledir_mapping)//trim(table_mapping),&
+        'variable_entry:'//cvnm//':preproc',&
+        preproc,found)
+    !write(*,*) 'preproc:'
+    !write(*,*) 'len_trim(preproc):',len_trim(preproc)
+    !write(*,*) 'size(preproc):',size(preproc)
+
+    if (.not. found) return
+
+    do n=1,size(preproc)
+      preproc_key = preproc(n)
+      call json_get_value(trim(tabledir_mapping)//trim(table_mapping),&
+          'variable_entry:'//cvnm//':preproc:'//preproc_key,&
+          preproc_value,found)
+      if (found) then
+      !if (len_trim(preproc_value) >0 ) then
+        write(*,*) trim(preproc(n)),":",trim(preproc_value)
       else
-        str1 = str2
+        cycle
       end if
-      select case (str1)
+
+    !str2 = special
+    !do
+      !if (index(str2, ';') > 0) then
+        !str1 = str2(1:index(str2, ';') - 1)
+        !str2 = str2(index(str2, ';') + 1:)
+      !else
+        !str1 = str2
+      !end if
+      select case (preproc_value)
 
         ! Compute depth below geoid from dz or pddpo
       case ('dz2zfull')
@@ -1699,6 +1236,7 @@ contains
     integer         :: i, j, k, n, fid
     real(kind=8)    :: missing, phiu, phil
 
+   write(*,*) 'fnm:',trim(fnm)
     ! Open first input file
     call scan_files(reset=.true.)
     status = nf90_open(fnm, nf90_nowrite, ncid)
@@ -1829,7 +1367,7 @@ contains
         do j = 1, slenmax2
           s1(j:j) = section(j, i)
         end do
-        write(*, *) 's1:', s1
+        !write(*, *) 's1:', s1
         if (trim(s1) == 'taiwan_and_luzon_straits') then
           section1(i) = 'taiwan_luzon_straits'
         else
@@ -2036,17 +1574,20 @@ contains
 
   ! -----------------------------------------------------------------
 
-  subroutine open_ofile(fx)
+  subroutine open_ofile(ivnm,ovnm,fx)
 
     implicit none
 
     logical, optional, intent(in)   :: fx
     logical                         :: fxflag
 
-    real                            :: fac1, fac2, fac3, fac4, fac5, fac6
+    character(len=*), intent(in)   :: ivnm,ovnm
+
+    !real                            :: fac1, fac2, fac3, fac4, fac5, fac6
     integer, parameter              :: ndimmax = 10
     integer                 :: i, j, k, n, ndims, dimids(ndimmax), dimlens(ndimmax)
-    character(len=slenmax)  :: coord, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
+    !character(len=slenmax)  :: coord, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
+    character(len=slenmax)  :: coord
 
     real(kind=8), allocatable       :: tmp1d(:), tmp2d(:, :)
 
@@ -2060,20 +1601,20 @@ contains
     status = nf90_open(fnm, nf90_nowrite, ncid)
     call handle_ncerror(status)
 
-    call resolve_vnm(slenmax, ivnm, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6, &
-      fac1, fac2, fac3, fac4, fac5, fac6)
-    if (verbose) then
-      write(*, *) 'Resolve input variable term ', trim(ivnm), ' ='
-      if (len_trim(ivnm1) > 0) write(*, *) ' ', trim(ivnm1), '*', fac1
-      if (len_trim(ivnm2) > 0) write(*, *) ' + ', trim(ivnm2), '*', fac2
-      if (len_trim(ivnm3) > 0) write(*, *) ' + ', trim(ivnm3), '*', fac3
-      if (len_trim(ivnm4) > 0) write(*, *) ' + ', trim(ivnm4), '*', fac4
-      if (len_trim(ivnm5) > 0) write(*, *) ' + ', trim(ivnm5), '*', fac5
-      if (len_trim(ivnm6) > 0) write(*, *) ' + ', trim(ivnm6), '*', fac6
-    end if
-    status = nf90_inq_varid(ncid, trim(ivnm1), rhid)
+!   call resolve_vnm(slenmax, ivnm, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6, &
+!     fac1, fac2, fac3, fac4, fac5, fac6)
+!   if (verbose) then
+!     write(*, *) 'Resolve input variable term ', trim(ivnm), ' ='
+!     if (len_trim(ivnm1) > 0) write(*, *) ' ', trim(ivnm1), '*', fac1
+!     if (len_trim(ivnm2) > 0) write(*, *) ' + ', trim(ivnm2), '*', fac2
+!     if (len_trim(ivnm3) > 0) write(*, *) ' + ', trim(ivnm3), '*', fac3
+!     if (len_trim(ivnm4) > 0) write(*, *) ' + ', trim(ivnm4), '*', fac4
+!     if (len_trim(ivnm5) > 0) write(*, *) ' + ', trim(ivnm5), '*', fac5
+!     if (len_trim(ivnm6) > 0) write(*, *) ' + ', trim(ivnm6), '*', fac6
+!   end if
+    status = nf90_inq_varid(ncid, trim(ivnm), rhid)
     if (status /= nf90_noerr) then
-      write(*, *) 'cannot find input variable ', trim(ivnm1)
+      write(*, *) 'cannot find input variable ', trim(ivnm)
       stop
     end if
     status = nf90_inquire_variable(ncid, rhid, ndims=ndims)
@@ -2158,7 +1699,7 @@ contains
     write(*, *) 'tablepath:', trim(tablepath)
     write(*, *) 'ovm:', trim(ovnm)
     write(*, *) 'vtype:', trim(vtype)
-    if (.not. fxflag) call get_timecoord(trim(tablepath), ovnm, tcoord)
+    if (.not. fxflag) call json_get_timecoord(trim(tablepath), ovnm, tcoord)
 
     ! Call CMOR setup
     if (verbose) then
@@ -2205,7 +1746,8 @@ contains
           grid_label = 'grz'
           grid = 'zonal mean or integral'
         else if (trim(vtype) == 'level') then
-          grid_label = 'gr'
+          !grid_label = 'gr'
+          grid_label = 'g99'
           grid = trim(ocngrid)//', interpolated to z-levels'
         end if
       end if
@@ -2218,13 +1760,15 @@ contains
     write(*, *) 'Define horizontal axes'
     if (vtype(1:3) /= 'mer' .and. vtype(1:3) /= 'sec') then
       iaxid = cmor_axis( &
-        table=trim(tabledir)//trim(tgrids), &
+        !table=trim(tabledir)//trim(tgrids), &
+        table=trim(tabledir)//'CMIP7_grids.json', &
         table_entry='i_index', &
         units='1', &
         length=idm, &
         coord_vals=xvec)
       jaxid = cmor_axis( &
-        table=trim(tabledir)//trim(tgrids), &
+        !table=trim(tabledir)//trim(tgrids), &
+        table=trim(tabledir)//'CMIP7_grids.json', &
         table_entry='j_index', &
         units='1', &
         length=jdm, &
@@ -2379,6 +1923,7 @@ contains
     ! Define output variable
     write(*, *) 'Define output variable'
     write(*, *) 'zcoord:', trim(zcoord)
+    write(*, *) 'vunits:', trim(vunits)
     if (fxflag) then
       if ((trim(vtype) == '2d' .and. .not. (trim(zcoord) == 'olevel' .or. &
         index(special, 'glbave') > 0 .or. index(special, '2zos') > 0.)) &

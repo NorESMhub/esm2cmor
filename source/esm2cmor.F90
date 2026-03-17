@@ -2,9 +2,9 @@ program main
    
   use m_namelists, only: verbose, read_namelists, print_namelists, &
     ibasedir, casename, forcefilescan, membertag
-  use m_modelsatm, only: atm2cmor
-  use m_modelslnd, only: lnd2cmor
-  use m_modelsice, only: ice2cmor
+  !use m_modelsatm, only: atm2cmor
+  !use m_modelslnd, only: lnd2cmor
+  !use m_modelsice, only: ice2cmor
   use m_modelsocn, only: ocn2cmor
    
   implicit none

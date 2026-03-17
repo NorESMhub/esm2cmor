@@ -1,13 +1,17 @@
 module m_utilities
 
   use netcdf
-  use m_namelists, only: itag, verbose, ibasedir, slenmax, lenmax, &
+  use m_namelists, only: itag, verbose, ibasedir, slenmax, &
     casename, fnm, year1, month1, yearn, monthn, exprefyear, rec, tval, &
     tbnd, mbnd, year, month, forcefilescan, funit, scanallfiles, membertag
 
   implicit none
 
 contains
+
+  ! -----------------------------------------------------------------
+
+  !subroutine resolve_vnm(tnm, vnm)
 
   ! -----------------------------------------------------------------
 
@@ -393,13 +397,15 @@ contains
 
     implicit none
 
-    real :: fac1, fac2, fac3, fac4, fac5, fac6
-    real :: fac7, fac8, fac9, fac10, fac11, fac12
+    !real :: fac1, fac2, fac3, fac4, fac5, fac6
+    !real :: fac7, fac8, fac9, fac10, fac11, fac12
     character(len=*), intent(in) :: fnm, vnm
-    character(len=slenmax) :: vnm1, vnm2, vnm3, vnm4, vnm5, vnm6
-    character(len=slenmax) :: vnm7, vnm8, vnm9, vnm10, vnm11, vnm12
+    !character(len=slenmax) :: vnm1, vnm2, vnm3, vnm4, vnm5, vnm6
+    !character(len=slenmax) :: vnm7, vnm8, vnm9, vnm10, vnm11, vnm12
+    !character(len=*), intent(in) :: fnm
+    !character(len=*), dimension(:), allocatable, intent(in) :: vnms
 
-    integer :: ncid, rhid, status, ind
+    integer :: ncid, rhid, status, n
 
     var_in_file = .false.
     if (len_trim(fnm) > 0) then
@@ -417,117 +423,122 @@ contains
       return
     end if
 
+    !if (len_trim(vnm) == 0) then
+      !write(*,*) '
+
     var_in_file = .true.
-    call resolve_vnm(slenmax, vnm, vnm1, vnm2, vnm3, vnm4, vnm5, vnm6, &
-      fac1, fac2, fac3, fac4, fac5, fac6, &
-      vnm7, vnm8, vnm9, vnm10, vnm11, vnm12, &
-      fac7, fac8, fac9, fac10, fac11, fac12)
+    !call resolve_vnm(slenmax, vnm, vnm1, vnm2, vnm3, vnm4, vnm5, vnm6, &
+      !fac1, fac2, fac3, fac4, fac5, fac6, &
+      !vnm7, vnm8, vnm9, vnm10, vnm11, vnm12, &
+      !fac7, fac8, fac9, fac10, fac11, fac12)
+    
+    !do n = 1, size(vnms)
+     status = nf90_inq_varid(ncid, trim(vnm), rhid)
+     if (status /= nf90_noerr) then
+       var_in_file = .false.
+       if (verbose) write(*, *) &
+         'skipping variable. ' // trim(vnm) // ' not in ' // trim(fnm)
+     end if
+    !end do
 
-    status = nf90_inq_varid(ncid, trim(vnm1), rhid)
-    if (status /= nf90_noerr) then
-      var_in_file = .false.
-      if (verbose) write(*, *) &
-        'skipping variable. ' // trim(vnm1) // ' not in ' // trim(fnm)
-    end if
+!   if (len_trim(vnm2) > 0) then
+!     status = nf90_inq_varid(ncid, trim(vnm2), rhid)
+!     if (status /= nf90_noerr) then
+!       var_in_file = .false.
+!       if (verbose) write(*, *) &
+!         'skipping variable. ' // trim(vnm2) // ' not in ' // trim(fnm)
+!     end if
+!   end if
 
-    if (len_trim(vnm2) > 0) then
-      status = nf90_inq_varid(ncid, trim(vnm2), rhid)
-      if (status /= nf90_noerr) then
-        var_in_file = .false.
-        if (verbose) write(*, *) &
-          'skipping variable. ' // trim(vnm2) // ' not in ' // trim(fnm)
-      end if
-    end if
+!   if (len_trim(vnm3) > 0) then
+!     status = nf90_inq_varid(ncid, trim(vnm3), rhid)
+!     if (status /= nf90_noerr) then
+!       var_in_file = .false.
+!       if (verbose) write(*, *) &
+!         'skipping variable. ' // trim(vnm3) // ' not in ' // trim(fnm)
+!     end if
+!   end if
 
-    if (len_trim(vnm3) > 0) then
-      status = nf90_inq_varid(ncid, trim(vnm3), rhid)
-      if (status /= nf90_noerr) then
-        var_in_file = .false.
-        if (verbose) write(*, *) &
-          'skipping variable. ' // trim(vnm3) // ' not in ' // trim(fnm)
-      end if
-    end if
+!   if (len_trim(vnm4) > 0) then
+!     status = nf90_inq_varid(ncid, trim(vnm4), rhid)
+!     if (status /= nf90_noerr) then
+!       var_in_file = .false.
+!       if (verbose) write(*, *) &
+!         'skipping variable. ' // trim(vnm3) // ' not in ' // trim(fnm)
+!     end if
+!   end if
 
-    if (len_trim(vnm4) > 0) then
-      status = nf90_inq_varid(ncid, trim(vnm4), rhid)
-      if (status /= nf90_noerr) then
-        var_in_file = .false.
-        if (verbose) write(*, *) &
-          'skipping variable. ' // trim(vnm3) // ' not in ' // trim(fnm)
-      end if
-    end if
+!   if (len_trim(vnm5) > 0) then
+!     status = nf90_inq_varid(ncid, trim(vnm5), rhid)
+!     if (status /= nf90_noerr) then
+!       var_in_file = .false.
+!       if (verbose) write(*, *) &
+!         'skipping variable ' // trim(vnm5) // ' not in ' // trim(fnm)
+!     end if
+!   end if
 
-    if (len_trim(vnm5) > 0) then
-      status = nf90_inq_varid(ncid, trim(vnm5), rhid)
-      if (status /= nf90_noerr) then
-        var_in_file = .false.
-        if (verbose) write(*, *) &
-          'skipping variable ' // trim(vnm5) // ' not in ' // trim(fnm)
-      end if
-    end if
+!   if (len_trim(vnm6) > 0) then
+!     status = nf90_inq_varid(ncid, trim(vnm6), rhid)
+!     if (status /= nf90_noerr) then
+!       var_in_file = .false.
+!       if (verbose) write(*, *) &
+!         'skipping variable ' // trim(vnm6) // ' not in ' // trim(fnm)
+!     end if
+!   end if
 
-    if (len_trim(vnm6) > 0) then
-      status = nf90_inq_varid(ncid, trim(vnm6), rhid)
-      if (status /= nf90_noerr) then
-        var_in_file = .false.
-        if (verbose) write(*, *) &
-          'skipping variable ' // trim(vnm6) // ' not in ' // trim(fnm)
-      end if
-    end if
+!   if (len_trim(vnm7) > 0) then
+!     status = nf90_inq_varid(ncid, trim(vnm7), rhid)
+!     if (status /= nf90_noerr) then
+!       var_in_file = .false.
+!       if (verbose) write(*, *) &
+!         'skipping variable ' // trim(vnm7) // ' not in ' // trim(fnm)
+!     end if
+!   end if
 
-    if (len_trim(vnm7) > 0) then
-      status = nf90_inq_varid(ncid, trim(vnm7), rhid)
-      if (status /= nf90_noerr) then
-        var_in_file = .false.
-        if (verbose) write(*, *) &
-          'skipping variable ' // trim(vnm7) // ' not in ' // trim(fnm)
-      end if
-    end if
+!   if (len_trim(vnm8) > 0) then
+!     status = nf90_inq_varid(ncid, trim(vnm8), rhid)
+!     if (status /= nf90_noerr) then
+!       var_in_file = .false.
+!       if (verbose) write(*, *) &
+!         'skipping variable ' // trim(vnm8) // ' not in ' // trim(fnm)
+!     end if
+!   end if
 
-    if (len_trim(vnm8) > 0) then
-      status = nf90_inq_varid(ncid, trim(vnm8), rhid)
-      if (status /= nf90_noerr) then
-        var_in_file = .false.
-        if (verbose) write(*, *) &
-          'skipping variable ' // trim(vnm8) // ' not in ' // trim(fnm)
-      end if
-    end if
+!   if (len_trim(vnm9) > 0) then
+!     status = nf90_inq_varid(ncid, trim(vnm9), rhid)
+!     if (status /= nf90_noerr) then
+!       var_in_file = .false.
+!       if (verbose) write(*, *) &
+!         'skipping variable ' // trim(vnm9) // ' not in ' // trim(fnm)
+!     end if
+!   end if
 
-    if (len_trim(vnm9) > 0) then
-      status = nf90_inq_varid(ncid, trim(vnm9), rhid)
-      if (status /= nf90_noerr) then
-        var_in_file = .false.
-        if (verbose) write(*, *) &
-          'skipping variable ' // trim(vnm9) // ' not in ' // trim(fnm)
-      end if
-    end if
+!   if (len_trim(vnm10) > 0) then
+!     status = nf90_inq_varid(ncid, trim(vnm10), rhid)
+!     if (status /= nf90_noerr) then
+!       var_in_file = .false.
+!       if (verbose) write(*, *) &
+!         'skipping variable ' // trim(vnm10) // ' not in ' // trim(fnm)
+!     end if
+!   end if
 
-    if (len_trim(vnm10) > 0) then
-      status = nf90_inq_varid(ncid, trim(vnm10), rhid)
-      if (status /= nf90_noerr) then
-        var_in_file = .false.
-        if (verbose) write(*, *) &
-          'skipping variable ' // trim(vnm10) // ' not in ' // trim(fnm)
-      end if
-    end if
+!   if (len_trim(vnm11) > 0) then
+!     status = nf90_inq_varid(ncid, trim(vnm11), rhid)
+!     if (status /= nf90_noerr) then
+!       var_in_file = .false.
+!       if (verbose) write(*, *) &
+!         'skipping variable ' // trim(vnm11) // ' not in ' // trim(fnm)
+!     end if
+!   end if
 
-    if (len_trim(vnm11) > 0) then
-      status = nf90_inq_varid(ncid, trim(vnm11), rhid)
-      if (status /= nf90_noerr) then
-        var_in_file = .false.
-        if (verbose) write(*, *) &
-          'skipping variable ' // trim(vnm11) // ' not in ' // trim(fnm)
-      end if
-    end if
-
-    if (len_trim(vnm12) > 0) then
-      status = nf90_inq_varid(ncid, trim(vnm12), rhid)
-      if (status /= nf90_noerr) then
-        var_in_file = .false.
-        if (verbose) write(*, *) &
-          'skipping variable ' // trim(vnm12) // ' not in ' // trim(fnm)
-      end if
-    end if
+!   if (len_trim(vnm12) > 0) then
+!     status = nf90_inq_varid(ncid, trim(vnm12), rhid)
+!     if (status /= nf90_noerr) then
+!       var_in_file = .false.
+!       if (verbose) write(*, *) &
+!         'skipping variable ' // trim(vnm12) // ' not in ' // trim(fnm)
+!     end if
+!   end if
 
     status = nf90_close(ncid)
     call handle_ncerror(status)
@@ -572,83 +583,6 @@ contains
 
   ! -----------------------------------------------------------------
 
-  subroutine get_vertcoord(tnm, vnm, cnm)
-
-    use json_module
-    implicit none
-
-    character(len=*), intent(in) :: tnm, vnm
-    character(len=*), intent(out) :: cnm
-
-    type(json_file) :: json
-    logical :: found
-    integer :: k, pdm
-    character(len=10), dimension(:), allocatable :: cval
-
-    cnm = ''
-
-    write(*,*) 'subroutine: get_vertcoord'
-    call json%initialize()
-    call json%load_file(filename=trim(tnm))
-    call json%get('variable_entry.' // trim(vnm) // '.dimensions', cval, found)
-    call json%destroy()
-
-    !if (.not. found) return
-    if (.not. found) then
-      write(*,*) 'dimension not found, return'
-      return
-    end if
-
-    write(*, *) 'tnm:', trim(tnm)
-    write(*, *) 'vnm:', trim(vnm)
-    write(*, *) 'cval:', cval
-
-    pdm = size(cval)
-    do k = 1, pdm
-      if (cval(k) == 'alevel' .or. cval(k)(1:4) == 'plev' .or. &
-          cval(k) == 'olevel') then
-        cnm = cval(k)
-        exit
-      end if
-    end do
-
-  end subroutine get_vertcoord
-
-  ! -----------------------------------------------------------------
-
-  subroutine get_timecoord(tnm, vnm, cnm)
-
-    use json_module
-    implicit none
-
-    character(len=*), intent(in) :: tnm, vnm
-    character(len=*), intent(out) :: cnm
-
-    type(json_file) :: json
-    logical :: found
-    integer :: k, pdm
-    character(len=10), dimension(:), allocatable :: cval
-
-    write(*, *) 'l643, vnm:', trim(vnm)
-    write(*, *) 'l643, tnm:', trim(tnm)
-
-    call json%initialize()
-    call json%load_file(filename=trim(tnm))
-    call json%get('variable_entry.' // trim(vnm) // '.dimensions', cval, found)
-    call json%destroy()
-
-    pdm = size(cval)
-    do k = 1, pdm
-      if (cval(k)(1:4) == 'time') then
-        cnm = cval(k)
-        exit
-      end if
-    end do
-
-  end subroutine get_timecoord
-
-  ! -----------------------------------------------------------------
-
   subroutine scan_files(reset)
 
     implicit none
@@ -678,7 +612,7 @@ contains
           'WARNING: no file found for case dir|tag|year1|month1|yearn|monthn: ', &
           trim(ibasedir) // '/' // trim(casename), '|', trim(itag), '|', &
           year1, '|', month1, '|', yearn, '|', monthn
-      else
+      !else
         
       isloop = .false.
         !end if
@@ -792,6 +726,7 @@ contains
         end if
       end if
 
+      !write(*,*) 'open_ofile,fnam:',trim(fnam)
       ! read time information from files
       call handle_ncerror(nf90_open(trim(fnam), nf90_nowrite, ncid))
 
@@ -1694,13 +1629,13 @@ contains
 
   ! -----------------------------------------------------------------
 
-  logical function skip_variable(n, nmax, do_table)
+  logical function skip_variable(n, nmax)
 
     implicit none
 #ifdef MPI
     include 'mpif.h'
 #endif
-    logical, intent(in) :: do_table
+    !logical, intent(in) :: do_table
     integer, intent(in) :: n, nmax
 
     integer :: mpirank, mpisize, mpierror
@@ -1713,7 +1648,7 @@ contains
     mpisize = 1
 #endif
 
-    if (do_table .and. mod(n - 1, mpisize) == mpirank) then
+    if (mod(n - 1, mpisize) == mpirank) then
       skip_variable = .false.
     else
       skip_variable = .true.

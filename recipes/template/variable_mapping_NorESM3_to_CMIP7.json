@@ -15,7 +15,7 @@
         "preproc":"special preprocess before model data ingestion",
         "postproc":"special postprocess after model data is ingested and before written as NetCDF file"
     },
-    "entry": {
+    "variable_entry": {
         "atmos.tas.tavg-h2m-hxy-u.mon.glb": {
             "original_name":"TREFHT"
         },
@@ -26,7 +26,13 @@
             "original_name":"temp"
         },
         "ocean.tos.tavg-u-hxy-sea.mon.glb": {
-            "original_name":"tos"
+            "original_name":"sst"
+        },
+        "ocean.tos.tavg-u-hxy-sea.day.glb": {
+            "original_name":"sst"
+        },
+        "ocean.diftrblo.tavg-ol-hxy-sea.yr.glb": {
+            "original_name":"difintlvl"
         },
         "ocean.wfo.tavg-u-hxy-sea.mon.glb": {
             "original_name":"lip+sop+eva+rnf+rfi+fmltfz",
@@ -58,17 +64,27 @@
             "original_name":"srfphyc*122*12/60/1000",
             "sources":{
                 "variables":["srfphyc"],
-                "factors"  :[0.0244   ]
+                "factors"  :[0.024399999999999998]
             },
             "preproc":{
                 "comment":"conversion from [mol P/m3] to [kg Chl/m3] using [60 gC/gChl]"
             }
         },
+        "ocnBgchem.dpco2.tavg-u-hxy-sea.mon.glb":{
+            "original_name":"(pco2-atmco2)*muatm2pa",
+            "sources":{
+                "variables":["pco2","atmco2"],
+                "factors"  :[0.101325, -0.101325]
+            },
+            "preproc":{
+                "comment":"dpco2=(pco2-atmco2)*muatm2pa, where muatm2pa=0.101325"
+            }
+        },
         "ocnBgchem.frn.tavg-u-hxy-sea.mon.glb":{
             "original_name":"carflx_bot/122*16+dnitint",
             "sources":{
-                "variables":["carflx_bot, dnitint"],
-                "factors"  :[0.131147541, 1.0     ]
+                "variables":["carflx_bot", "dnitint"],
+                "factors"  :[0.13114754098360656,1.0]
             },
             "preproc":{
                 "comment":"(how this is derived?)"
@@ -107,7 +123,7 @@
                 "factors"    :[1.0]
             },
             "postproc":{
-                "divided by aice":true
+                "divided by":"aice"
             }
         }
     }
