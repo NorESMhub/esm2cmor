@@ -2,25 +2,28 @@
 compound_names    = 
 !
 ! --- --- --- --- --- ---
-! list of variables to be cmorized
-! add a comment mark ! to skip, e.g.,
+! list of variables to be cmorized;
+! use Fortran comment to skip any of them, e.g.,
 !   'atmos.tas.tavg-h2m-hxy-u.mon.glb'
 ! --- --- --- --- --- ---
 !
-    'atmos.ta.tavg-al-hxy-u.mon.glb'
-    'atmos.tas.tavg-h2m-hxy-u.mon.glb'
-!   'ocean.thetao.tavg-ol-hxy-sea.mon.glb'
-!   'ocean.tos.tavg-u-hxy-sea.mon.glb'
-!   'ocean.tos.tavg-u-hxy-sea.day.glb'
+!   'atmos.ta.tavg-al-hxy-u.mon.glb'
+!   'atmos.tas.tavg-h2m-hxy-u.mon.glb'
+    'ocean.thetao.tavg-ol-hxy-sea.mon.glb'
+    'ocean.tos.tavg-u-hxy-sea.mon.glb'
+    'ocean.tos.tavg-u-hxy-sea.day.glb'
     'ocean.diftrblo.tavg-ol-hxy-sea.yr.glb'
-!   'ocean.wfo.tavg-u-hxy-sea.mon.glb'
-!   'ocnBgchem.chl.tavg-d0m-hxy-sea.day.glb'
-!   'ocnBgchem.frn.tavg-u-hxy-sea.mon.glb'
-!   'ocnBgchem.intpoc.tavg-u-hxy-sea.mon.30S-90S'
-!   'ocnBgchem.spco2.tavg-u-hxy-sea.mon.glb'
-    'seaIce.siconc.tavg-u-hxy-u.mon.glb'
-    'seaIce.sidmasstranx.tavg-u-hxy-u.mon.glb'
-    'seaIce.sithick.tavg-u-hxy-si.mon.glb'
+    'ocean.wfo.tavg-u-hxy-sea.mon.glb'
+    'ocnBgchem.chl.tavg-ols-hxy-sea.day.glb'
+    'ocnBgchem.chl.tavg-ols-hxy-sea.mon.glb'
+    'ocnBgchem.frn.tavg-u-hxy-sea.mon.glb'
+    'ocnBgchem.intpoc.tavg-u-hxy-sea.mon.30S-90S'
+    'ocnBgchem.spco2.tavg-u-hxy-sea.mon.glb'
+    'ocnBgchem.calc.tavg-ol-hxy-sea.mon.glb'
+    'ocnBgchem.dmso.tavg-ols-hxy-sea.mon.glb'
+!   'seaIce.siconc.tavg-u-hxy-u.mon.glb'
+!   'seaIce.sidmasstranx.tavg-u-hxy-u.mon.glb'
+!   'seaIce.sithick.tavg-u-hxy-si.mon.glb'
 !
 ! --- --- --- --- --- ---
 !

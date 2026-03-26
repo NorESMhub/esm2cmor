@@ -16,7 +16,7 @@ FC=gfortran
 LD=$(FC)
 
 # Libraries
-CMOR=/diagnostics/CMOR/cmorlib/3.14.0/gnu
+CMOR=/diagnostics/CMOR/cmorlib/3.14.1/gnu
 JSONF=/diagnostics/CMOR/json-fortran/jsonfortran-gnu-9.2.1
 NETCDFF=$(EBROOTNETCDFMINFORTRAN)
 #NETCDF=$(EBROOTNETCDF)

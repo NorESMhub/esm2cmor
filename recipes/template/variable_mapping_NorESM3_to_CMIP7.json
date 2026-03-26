@@ -6,11 +6,11 @@
         "sources":{
           "description":[
             "if it requires deviation, a list of variables and factors are given",
-            "derivation formula: variables(1)*factors(1)+variables(2)*factors(2)+...+variables(n)*factors(n)",
+            "derivation formula: vars(1)*facs(1)+vars(2)*facs(2)+...+vars(n)*facs(n)",
             "factors will be set to one if not explicitly specified here"
           ],
-          "variables":"list of variables which are used to derive the requested CMIP7 variable",
-          "factors":"factors that apply to each of the variable"
+          "vars":"list of variables which are used to derive the requested CMIP7 variable",
+          "facs":"factors that apply to each of the variable"
         },
         "preproc":"special preprocess before model data ingestion",
         "postproc":"special postprocess after model data is ingested and before written as NetCDF file"
@@ -37,8 +37,8 @@
         "ocean.wfo.tavg-u-hxy-sea.mon.glb": {
             "original_name":"lip+sop+eva+rnf+rfi+fmltfz",
             "sources":{
-                "variables":["lip", "sop", "eva", "rnf", "rfi", "fmltfz"],
-                "factors"  :[1.0  , 1.0  , 1.0  , 1.0  , 1.0  , 1.0     ]
+                "vars":["lip", "sop", "eva", "rnf", "rfi", "fmltfz"],
+                "facs"  :[1.0  , 1.0  , 1.0  , 1.0  , 1.0  , 1.0     ]
             },
             "preproc":{
                 "units":"kg m-2 s-1",
@@ -49,8 +49,8 @@
         "ocnBgchem.intpoc.tavg-u-hxy-sea.mon.30S-90S":{
             "original_name":"vint(detoclvl*122*12/1000)",
             "sources":{
-                "variables":["detoclvl"],
-                "factors"    :[1.464   ]
+                "vars":["detoclvl"],
+                "facs"    :[1.464   ]
             },
             "preproc":{
                 "comment":"vertical integration of detoclvl*122*12/1000"
@@ -60,11 +60,21 @@
             },
             "history":""
         },
-        "ocnBgchem.chl.tavg-d0m-hxy-sea.day.glb":{
+        "ocnBgchem.chl.tavg-ols-hxy-sea.day.glb":{
             "original_name":"srfphyc*122*12/60/1000",
             "sources":{
-                "variables":["srfphyc"],
-                "factors"  :[0.024399999999999998]
+                "vars":["srfphyc"],
+                "facs"  :[0.024399999999999998]
+            },
+            "preproc":{
+                "comment":"conversion from [mol P/m3] to [kg Chl/m3] using [60 gC/gChl]"
+            }
+        },
+        "ocnBgchem.chl.tavg-ols-hxy-sea.mon.glb":{
+            "original_name":"srfphyc*122*12/60/1000",
+            "sources":{
+                "vars":["srfphyc"],
+                "facs"  :[0.024399999999999998]
             },
             "preproc":{
                 "comment":"conversion from [mol P/m3] to [kg Chl/m3] using [60 gC/gChl]"
@@ -73,8 +83,8 @@
         "ocnBgchem.dpco2.tavg-u-hxy-sea.mon.glb":{
             "original_name":"(pco2-atmco2)*muatm2pa",
             "sources":{
-                "variables":["pco2","atmco2"],
-                "factors"  :[0.101325, -0.101325]
+                "vars":["pco2","atmco2"],
+                "facs"  :[0.101325, -0.101325]
             },
             "preproc":{
                 "comment":"dpco2=(pco2-atmco2)*muatm2pa, where muatm2pa=0.101325"
@@ -83,8 +93,8 @@
         "ocnBgchem.frn.tavg-u-hxy-sea.mon.glb":{
             "original_name":"carflx_bot/122*16+dnitint",
             "sources":{
-                "variables":["carflx_bot", "dnitint"],
-                "factors"  :[0.13114754098360656,1.0]
+                "vars":["carflx_bot", "dnitint"],
+                "facs"  :[0.13114754098360656,1.0]
             },
             "preproc":{
                 "comment":"(how this is derived?)"
@@ -93,12 +103,18 @@
         "ocnBgchem.spco2.tavg-u-hxy-sea.mon.glb":{
             "original_name":"pco2*muatm2pa",
             "sources":{
-                "variables":["pco2"  ],
-                "factors"  :[0.101325]
+                "vars":["pco2"  ],
+                "facs"  :[0.101325]
             },
             "preproc":{
                 "comment":"pco2*muatm2pa,where muatm2pa is 0.101325"
             }
+        },
+        "ocnBgchem.calc.tavg-ol-hxy-sea.mon.glb":{
+            "original_name":"calclvl"
+        },
+        "ocnBgchem.dmso.tavg-ols-hxy-sea.mon.glb":{
+            "original_name":"dms"
         },
         "seaIce.siconc.tavg-u-hxy-u.mon.glb": {
             "original_name":"aice"
@@ -112,15 +128,15 @@
         "seaIce.siitdconc.tavg-u-hxy-si.mon.glb":{
             "orginal_name":"aicen*100",
             "sources":{
-                "variables":["aicen"],
-                "factors"    :[100.0]
+                "vars":["aicen"],
+                "facs"    :[100.0]
             }
         },
         "seaIce.simpconc.tavg-u-hxy-si.mon.glb":{
             "orginal_name":"apeff_ai/aice",
             "sources":{
-                "variables":["apeff_ai"],
-                "factors"    :[1.0]
+                "vars":["apeff_ai"],
+                "facs"    :[1.0]
             },
             "postproc":{
                 "divided by":"aice"

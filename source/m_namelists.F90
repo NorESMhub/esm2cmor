@@ -74,7 +74,7 @@ module m_namelists
   ! Variables
   character(len=slenmax), save  :: pomon
   integer, save                 :: n_variables
-  character(len=slenmax), dimension(rowmax), save  :: compound_names, branded_names, &
+  character(len=slenmax), dimension(rowmax), save :: compound_names, branded_names, &
     realms, frequencies, regions
   character(len=slenmax) :: realm, frequency
 
@@ -433,7 +433,7 @@ contains
     type(json_value), pointer :: p
 
 
-    write(*,*) 'varname:',trim(varname)
+    !write(*,*) 'varname:',trim(varname)
     call json%initialize()
     call json%create_object(p, '')
 
@@ -486,7 +486,7 @@ contains
       '<activity_id><institution_id><source_id><experiment_id><_member_id><table><variable_id><grid_label><version>')
     call json%add(p, 'output_file_template', &
       '<variable_id><table><source_id><experiment_id><_member_id><grid_label>')
-    call json%add(p, 'license_id', 'CC-BY-4-0')
+    call json%add(p, 'license_id', 'CC-BY-4.0')
     call json%add(p, 'archive_id', 'WCRP')
 
     call json%add(p, 'frequency', trim(frequency))
