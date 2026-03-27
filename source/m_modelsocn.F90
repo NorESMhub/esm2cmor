@@ -12,16 +12,16 @@ module m_modelsocn
   integer, save         :: ii, jj, kk, ncid, rhid, dimid, status
 
   ! Grid dimensions and variables
-  real(kind=8), save                                :: voglb, aoglb
+  real(r8), save                                :: voglb, aoglb
   integer, save                                     :: idm, jdm, kdm = 0, ddm = 0, ldm = 0, rdm = 0, secdm = 0, slenmax2
   integer, parameter                                :: ncrns = 4
   integer, allocatable, save, dimension(:, :)       :: basin
-  real(kind=8), allocatable, save, dimension(:)     :: xvec, yvec, kvec, kvechalf,&
+  real(r8), allocatable, save, dimension(:)     :: xvec, yvec, kvec, kvechalf,&
     sigma, sigmahalf, depth, slat
-  real(kind=8), allocatable, save, dimension(:, :)  :: parea, pmask, pdepth, plon,&
+  real(r8), allocatable, save, dimension(:, :)  :: parea, pmask, pdepth, plon,&
     plat, ulon, ulat, vlon, vlat, slat_bnds, sigma_bnds, sigmahalf_bnds, &
     depth_bnds, bpini, bpinit, uscaley, vscalex, udepth, vdepth
-  real(kind=8), allocatable, save, dimension(:, :, :)   :: plon_crns, plat_crns, &
+  real(r8), allocatable, save, dimension(:, :, :)   :: plon_crns, plat_crns, &
     ulon_crns, ulat_crns, vlon_crns, vlat_crns, plon_crnsp, plat_crnsp, &
     ulon_crnsp, ulat_crnsp, vlon_crnsp, vlat_crnsp, dzini, sini, tini
   character(len=slenmax), allocatable, save, dimension(:)   :: region1, section1
@@ -30,7 +30,7 @@ module m_modelsocn
   character(len=slenmax), save                              :: grid, grid_label
 
   ! Gravity
-  real(kind=8), parameter :: g = 9.80665, ginv = 1.d0 / g
+  real(r8), parameter :: g = 9.80665, ginv = 1.0 / g
 
   ! Dataset related variables
   character(len=slenmax), save          :: ivnm, ovnm, vunits, vpositive, vtype
@@ -53,17 +53,17 @@ module m_modelsocn
   character(len=slenmax), save          :: special
 
   ! Data fields
-  real(kind=8), allocatable, save, dimension(:, :, :)   :: fld, fld2, fldtmp, &
+  real(r8), allocatable, save, dimension(:, :, :)   :: fld, fld2, fldtmp, &
     fldacc, fldhalf, dp
-  real(kind=8), allocatable, save, dimension(:, :)      :: sealv, pbot
-  real(kind=8)                                          :: sfac, offs, fill
+  real(r8), allocatable, save, dimension(:, :)      :: sealv, pbot
+  real(r8)                                          :: sfac, offs, fill
 
   ! Auxillary variables for special operations
   character(len=slenmax), save                          :: str1, str2
 
     character(len=slenmax), dimension(:), allocatable  :: vars,preproc
     integer, dimension(:), allocatable                 :: idx
-    real(kind=8), dimension(:), allocatable            :: facs
+    real(r8), dimension(:), allocatable            :: facs
 
 contains
 
@@ -674,7 +674,7 @@ contains
     implicit none
 
     integer         :: i, j, k, n
-    real(kind=8)    :: r, rd, p, ptoptmp, pbottmp, sref = 35.
+    real(r8)    :: r, rd, p, ptoptmp, pbottmp, sref = 35.0
 
     character(len=slenmax), dimension(:), allocatable  :: preproc
     character(len=:), allocatable  :: preproc_key, preproc_value
@@ -1300,7 +1300,7 @@ contains
 
     logical         :: check
     integer         :: i, j, k, n, fid
-    real(kind=8)    :: missing, phiu, phil
+    real(r8)    :: missing, phiu, phil
 
     ! Open first input file
     call scan_files(reset=.true.)
@@ -1656,7 +1656,7 @@ contains
     !character(len=slenmax)  :: coord, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
     character(len=slenmax)  :: coord
 
-    real(kind=8), allocatable       :: tmp1d(:), tmp2d(:, :)
+    real(r8), allocatable       :: tmp1d(:), tmp2d(:, :)
 
     ! Check if output variable should have time coordinate
     fxflag = .false.

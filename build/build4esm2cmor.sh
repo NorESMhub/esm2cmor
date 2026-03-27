@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 
-if [ $# -eq 0 ] || [ $1 == "-h" ]; then
+# Deafult value for machine, now only for nird
+mach=nird
+mpi_flag=false
+compiler=gnu
+
+if [ $# == 1 ] && [ $1 == "-h" ]; then
   echo "Usage:"
   echo "./build4esm2cmor.sh "
-  echo "  -p --ifmpi=true|false"
-  echo "  -c --compiler=intel|gnu"
+  echo "  -p --ifmpi=false|true"
+  echo "  -c --compiler=gnu|intel"
   echo "./build4esm2cmor.sh --ifmpi=true|false --compiler=intel|gnu"
   echo "./build4esm2cmor.sh -p true|false -c intel|gnu"
   echo "Example:"
@@ -54,9 +59,7 @@ else
   done
 fi
 
-# deafult value for machine, now only for nird
-mach=nird
-
+# derive Makefile name
 if ${mpi_flag}; then
     Makefile=Makefile.${mach}_${compiler}_mpi
 else

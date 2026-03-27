@@ -1,5 +1,7 @@
 module m_namelists
 
+  use, intrinsic        :: iso_fortran_env, only    : r4=>real32, r8=>real64
+
   implicit none
 
   ! Namelist limits
@@ -49,14 +51,14 @@ module m_namelists
   !character(len=slenmax), dimension(smax), save :: history, comment, forcing
   character(len=slenmax), save :: history, comment, forcing
   integer, save                                 :: realization, exprefyear, year1, yearn, month1, monthn
-  real(kind=8), save                            :: branch_time
+  real(r8), save                            :: branch_time
   logical, save :: dry_run, plevdummy, readdummy, add_fill_day, scanallfiles
   integer, save :: physics_version = 1, initialization_method = 1
   character(len=slenmax), save  :: activity_id, parent_variant_label, &
     parent_mip_era, mip_era, sub_experiment_id, parent_sub_experiment, &
     parent_activity_id, branch_method, parent_time_units, tracking_prefix, &
     variant_label, source_type
-  real(kind=8), save            :: branch_time_in_child, branch_time_in_parent
+  real(r8), save            :: branch_time_in_child, branch_time_in_parent
   character(len=slenmax), save  :: forcing_index, physics_index, realization_index, &
     initialization_index
   namelist /experiment/ casename, experiment_id, parent_experiment_id, &
@@ -88,7 +90,7 @@ module m_namelists
   ! Time related variables
   logical, save :: linstant
   integer, save :: year, month, rec
-  real(kind=8), save :: tval(1), tval2(2), tbnd(2), mbnd(2), tbnds(2,1), mbnds(2,1)
+  real(r8), save :: tval(1), tval2(2), tbnd(2), mbnd(2), tbnds(2,1), mbnds(2,1)
   character(len=slenmax), save :: calendar = 'noleap', &
     calunits = 'days since 1850-01-01 00:00:00'
 

@@ -1,7 +1,7 @@
 module m_utilities
 
   use netcdf
-  use m_namelists, only: itag, verbose, ibasedir, slenmax, &
+  use m_namelists, only: itag, verbose, ibasedir, slenmax, r8, &
     casename, fnm, year1, month1, yearn, monthn, exprefyear, rec, tval, &
     tbnd, mbnd, year, month, forcefilescan, funit, scanallfiles, membertag
 
@@ -250,7 +250,7 @@ contains
     integer, intent(in)     :: y1, m1, y2, m2, yr
     logical, intent(in)     :: lreset
     integer, intent(out)    :: irec
-    real(kind=8), intent(out)   :: tval, tbnd(2), mbnd(2)
+    real(r8), intent(out)   :: tval, tbnd(2), mbnd(2)
     integer, intent(out)        :: year, month
 
     character(len=1024) :: fpre, str1, str2
@@ -261,7 +261,7 @@ contains
     character(len=1024)         :: units, calendar
     integer, save       :: fstat, n, nrec, unlimdimid, ncid, rhid, rhid2, &
                            status, sstartend(2,10), nskip, irecold, toff, ndays
-    real(kind=8), save  :: dnumlo, dnumhi, tbndold(2) = (/-999999., -999999./)
+    real(r8), save  :: dnumlo, dnumhi, tbndold(2) = (/-999999., -999999./)
     logical, save       :: ltimebnds, ldone
 
     ! check whether to start file list read from beginning or to resume
@@ -432,8 +432,8 @@ contains
 
     character(len=*), intent(in) :: calendar
     integer, intent(in) :: yref
-    real(kind=8), intent(in) :: tval
-    real(kind=8), intent(out) :: tbnd(2)
+    real(r8), intent(in) :: tval
+    real(r8), intent(out) :: tbnd(2)
     integer, intent(out) :: year, month
 
     integer :: y1, m1, y2, m2, ndays, ndayslast
@@ -655,12 +655,12 @@ contains
 
   ! -----------------------------------------------------------------
 
-  real function transifs(seclen, iind, jind, iflg, jflg, fldx, fldy)
+  real(r8) function transifs(seclen, iind, jind, iflg, jflg, fldx, fldy)
 
     implicit none
 
     integer, intent(in) :: iind(*), jind(*), iflg(*), jflg(*), seclen
-    real(kind=8), dimension(:, :), intent(in) :: fldx, fldy
+    real(r8), dimension(:, :), intent(in) :: fldx, fldy
 
     integer :: n
 
@@ -684,8 +684,8 @@ contains
     implicit none
 
     integer, intent(in) :: idm, jdm, kdm
-    real(kind=8), dimension(idm, jdm, kdm), intent(inout) :: umflx, vmflx
-    real(kind=8), dimension(idm, jdm, kdm), intent(out) :: strmf
+    real(r8), dimension(idm, jdm, kdm), intent(inout) :: umflx, vmflx
+    real(r8), dimension(idm, jdm, kdm), intent(out) :: strmf
 
     integer :: i, j, ip1, jp1
 
@@ -738,11 +738,11 @@ contains
     implicit none
 
     integer, intent(in) :: idm, jdm
-    real(kind=8), dimension(idm, jdm), intent(in) :: angle
-    real(kind=8), dimension(idm, jdm), intent(inout) :: u, v
+    real(r8), dimension(idm, jdm), intent(in) :: angle
+    real(r8), dimension(idm, jdm), intent(inout) :: u, v
 
     integer :: i, j
-    real :: urot
+    real(r8) :: urot
 
     do j = 1, jdm
       do i = 1, idm
@@ -756,7 +756,7 @@ contains
 
   ! -----------------------------------------------------------------
 
-  real function rho(p, th, s)
+  real(r8) function rho(p, th, s)
 
     ! Description: computes in-situ density from potential temperature
     !              and salinity
@@ -764,19 +764,19 @@ contains
 
     implicit none
 
-    real(kind=8), intent(in) :: p
-    real(kind=8), intent(in) :: th, s
+    real(r8), intent(in) :: p
+    real(r8), intent(in) :: th, s
 
-    real, parameter :: &
-      a11 = 9.9985372432159340e-01, a12 = 1.0380621928183473e-02, &
-      a13 = 1.7073577195684715e-03, a14 = -3.6570490496333680e-05, &
-      a15 = -7.3677944503527477e-06, a16 = -3.5529175999643348e-06, &
-      b11 = 1.7083494994335439e-10, b12 = 7.1567921402953455e-13, &
-      b13 = 1.2821026080049485e-13, a21 = 1.0, &
-      a22 = 1.0316374535350838e-02, a23 = 8.9521792365142522e-04, &
-      a24 = -2.8438341552142710e-05, a25 = -1.1887778959461776e-05, &
-      a26 = -4.0163964812921489e-06, b21 = 1.1995545126831476e-10, &
-      b22 = 5.5234008384648383e-13, b23 = 8.4310335919950873e-14
+    real(r8), parameter :: &
+      a11 = 9.9985372432159340e-01_r8, a12 = 1.0380621928183473e-02_r8, &
+      a13 = 1.7073577195684715e-03_r8, a14 = -3.6570490496333680e-05_r8, &
+      a15 = -7.3677944503527477e-06_r8, a16 = -3.5529175999643348e-06_r8, &
+      b11 = 1.7083494994335439e-10_r8, b12 = 7.1567921402953455e-13_r8, &
+      b13 = 1.2821026080049485e-13_r8, a21 = 1.0, &
+      a22 = 1.0316374535350838e-02_r8, a23 = 8.9521792365142522e-04_r8, &
+      a24 = -2.8438341552142710e-05_r8, a25 = -1.1887778959461776e-05_r8, &
+      a26 = -4.0163964812921489e-06_r8, b21 = 1.1995545126831476e-10_r8, &
+      b22 = 5.5234008384648383e-13_r8, b23 = 8.4310335919950873e-14_r8
 
     rho = (a11 + (a12 + a14 * th + a15 * s) * th + (a13 + a16 * s) * s &
       + (b11 + b12 * th + b13 * s) * p) &
@@ -787,29 +787,29 @@ contains
 
   ! -----------------------------------------------------------------
 
-  real function p_alpha(p1, p2, th, s)
+  real(r8) function p_alpha(p1, p2, th, s)
 
     ! Description: integrate specific volume with respect to pressure
     ! Comment: units are in cgs
 
     implicit none
 
-    real(kind=8), intent(in) :: p1, p2, th, s
+    real(r8), intent(in) :: p1, p2, th, s
 
-    real, parameter :: &
-      a11 = 9.9985372432159340e-01, a12 = 1.0380621928183473e-02, &
-      a13 = 1.7073577195684715e-03, a14 = -3.6570490496333680e-05, &
-      a15 = -7.3677944503527477e-06, a16 = -3.5529175999643348e-06, &
-      b11 = 1.7083494994335439e-10, b12 = 7.1567921402953455e-13, &
-      b13 = 1.2821026080049485e-13, a21 = 1.0, &
-      a22 = 1.0316374535350838e-02, a23 = 8.9521792365142522e-04, &
-      a24 = -2.8438341552142710e-05, a25 = -1.1887778959461776e-05, &
-      a26 = -4.0163964812921489e-06, b21 = 1.1995545126831476e-10, &
-      b22 = 5.5234008384648383e-13, b23 = 8.4310335919950873e-14
+    real(r8), parameter :: &
+      a11 = 9.9985372432159340e-01_r8, a12 = 1.0380621928183473e-02_r8, &
+      a13 = 1.7073577195684715e-03_r8, a14 = -3.6570490496333680e-05_r8, &
+      a15 = -7.3677944503527477e-06_r8, a16 = -3.5529175999643348e-06_r8, &
+      b11 = 1.7083494994335439e-10_r8, b12 = 7.1567921402953455e-13_r8, &
+      b13 = 1.2821026080049485e-13_r8, a21 = 1.0, &
+      a22 = 1.0316374535350838e-02_r8, a23 = 8.9521792365142522e-04_r8, &
+      a24 = -2.8438341552142710e-05_r8, a25 = -1.1887778959461776e-05_r8, &
+      a26 = -4.0163964812921489e-06_r8, b21 = 1.1995545126831476e-10_r8, &
+      b22 = 5.5234008384648383e-13_r8, b23 = 8.4310335919950873e-14_r8
 
-    real, parameter :: r1_3 = 1. / 3., r1_5 = 1. / 5., r1_7 = 1. / 7., r1_9 = 1. / 9.
+    real(r8), parameter :: r1_3 = 1. / 3., r1_5 = 1. / 5., r1_7 = 1. / 7., r1_9 = 1. / 9.
 
-    real :: a1, a2, b1, b2, pm, r, q, qq
+    real(r8) :: a1, a2, b1, b2, pm, r, q, qq
 
     a1 = a11 + (a12 + a14 * th + a15 * s) * th + (a13 + a16 * s) * s
     a2 = a21 + (a22 + a24 * th + a25 * s) * th + (a23 + a26 * s) * s
@@ -835,7 +835,7 @@ contains
 
   ! -----------------------------------------------------------------
 
-  real function getlpi(temp, saln, phiu, phil, pu)
+  real(r8) function getlpi(temp, saln, phiu, phil, pu)
 
     ! get lower pressure interface of a layer knowing the temperature,
     ! salinity of the layer and the geopotential at upper and lower
@@ -843,9 +843,9 @@ contains
 
     implicit none
 
-    real(kind=8), intent(in) :: temp, saln, phiu, phil, pu
+    real(r8), intent(in) :: temp, saln, phiu, phil, pu
 
-    real(kind=8) :: pl, q, dphi, alpu, alpl
+    real(r8) :: pl, q, dphi, alpu, alpl
 
     ! first guess on pressure interface
     pl = pu - rho(pu, temp, saln) * (phil - phiu)
@@ -872,23 +872,23 @@ contains
 
     implicit none
 
-    real(kind=8), intent(in) :: p1, p2, th, s
-    real(kind=8), intent(out) :: dphi, alp1, alp2
+    real(r8), intent(in) :: p1, p2, th, s
+    real(r8), intent(out) :: dphi, alp1, alp2
 
-    real, parameter :: &
-      a11 = 9.9985372432159340e-01, a12 = 1.0380621928183473e-02, &
-      a13 = 1.7073577195684715e-03, a14 = -3.6570490496333680e-05, &
-      a15 = -7.3677944503527477e-06, a16 = -3.5529175999643348e-06, &
-      b11 = 1.7083494994335439e-10, b12 = 7.1567921402953455e-13, &
-      b13 = 1.2821026080049485e-13, a21 = 1.0, &
-      a22 = 1.0316374535350838e-02, a23 = 8.9521792365142522e-04, &
-      a24 = -2.8438341552142710e-05, a25 = -1.1887778959461776e-05, &
-      a26 = -4.0163964812921489e-06, b21 = 1.1995545126831476e-10, &
-      b22 = 5.5234008384648383e-13, b23 = 8.4310335919950873e-14
+    real(r8), parameter :: &
+      a11 = 9.9985372432159340e-01_r8, a12 = 1.0380621928183473e-02_r8, &
+      a13 = 1.7073577195684715e-03_r8, a14 = -3.6570490496333680e-05_r8, &
+      a15 = -7.3677944503527477e-06_r8, a16 = -3.5529175999643348e-06_r8, &
+      b11 = 1.7083494994335439e-10_r8, b12 = 7.1567921402953455e-13_r8, &
+      b13 = 1.2821026080049485e-13_r8, a21 = 1.0, &
+      a22 = 1.0316374535350838e-02_r8, a23 = 8.9521792365142522e-04_r8, &
+      a24 = -2.8438341552142710e-05_r8, a25 = -1.1887778959461776e-05_r8, &
+      a26 = -4.0163964812921489e-06_r8, b21 = 1.1995545126831476e-10_r8, &
+      b22 = 5.5234008384648383e-13_r8, b23 = 8.4310335919950873e-14_r8
 
-    real, parameter :: r1_3 = 1. / 3., r1_5 = 1. / 5., r1_7 = 1. / 7., r1_9 = 1. / 9.
+    real(r8), parameter :: r1_3 = 1. / 3., r1_5 = 1. / 5., r1_7 = 1. / 7., r1_9 = 1. / 9.
 
-    real :: a1, a2, b1, b2, pm, r, q, qq
+    real(r8) :: a1, a2, b1, b2, pm, r, q, qq
 
     a1 = a11 + (a12 + a14 * th + a15 * s) * th + (a13 + a16 * s) * s
     a2 = a21 + (a22 + a24 * th + a25 * s) * th + (a23 + a26 * s) * s
@@ -926,12 +926,12 @@ contains
 
     implicit none
 
-    real(kind=8), intent(in) :: theta_a, lambda_a, theta_b, lambda_b
-    real(kind=8), intent(out) :: theta_c, lambda_c
+    real(r8), intent(in) :: theta_a, lambda_a, theta_b, lambda_b
+    real(r8), intent(out) :: theta_c, lambda_c
 
-    real :: x_a, y_a, z_a, x_b, y_b, z_b, beta, x_c, y_c, z_c
+    real(r8) :: x_a, y_a, z_a, x_b, y_b, z_b, beta, x_c, y_c, z_c
 
-    real, parameter :: deg2rad = 3.141592654 / 180., rad2deg = 1. / deg2rad
+    real(r8), parameter :: deg2rad = 3.141592654_r8 / 180._r8, rad2deg = 1._r8 / deg2rad
 
     ! Represent the spherical coordinates as Cartesian coordinates on a
     ! unit sphere.
@@ -965,12 +965,12 @@ contains
 
     implicit none
 
-    real(kind=8), intent(in) :: theta_a, lambda_a, theta_b, lambda_b
-    real(kind=8), intent(out) :: theta_c, lambda_c
+    real(r8), intent(in) :: theta_a, lambda_a, theta_b, lambda_b
+    real(r8), intent(out) :: theta_c, lambda_c
 
-    real :: x_a, y_a, z_a, x_b, y_b, z_b, beta, x_c, y_c, z_c
+    real(r8) :: x_a, y_a, z_a, x_b, y_b, z_b, beta, x_c, y_c, z_c
 
-    real, parameter :: deg2rad = 3.141592654 / 180., rad2deg = 1. / deg2rad
+    real(r8), parameter :: deg2rad = 3.141592654_r8 / 180._r8, rad2deg = 1._r8 / deg2rad
 
     ! Represent the spherical coordinates as Cartesian coordinates on
     ! a unit sphere.
@@ -1084,19 +1084,19 @@ contains
     implicit none
 
     integer, intent(in) :: intyp, imax, nlat, nlevi, nlevip1, nlevo, kxtrp, varflg
-    real(kind=8), intent(in) :: dati(imax, nlat, nlevi), hbcofa(nlevip1), hbcofb(nlevip1)
-    real(kind=8), intent(in) :: p0, plevo(nlevo), psfc(imax, nlat)
-    real(kind=8), intent(in) :: spvl, tbot(imax, nlat), phis(imax, nlat)
-    real(kind=8), intent(out) :: dato(imax, nlat, nlevo)
-    real(kind=8), intent(inout) :: plevi(nlevip1)
+    real(r8), intent(in) :: dati(imax, nlat, nlevi), hbcofa(nlevip1), hbcofb(nlevip1)
+    real(r8), intent(in) :: p0, plevo(nlevo), psfc(imax, nlat)
+    real(r8), intent(in) :: spvl, tbot(imax, nlat), phis(imax, nlat)
+    real(r8), intent(out) :: dato(imax, nlat, nlevo)
+    real(r8), intent(inout) :: plevi(nlevip1)
 
     integer :: i, j, k, kp, kpi
-    real(kind=8) :: a1, a2ln, a2ln1, a2ln2
-    real(kind=8) :: tstar, hgt, alnp, t0, tplat, tprime0, alpha, alnp3, psfcmb
-    real(kind=8) :: alp, alphp
-    real(kind=8), parameter :: rd = 287.04d0
-    real(kind=8), parameter :: ginv = 1.d0 / 9.80616d0
-    real(kind=8), parameter :: alpha0 = 0.0065d0 * rd * ginv
+    real(r8) :: a1, a2ln, a2ln1, a2ln2
+    real(r8) :: tstar, hgt, alnp, t0, tplat, tprime0, alpha, alnp3, psfcmb
+    real(r8) :: alp, alphp
+    real(r8), parameter :: rd = 287.04d0
+    real(r8), parameter :: ginv = 1.d0 / 9.80616d0
+    real(r8), parameter :: alpha0 = 0.0065d0 * rd * ginv
 
     ! statement function for double log interpolation
     a2ln(a1) = log(log(a1 + 2.72d0))

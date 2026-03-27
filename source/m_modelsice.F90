@@ -13,11 +13,11 @@ module m_modelsice
   ! Grid dimensions and variables
   integer, save                                     :: idm, jdm
   integer, parameter                                :: ncrns = 4
-  real(kind=8), allocatable, save, dimension(:)     :: xvec, yvec
-  real(kind=8), allocatable, save, dimension(:, :)  :: &
+  real(dp), allocatable, save, dimension(:)     :: xvec, yvec
+  real(dp), allocatable, save, dimension(:, :)  :: &
     angle, tlon, tlat, ulon, ulat, vlon, vlat, uvlon, uvlat, tarea, uarea, &
     tlon2, tlat2, ulon2, ulat2, vlon2, vlat2, uvlon2, uvlat2
-  real(kind=8), allocatable, save, dimension(:, :, :)   :: &
+  real(dp), allocatable, save, dimension(:, :, :)   :: &
     tlon_crns, tlat_crns, tlon_crnsp, tlat_crnsp, ulon_crns, ulat_crns, &
     ulon_crnsp, ulat_crnsp, vlon_crns, vlat_crns, vlon_crnsp, vlat_crnsp, &
     uvlon_crns, uvlat_crns, uvlon_crnsp, uvlat_crnsp
@@ -43,8 +43,8 @@ module m_modelsice
     table_id_grid, error_flag
 
   ! Data fields
-  real(kind=8), allocatable, save, dimension(:, :)      :: fld, fld2, fld3, fldacc
-  real(kind=8), allocatable, save, dimension(:, :, :)   :: fld3d
+  real(dp), allocatable, save, dimension(:, :)      :: fld, fld2, fld3, fldacc
+  real(dp), allocatable, save, dimension(:, :, :)   :: fld3d
 
   ! Auxillary variables for special operations
   character(len=slenmax), save                          :: str1, str2
@@ -589,7 +589,7 @@ contains
       case ('masksh')
         do j = 1, jdm
           do i = 1, idm
-            if (tlat(i, j) < 0) fld(i, j) = 0.0
+            if (tlat(i, j) < 0) fld(i, j) = 0.0_dp
           end do
         end do
 
@@ -649,7 +649,7 @@ contains
 
     logical         :: check
     integer         :: i, j, n
-    real(kind=8)    :: missing, theta, lambda
+    real(dp)    :: missing, theta, lambda
 
     ! Open first input file
     call scan_files(reset=.true.)
@@ -889,8 +889,8 @@ contains
     integer :: n, ndims, dimids(ndimmax), dimlens(ndimmax)
     integer :: physics_version = 1, initialization_method = 1
     character(len=slenmax) :: coord, ivnm1a, ivnm2a, ivnm1b, ivnm2b
-    real(kind=8), dimension(:), allocatable :: tmp1d, tmp1d_2
-    real(kind=8), dimension(:, :), allocatable :: tmp2d
+    real(dp), dimension(:), allocatable :: tmp1d, tmp1d_2
+    real(dp), dimension(:, :), allocatable :: tmp2d
 
     ! Check if output variable should have time coordinate
     fxflag = .false.
@@ -1067,12 +1067,12 @@ contains
       deallocate(tmp1d, tmp2d)
     else if (trim(zcoord) == 'iceband') then
       allocate(tmp1d(5), tmp2d(2, 5))
-      tmp1d(:) = (/0.6445072d0, 1.391433d0, 2.470179d0, &
-                   4.567288d0, 1.d8/)
-      tmp2d(1, :) = (/0.d0, 0.6445072d0, 1.391433d0, &
-                      2.470179d0, 4.567288d0/)
-      tmp2d(2, :) = (/0.6445072d0, 1.391433d0, 2.470179d0, &
-                      4.567288d0, 1.d8/)
+      tmp1d(:) = (/0.6445072_dp, 1.391433_dp, 2.470179_dp, &
+                   4.567288_dp, 1.0e8_dp/)
+      tmp2d(1, :) = (/0._dp, 0.6445072_dp, 1.391433_dp, &
+                      2.470179_dp, 4.567288_dp/)
+      tmp2d(2, :) = (/0.6445072_dp, 1.391433_dp, 2.470179_dp, &
+                      4.567288_dp, 1.0e8_dp/)
       kaxid = cmor_axis( &
         table=trim(tabledir)//trim(table), &
         table_entry='iceband', &
