@@ -1,5 +1,5 @@
 &experiment
- casename               = 'n1850.ne16pg3_tn14.noresm3_0_beta09.Run5.2026-01-08'
+ casename               = 'NOIIAJRARYF8485OC_TL319_tn14_CMIP7_diag_20260204',
  osubdir                = 'DUMMY-MODEL/piControl/v20260310'
  experiment_id          = 'piControl'
  sub_experiment_id      = 'none',
@@ -15,8 +15,8 @@
  physics_index          = 'p1',
  forcing_index          = 'f1',
  branch_time            = 0.,
- year1                  = 251,
- yearn                  = 252,
+ year1                  = 051,
+ yearn                  = 051,
  month1                 = 1,
  monthn                 = 12,
  exprefyear             = 1,

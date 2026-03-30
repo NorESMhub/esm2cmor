@@ -211,6 +211,8 @@ contains
 
     isloop = .true.
 
+    !write(*,*) 'scan_file loop'
+
     do while (isloop)
       if (present(reset)) then
         call get_file_info(ibasedir, casename, itag, fnm, year1, month1, &
@@ -222,16 +224,18 @@ contains
           mbnd, year, month)
       end if
 
-      if (len_trim(fnm) == 0) then
-        if (verbose) write(*, *) &
-          'WARNING: no file found for case dir|tag|year1|month1|yearn|monthn: ', &
-          trim(ibasedir) // '/' // trim(casename), '|', trim(itag), '|', &
-          year1, '|', month1, '|', yearn, '|', monthn
-      !else
-        
-        !isloop = .false.
-        !end if
-      end if
+      !write(*,*) 'scan_files, fnm:',trim(fnm)
+
+      !if (len_trim(fnm) == 0) then
+        !if (verbose) write(*, *) &
+          !'WARNING: no file found for case dir|tag|year1|month1|yearn|monthn: ', &
+          !trim(ibasedir) // '/' // trim(casename), '|', trim(itag), '|', &
+          !year1, '|', month1, '|', yearn, '|', monthn
+      !!else
+       ! 
+        !!isloop = .false.
+        !!end if
+      !end if
       isloop = .false.
     end do
 
@@ -438,22 +442,35 @@ contains
 
     integer :: y1, m1, y2, m2, ndays, ndayslast
 
+    if (tval < 0.) return
+
+    ndayslast = 0
     ndays = 0
     y2 = yref
     m2 = 1
+    year = yref
+    month = 1
+
+
     do while (ndays < tval)
       ndayslast = ndays
-      call nccaln(calendar, yref, 1, 1, y2, m2, 1, ndays)
-      year = y1
-      month = m1
-      y1 = y2
-      m1 = m2
+
+      !year = y1
+      !month = m1
+      !y1 = y2
+      !m1 = m2
+
+      year = y2
+      month = m2
+      !y1 = y2
+      !m1 = m2
       if (m2 == 12) then
         y2 = y2 + 1
         m2 = 1
       else
         m2 = m2 + 1
       end if
+      call nccaln(calendar, yref, 1, 1, y2, m2, 1, ndays)
     end do
     tbnd(1) = ndayslast
     tbnd(2) = ndays

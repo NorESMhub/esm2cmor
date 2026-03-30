@@ -34,17 +34,30 @@ program main
         //trim('filelist_'//casename)//trim(membertag)
       if (len_trim(membertag) .gt. 0) then
         call SYSTEM('find '//trim(ibasedir)//'/'//trim(casename) &
-          //' -path "*/hist/*" -name "*.*_'//trim(membertag) &
+          //'/{ice,ocn} ' &
+          //'-mindepth 2 -maxdepth 2 -path "*/hist/*" -name "*.*_'//trim(membertag) &
           //'.h*.nc" | sort > '//trim('filelist_'//casename) &
           //trim(membertag))
       else
+!       call SYSTEM('find '//trim(ibasedir)//'/'//trim(casename) &
+!         //'/{atm,ice,lnd,ocn,rof}' &
+!         //' \( -path "*/hist/*" -or ' &
+!         //'    -path "*/hist_true/*" \)' &
         call SYSTEM('find '//trim(ibasedir)//'/'//trim(casename) &
-          //'/{atm,ice,lnd,ocn,rof}' &
-          //' \( -path "*/hist/*" -or ' &
-          //'    -path "*/hist_true/*" \)' &
+          //'/{ice,ocn} ' &
+          //'-mindepth 2 -maxdepth 2' &
+          //' -path "*/hist/*"' &
           //' -name "*.nc"' &
           //' | sort > '//trim('filelist_'//casename))
+
+        write(*,*) 'find '//trim(ibasedir)//'/'//trim(casename) &
+          //'/{ice,ocn} ' &
+          //'-mindepth 2 -maxdepth 2 ' &
+          //'-path "*/hist/*" ' &
+          //'-name "*.nc" ' &
+          //'| sort > '//trim('filelist_'//casename)
       end if
+
     else
       write(*,*) 'get_file_info: read existing file list ' &
         //trim('filelist_'//casename)//trim(membertag)

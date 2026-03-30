@@ -4,6 +4,6 @@
  griddata      = '/projects/NS9560K/cmor/griddata',
  tabledir      = '/diagnostics/CMOR/esm2cmor/tables',
  createsubdirs = .false.,
- forcefilescan = .false.,  
+ forcefilescan = .true.,  
  verbose       = .true.,
 /

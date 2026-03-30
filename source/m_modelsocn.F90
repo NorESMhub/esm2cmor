@@ -73,8 +73,8 @@ contains
 
     implicit none
 
-    !logical :: badrec, last, first
-    logical :: badrec
+    logical :: badrec, last, first
+    !logical :: badrec
     !integer :: k, m, n, nrec
     integer :: k, m, n
     integer :: romon = 365*10*2
@@ -161,9 +161,19 @@ contains
     ! Read grid information from input files
     !write(*, *) 'Read grid information from input files'
     call scan_files(reset=.true.)
-    write(*,*) 'fnm in m_ocn:',trim(fnm)
+
+    if (len_trim(fnm) == 0) then
+        if (verbose) write(*, *) &
+          'WARNING: no file found for case dir|tag|year1|month1|yearn|monthn: ', &
+          trim(ibasedir) // '/' // trim(casename), '|', trim(itag), '|', &
+          year1, '|', month1, '|', yearn, '|', monthn
+      !else
+
+        !isloop = .false.
+        !end if
+        cycle
+      end if
     !if (len_trim(fnm) == 0) return
-    if (len_trim(fnm) == 0) cycle
     call read_gridinfo_ifile
     !stop 'l168'
 
@@ -196,7 +206,7 @@ contains
 
 !     ! Check if input variable is present
       !if (len_trim(pomon) == 0) call scan_files(reset=.true.)
-      call scan_files(reset=.true.)
+      ! call scan_files(reset=.true.)
       !if (.not. var_in_file(fnm, ivnm)) cycle
 
       write(*,*) 'cvnm:',trim(cvnm)
@@ -252,9 +262,9 @@ contains
         m = m + 1
 
 !       ! Open output file
+        !write(*,*) 'm:',m
         if (mod(m - 1, romon) == 0) then
             call open_ofile(ivnm,ovnm)
-            !write(*,*) 'm:',m
         end if
 
 !       ! Read variable into buffer (average if necessary)
@@ -265,6 +275,8 @@ contains
         !do
           !if (len_trim(pomon) == 0) call scan_files(reset=.false.)
           call scan_files(reset=.false.)
+          !write(*,*) 'fnm:',trim(fnm)
+          !write(*,*) 'rec:',rec
           if (rec == 0) exit
           !write(*,*) 'rec:',rec
           !if (rec == 0) then
@@ -282,8 +294,8 @@ contains
             !exit
           !end if
           !write(*,*) 'last:',last
+          !if (last) exit
         !end do
-        !if (last) exit
         !fld = fldacc / real(nrec)
 
         !! for monthly
@@ -2037,8 +2049,8 @@ contains
         .or. index(special, 'dpint') > 0 &
         .or. index(special, 'dpavg') > 0 &
         .or. index(special, 'omega2z') > 0) then
-        write(*, *) 'case l2594'
-        write(*, *) 'vunits:',trim(vunits)
+        !write(*, *) 'case l2594'
+        !write(*, *) 'vunits:',trim(vunits)
         varid = cmor_variable( &
           table=trim(tablepath), &
           table_entry=trim(ovnm), &
