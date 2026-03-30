@@ -9,7 +9,7 @@ contains
 
   ! -----------------------------------------------------------------
 
-  subroutine json_get_keys(fnm,path,keys,lfound,separator)
+  subroutine json_get_keys(fnm,path,keys,separator,lfound)
 
     character(len=*),                                  intent(in)  :: fnm, path
     character(len=slenmax), dimension(:), allocatable, intent(out) :: keys
@@ -62,7 +62,7 @@ contains
 
   ! -----------------------------------------------------------------
 
-  subroutine json_get_value(fnm, path, str, lfound, separator)
+  subroutine json_get_value_string(fnm, path, str, separator, lfound)
 
     character(len=*),              intent(in)  :: fnm, path
     character(len=*), intent(out) :: str
@@ -93,10 +93,10 @@ contains
 
     if (present(lfound)) lfound = found
 
-  end subroutine json_get_value
+  end subroutine json_get_value_string
   ! -----------------------------------------------------------------
 
-  subroutine json_get_array_string(fnm,path,array,lfound,separator)
+  subroutine json_get_array_string(fnm,path,array,separator,lfound)
 
     character(len=*),                                  intent(in)  :: fnm, path
     character(len=slenmax), dimension(:), allocatable, intent(out) :: array
@@ -124,7 +124,7 @@ contains
 
   ! -----------------------------------------------------------------
 
-  subroutine json_get_array_real(fnm,path,array,lfound,separator)
+  subroutine json_get_array_real(fnm,path,array,separator,lfound)
 
     character(len=*),                        intent(in)  :: fnm, path
     real(kind=8), dimension(:), allocatable, intent(out) :: array
@@ -152,7 +152,7 @@ contains
 
   ! -----------------------------------------------------------------
 
-  subroutine json_get_vertcoord(tnm, vnm, str, lfound, separator)
+  subroutine json_get_vertcoord(tnm, vnm, str, separator, lfound)
 
     character(len=*), intent(in) :: tnm, vnm
     character(len=*), intent(out) :: str
@@ -202,7 +202,7 @@ contains
 
   ! -----------------------------------------------------------------
 
-  subroutine json_get_timecoord(tnm, vnm, str, lfound, separator)
+  subroutine json_get_timecoord(tnm, vnm, str, separator, lfound)
 
     !use json_module
     !implicit none
@@ -251,7 +251,7 @@ contains
 
   ! -----------------------------------------------------------------
 
-  subroutine json_get_vunits(tnm, vnm, units, lfound, separator)
+  subroutine json_get_units(tnm, vnm, units, separator, lfound)
 
     !use json_module
     !implicit none
@@ -281,7 +281,7 @@ contains
 
     if (present(lfound)) lfound = found
 
-  end subroutine json_get_vunits
+  end subroutine json_get_units
 
 
 ! ! -----------------------------------------------------------------

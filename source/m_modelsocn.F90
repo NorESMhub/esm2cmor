@@ -194,7 +194,7 @@ contains
 !     ! Check if vertical coordinate required
       !write(*, *) 'l381,tabledir/table:', trim(tabledir)//trim(table)
       !write(*, *) 'ovnm:', trim(ovnm)
-      call json_get_vertcoord(trim(tabledir)//trim(table), bvnm, zcoord,found)
+      call json_get_vertcoord(trim(tabledir)//trim(table), bvnm, zcoord,lfound=found)
       !write(*, *) 'l382,zcoord:', trim(zcoord)
 
 !     ! Choose history file
@@ -212,12 +212,12 @@ contains
       write(*,*) 'cvnm:',trim(cvnm)
       call json_get_array_string(trim(tabledir_mapping)//trim(table_mapping),&
         'variable_entry:'//trim(cvnm)//':sources:vars',&
-       vars,found,separator=':') 
+       vars, separator=':',lfound=found) 
       !write(*,*) 'vars:',vars
       if (found) then
         call json_get_array_real(trim(tabledir_mapping)//trim(table_mapping),&
           'variable_entry:'//trim(cvnm)//':sources:facs',&
-         facs,found,separator=':') 
+         facs,separator=':', lfound=found) 
         !write(*,*) 'size(vars):',size(vars)
         !write(*,*) 'vars:',vars
         do k =1, size(vars)
@@ -226,9 +226,9 @@ contains
         end do
         ivnm = vars(1)
       else
-        call json_get_value(trim(tabledir_mapping)//trim(table_mapping),&
+        call json_get_value_string(trim(tabledir_mapping)//trim(table_mapping),&
           'variable_entry:'//trim(cvnm)//':original_name',&
-          ivnm,found,':') 
+          ivnm,separator=':',lfound=found) 
         if (.not. found) cycle
         !write(*,*) 'original_name:',trim(ivnm)
         !ivnm = value_json
@@ -244,9 +244,9 @@ contains
         !end do
         !!ivnm = vars(1)
       !else
-        !call json_get_value(trim(tabledir_mapping)//trim(table_mapping),&
+        !call json_get_value_string(trim(tabledir_mapping)//trim(table_mapping),&
           !'variable_entry:'//trim(cvnm)//':original_name',&
-          !ivnm,found,':') 
+          !ivnm,separator=':',lfound=found) 
         !if (.not. found) cycle
         !!write(*,*) 'original_name:',trim(ivnm)
         !!ivnm = value_json
@@ -472,7 +472,7 @@ contains
     !table='variable_mapping_NorESM3_to_CMIP7.json'
     call json_get_keys(trim(tabledir_mapping)//trim(table_mapping),&
         'variable_entry:'//cvnm//':preproc',&
-        preproc,found)
+        preproc,separator=':',lfound=found)
     !write(*,*) 'preproc:'
     !write(*,*) 'len_trim(preproc):',len_trim(preproc)
     !write(*,*) 'size(preproc):',size(preproc)
@@ -481,9 +481,9 @@ contains
 
     do n=1,size(preproc)
       preproc_key = preproc(n)
-      call json_get_value(trim(tabledir_mapping)//trim(table_mapping),&
+      call json_get_value_string(trim(tabledir_mapping)//trim(table_mapping),&
           'variable_entry:'//cvnm//':preproc:'//preproc_key,&
-          preproc_value,found)
+          preproc_value,lfound=found)
       if (found) then
       !if (len_trim(preproc_value) >0 ) then
         write(*,*) trim(preproc(n)),":",trim(preproc_value)
@@ -693,7 +693,7 @@ contains
 
     call json_get_keys(trim(tabledir_mapping)//trim(table_mapping),&
         'variable_entry:'//cvnm//':preproc',&
-        preproc,found)
+        preproc,separator=':',lfound=found)
     !write(*,*) 'preproc:'
     !write(*,*) 'len_trim(preproc):',len_trim(preproc)
     !write(*,*) 'size(preproc):',size(preproc)
@@ -702,9 +702,9 @@ contains
 
     do n=1,size(preproc)
       preproc_key = preproc(n)
-      call json_get_value(trim(tabledir_mapping)//trim(table_mapping),&
+      call json_get_value_string(trim(tabledir_mapping)//trim(table_mapping),&
           'variable_entry:'//cvnm//':preproc:'//preproc_key,&
-          preproc_value,found)
+          preproc_value,separator=':',lfound=found)
       if (found) then
       !if (len_trim(preproc_value) >0 ) then
         write(*,*) trim(preproc(n)),":",trim(preproc_value)
