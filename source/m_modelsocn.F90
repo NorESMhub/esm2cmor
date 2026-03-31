@@ -61,7 +61,7 @@ module m_modelsocn
   ! Auxillary variables for special operations
   character(len=slenmax), save                          :: str1, str2
 
-    character(len=slenmax), dimension(:), allocatable  :: vars,preproc
+    character(len=slenmax), dimension(:), allocatable  :: vars,preproc_keys
     integer, dimension(:), allocatable                 :: idx
     real(r8), dimension(:), allocatable            :: facs
 
@@ -185,8 +185,7 @@ contains
       !call json_get_vunits('/diagnostics/CMOR/esm2cmor/tables/CMIP7_ocean.json','tos_tavg-u-hxy-sea',vunits)
       !call json_get_value(trim(tabledir)//trim(table), &
            !'variable_entry.' // trim(ovnm) // '.units',vunits,found)
-      call json_get_value(trim(tabledir)//trim(table), &
-           'variable_entry.' // trim(ovnm) // '.units',vunits)
+      call json_get_units(trim(tabledir)//trim(table), trim(ovnm),vunits)
       !write(*,*) 'get_vunits:',trim(vunits)
 !     vpositive = ' '
 !     vcomment = ' '
@@ -210,14 +209,17 @@ contains
       !if (.not. var_in_file(fnm, ivnm)) cycle
 
       write(*,*) 'cvnm:',trim(cvnm)
-      call json_get_array_string(trim(tabledir_mapping)//trim(table_mapping),&
-        'variable_entry:'//trim(cvnm)//':sources:vars',&
-       vars, separator=':',lfound=found) 
-      !write(*,*) 'vars:',vars
+      !call json_get_array_string(trim(tabledir_mapping)//trim(table_mapping),&
+        !'variable_entry:'//trim(cvnm)//':sources:vars',&
+       !vars, separator=':',lfound=found) 
+      call json_get_vars(trim(tabledir_mapping)//trim(table_mapping),&
+                trim(cvnm), vars, lfound=found) 
       if (found) then
-        call json_get_array_real(trim(tabledir_mapping)//trim(table_mapping),&
-          'variable_entry:'//trim(cvnm)//':sources:facs',&
-         facs,separator=':', lfound=found) 
+        !call json_get_array_real(trim(tabledir_mapping)//trim(table_mapping),&
+          !'variable_entry:'//trim(cvnm)//':sources:facs',&
+         !facs,separator=':', lfound=found) 
+      call json_get_facs(trim(tabledir_mapping)//trim(table_mapping),&
+                trim(cvnm), facs, lfound=found) 
         !write(*,*) 'size(vars):',size(vars)
         !write(*,*) 'vars:',vars
         do k =1, size(vars)
@@ -226,9 +228,11 @@ contains
         end do
         ivnm = vars(1)
       else
-        call json_get_value_string(trim(tabledir_mapping)//trim(table_mapping),&
-          'variable_entry:'//trim(cvnm)//':original_name',&
-          ivnm,separator=':',lfound=found) 
+        !call json_get_val_str(trim(tabledir_mapping)//trim(table_mapping),&
+          !'variable_entry:'//trim(cvnm)//':original_name',&
+          !ivnm,separator=':',lfound=found) 
+        call json_get_original_name(trim(tabledir_mapping)//trim(table_mapping), &
+                trim(cvnm), ivnm, lfound=found) 
         if (.not. found) cycle
         !write(*,*) 'original_name:',trim(ivnm)
         !ivnm = value_json
@@ -244,7 +248,7 @@ contains
         !end do
         !!ivnm = vars(1)
       !else
-        !call json_get_value_string(trim(tabledir_mapping)//trim(table_mapping),&
+        !call json_get_val_str(trim(tabledir_mapping)//trim(table_mapping),&
           !'variable_entry:'//trim(cvnm)//':original_name',&
           !ivnm,separator=':',lfound=found) 
         !if (.not. found) cycle
@@ -362,7 +366,7 @@ contains
 
     if (allocated(vars)) deallocate(vars)
     if (allocated(facs)) deallocate(facs)
-    if (allocated (preproc)) deallocate(preproc)
+    if (allocated (preproc_keys)) deallocate(preproc_keys)
 
     end do main_loop
 
@@ -463,30 +467,37 @@ contains
 
     integer :: i, j, k, n
 
-    character(len=slenmax), dimension(:), allocatable  :: preproc
-    character(len=:), allocatable  :: preproc_key, preproc_value
+    character(len=slenmax), dimension(:), allocatable  :: preproc_keys
+    character(len=slenmax)        :: preproc_key, preproc_val
 
     lsumz = .false.
     !str2 = special
       !tabledir='/diagnostics/CMOR/esm2cmor/recipes/template/'
     !table='variable_mapping_NorESM3_to_CMIP7.json'
-    call json_get_keys(trim(tabledir_mapping)//trim(table_mapping),&
-        'variable_entry:'//cvnm//':preproc',&
-        preproc,separator=':',lfound=found)
+    !call json_get_keys(trim(tabledir_mapping)//trim(table_mapping),&
+        !'variable_entry:'//trim(cvnm)//':preproc',&
+        !preproc_keys,separator=':',lfound=found)
+    call json_get_preproc_keys(trim(tabledir_mapping)//trim(table_mapping),&
+        trim(cvnm), preproc_keys, lfound=found)
+
     !write(*,*) 'preproc:'
     !write(*,*) 'len_trim(preproc):',len_trim(preproc)
     !write(*,*) 'size(preproc):',size(preproc)
 
     if (.not. found) return
+    write(*,*) 'preproc_keys:', preproc_keys
 
-    do n=1,size(preproc)
-      preproc_key = preproc(n)
-      call json_get_value_string(trim(tabledir_mapping)//trim(table_mapping),&
-          'variable_entry:'//cvnm//':preproc:'//preproc_key,&
-          preproc_value,lfound=found)
+    do n=1,size(preproc_keys)
+      write(*,*) 'n:',n
+      preproc_key = preproc_keys(n)
+      write(*,*) 'preproc_key:', trim(preproc_key)
+      !call json_get_val_str(trim(tabledir_mapping)//trim(table_mapping),&
+          !'variable_entry:'//trim(cvnm)//':preproc:'//trim(preproc_key),&
+          !preproc_val,lfound=found)
+      call json_get_preproc_val(trim(tabledir_mapping)//trim(table_mapping),&
+          trim(cvnm),trim(preproc_key), preproc_val, lfound=found)
       if (found) then
-      !if (len_trim(preproc_value) >0 ) then
-        write(*,*) trim(preproc(n)),":",trim(preproc_value)
+        write(*,*) trim(preproc_key),":",trim(preproc_val)
       else
         cycle
       end if
@@ -499,7 +510,7 @@ contains
         !str1 = str2
       !end if
       !select case (str1)
-      select case (preproc_value)
+      select case (preproc_val)
 
         ! atm to Pa
       case ('atm2Pa')
@@ -677,6 +688,8 @@ contains
       !if (str1 == str2) exit
     end do
 
+    if (allocated(preproc_keys)) deallocate(preproc_keys)
+
   end subroutine special_pre
 
   ! -----------------------------------------------------------------
@@ -688,26 +701,33 @@ contains
     integer         :: i, j, k, n
     real(r8)    :: r, rd, p, ptoptmp, pbottmp, sref = 35.0
 
-    character(len=slenmax), dimension(:), allocatable  :: preproc
-    character(len=:), allocatable  :: preproc_key, preproc_value
+    !character(len=slenmax), dimension(:), allocatable  :: preproc
+    !character(len=:), allocatable  :: preproc_key, preproc_val
+    character(len=slenmax), dimension(:), allocatable  :: preproc_keys
+    !character(len=:), allocatable  :: preproc_key, preproc_val
+    character(len=slenmax) :: preproc_key, preproc_val
 
-    call json_get_keys(trim(tabledir_mapping)//trim(table_mapping),&
-        'variable_entry:'//cvnm//':preproc',&
-        preproc,separator=':',lfound=found)
+    !call json_get_keys(trim(tabledir_mapping)//trim(table_mapping),&
+        !'variable_entry:'//cvnm//':preproc',&
+        !preproc,separator=':',lfound=found)
+    call json_get_preproc_keys(trim(tabledir_mapping)//trim(table_mapping),&
+        trim(cvnm), preproc_keys, lfound=found)
     !write(*,*) 'preproc:'
     !write(*,*) 'len_trim(preproc):',len_trim(preproc)
     !write(*,*) 'size(preproc):',size(preproc)
 
     if (.not. found) return
 
-    do n=1,size(preproc)
-      preproc_key = preproc(n)
-      call json_get_value_string(trim(tabledir_mapping)//trim(table_mapping),&
-          'variable_entry:'//cvnm//':preproc:'//preproc_key,&
-          preproc_value,separator=':',lfound=found)
+    do n=1,size(preproc_keys)
+      preproc_key = preproc_keys(n)
+      !call json_get_val_str(trim(tabledir_mapping)//trim(table_mapping),&
+          !'variable_entry:'//cvnm//':preproc:'//preproc_key,&
+          !preproc_val,separator=':',lfound=found)
+      call json_get_preproc_val(trim(tabledir_mapping)//trim(table_mapping),&
+          trim(cvnm),trim(preproc_key), preproc_val, lfound=found)
       if (found) then
-      !if (len_trim(preproc_value) >0 ) then
-        write(*,*) trim(preproc(n)),":",trim(preproc_value)
+      !if (len_trim(preproc_val) >0 ) then
+        write(*,*) trim(preproc_key),":",trim(preproc_val)
       else
         cycle
       end if
@@ -720,7 +740,7 @@ contains
       !else
         !str1 = str2
       !end if
-      select case (preproc_value)
+      select case (preproc_val)
 
         ! Compute depth below geoid from dz or pddpo
       case ('dz2zfull')
@@ -1301,6 +1321,8 @@ contains
 
       !if (str1 == str2) exit
     end do
+
+    if (allocated(preproc_keys)) deallocate(preproc_keys)
 
   end subroutine special_post
 
