@@ -5,8 +5,6 @@ module m_namelists
   implicit none
 
   ! Namelist limits
-  !integer, parameter :: rowmax = 200, colmax = 3, lenmax = 200
-  !integer, parameter :: slenmax = 1024, smax = 10
   integer, parameter :: rowmax = 200, slenmax = 1024
 
   ! System namelist
@@ -17,16 +15,12 @@ module m_namelists
 
   ! Model namelist
   character(len=slenmax), save                  :: model_id, institute_id
-  !character(len=slenmax), dimension(smax), save :: institution, source, &
-    !references, contact
   character(len=slenmax), save :: institution, source, references, contact
-  !character(len=(slenmax+1)*smax), save :: institution1, source1, references1, contact1
   character(len=slenmax), save :: tagoyr, tagoyrbgc, tagomon, tagomonbgc, tagoday, &
     tagodaybgc, tagimon, tagiday, tagamon, tagaday, taga6hr, taga6hri, taga3hr, &
     taga3hri, taglmon, taglday, tagl3hr, tagl3hri, taglyr
   character(len=slenmax), save :: secindexfile, ocngridfile, ocninitfile, ocnmertfile, &
     rhotablesuff, atmgridfile, ocnregnfile
-  !logical, save                 :: linebreaks
   character(len=slenmax), save  :: parent_source_id, coordtable, namelist_file_json, &
     atmgrid, atmgrid_label, atmgrid_resolution, ocngrid, ocngrid_label, ocngrid_resolution, &
     icegrid, icegrid_label, icegrid_resolution, lndgrid, lndgrid_label, lndgrid_resolution
@@ -38,7 +32,6 @@ module m_namelists
                     taga3hri, taglmon, taglday, tagl3hr, tagl3hri, taglyr, &
                     secindexfile, ocngridfile, ocninitfile, ocnmertfile, &
                     rhotablesuff, atmgridfile, ocnregnfile, &
-                    !linebreaks, &
                     parent_source_id, coordtable, namelist_file_json, &
                     atmgrid, atmgrid_label, atmgrid_resolution, &
                     ocngrid, ocngrid_label, ocngrid_resolution, &
@@ -48,7 +41,6 @@ module m_namelists
   ! Experiment namelist
   character(len=slenmax), save :: casename, experiment_id, parent_experiment_id, &
     parent_experiment_rip, isubdir, osubdir, membertag
-  !character(len=slenmax), dimension(smax), save :: history, comment, forcing
   character(len=slenmax), save :: history, comment, forcing
   integer, save                                 :: realization, exprefyear, year1, yearn, month1, monthn
   real(r8), save                            :: branch_time

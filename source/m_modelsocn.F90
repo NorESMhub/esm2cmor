@@ -61,7 +61,7 @@ module m_modelsocn
   ! Auxillary variables for special operations
   character(len=slenmax), save                          :: str1, str2
 
-    character(len=slenmax), dimension(:), allocatable  :: vars,preproc_keys
+    character(len=slenmax), dimension(:), allocatable  :: vars
     integer, dimension(:), allocatable                 :: idx
     real(r8), dimension(:), allocatable            :: facs
 
@@ -110,18 +110,9 @@ contains
         k = k + 1
       end if
     end do
-    write(*,*) 'idx:',idx
 
-    write(*,*) 'realms:'
-    !do n = 1, size(idx)
-      !write(*,*) trim(realms(idx(n)))
-    !end do
-
-    !do n = 1, n_variables
     main_loop: do n = 1, size(idx)
       realm = trim(realms(idx(n)))
-      !if (realm /= 'ocean') cycle
-!     !if (skip_variable(n, nomon, domon)) cycle
       if (skip_variable(n, n_variables)) cycle
 
 !     ! Map namelist variables
@@ -133,111 +124,40 @@ contains
 
       call select_ocn_ftag(realm, frequency, itag)
 
-      write(*,*) 'realm:',trim(realm)
-      write(*,*) 'cvnm:',trim(cvnm)
-      write(*,*) 'frequency:',trim(frequency)
-      write(*,*) 'itag:',trim(itag)
+      !write(*, *) 'Read grid information from input files'
+      call scan_files(reset=.true.)
 
+      if (len_trim(fnm) == 0) then
+          if (verbose) write(*, *) &
+            'WARNING: no file found for case dir|tag|year1|month1|yearn|monthn: ', &
+            trim(ibasedir) // '/' // trim(casename), '|', trim(itag), '|', &
+            year1, '|', month1, '|', yearn, '|', monthn
+          cycle
+        end if
+      call read_gridinfo_ifile
 
-      !! STORE file list for each tag
-    ! Read grid information from input files
-    !write(*, *) 'Read grid information from input files'
-    call scan_files(reset=.true.)
-
-    if (len_trim(fnm) == 0) then
-        if (verbose) write(*, *) &
-          'WARNING: no file found for case dir|tag|year1|month1|yearn|monthn: ', &
-          trim(ibasedir) // '/' // trim(casename), '|', trim(itag), '|', &
-          year1, '|', month1, '|', yearn, '|', monthn
-      !else
-
-        !isloop = .false.
-        !end if
-        cycle
-      end if
-    !if (len_trim(fnm) == 0) return
-    call read_gridinfo_ifile
-    !stop 'l168'
-
-
-      !ivnm = 
-!     special = vomon(3, n)
-      !vunits = ' '
-      !call json_get_vunits(trim(tabledir)//trim(table),trim(ovnm),vunits)
-      !call json_get_vunits('/diagnostics/CMOR/esm2cmor/tables/CMIP7_ocean.json','tos_tavg-u-hxy-sea',vunits)
-      !call json_get_value(trim(tabledir)//trim(table), &
-           !'variable_entry.' // trim(ovnm) // '.units',vunits,found)
       call json_get_units(trim(tabledir)//trim(table), trim(ovnm),vunits)
-      !write(*,*) 'get_vunits:',trim(vunits)
-!     vpositive = ' '
-!     vcomment = ' '
 
-!     ! Check if vertical coordinate required
-      !write(*, *) 'l381,tabledir/table:', trim(tabledir)//trim(table)
-      !write(*, *) 'ovnm:', trim(ovnm)
       call json_get_vertcoord(trim(tabledir)//trim(table), bvnm, zcoord,lfound=found)
-      !write(*, *) 'l382,zcoord:', trim(zcoord)
 
-!     ! Choose history file
-!     !if (index(special, 'day2mon') > 0) then
-        !itag = tagoday
-!     !else
-!       itag = tagomon
-!     !end if
-
-!     ! Check if input variable is present
-      !if (len_trim(pomon) == 0) call scan_files(reset=.true.)
-      ! call scan_files(reset=.true.)
-      !if (.not. var_in_file(fnm, ivnm)) cycle
-
-      write(*,*) 'cvnm:',trim(cvnm)
-      !call json_get_array_string(trim(tabledir_mapping)//trim(table_mapping),&
-        !'variable_entry:'//trim(cvnm)//':sources:vars',&
-       !vars, separator=':',lfound=found) 
       call json_get_vars(trim(tabledir_mapping)//trim(table_mapping),&
-                trim(cvnm), vars, lfound=found) 
+                            trim(cvnm), vars, lfound=found) 
       if (found) then
-        !call json_get_array_real(trim(tabledir_mapping)//trim(table_mapping),&
-          !'variable_entry:'//trim(cvnm)//':sources:facs',&
-         !facs,separator=':', lfound=found) 
-      call json_get_facs(trim(tabledir_mapping)//trim(table_mapping),&
-                trim(cvnm), facs, lfound=found) 
-        !write(*,*) 'size(vars):',size(vars)
-        !write(*,*) 'vars:',vars
+        call json_get_facs(trim(tabledir_mapping)//trim(table_mapping),&
+                            trim(cvnm), facs, lfound=found) 
         do k =1, size(vars)
-          !write(*,*) 'vars(k):',trim(vars(k))
           if (.not. var_in_file(fnm, vars(k))) cycle main_loop
         end do
         ivnm = vars(1)
       else
-        !call json_get_val_str(trim(tabledir_mapping)//trim(table_mapping),&
-          !'variable_entry:'//trim(cvnm)//':original_name',&
-          !ivnm,separator=':',lfound=found) 
         call json_get_original_name(trim(tabledir_mapping)//trim(table_mapping), &
                 trim(cvnm), ivnm, lfound=found) 
-        if (.not. found) cycle
-        !write(*,*) 'original_name:',trim(ivnm)
-        !ivnm = value_json
+        if (.not. found) then
+            write(*,*) "ERROR: //"trim(cvnm)//" not found in "//trim(table_mapping)
+            cycle
+        end if
         if (.not. var_in_file(fnm, ivnm)) cycle
       end if
-
-      !!write(*,*) 'facs:',facs
-      !if (found) then
-        !!write(*,*) 'size(facs):',size(facs)
-        !do k =1, size(facs)
-          !!write(*,*) 'facs(k):',trim(facs(k))
-          !if (.not. var_in_file(fnm, vars(k))) cycle main_loop
-        !end do
-        !!ivnm = vars(1)
-      !else
-        !call json_get_val_str(trim(tabledir_mapping)//trim(table_mapping),&
-          !'variable_entry:'//trim(cvnm)//':original_name',&
-          !ivnm,separator=':',lfound=found) 
-        !if (.not. found) cycle
-        !!write(*,*) 'original_name:',trim(ivnm)
-        !!ivnm = value_json
-        !if (.not. var_in_file(fnm, ivnm)) cycle
-      !end if
 
 !     ! Prepare output file
       call special_pre
@@ -248,57 +168,28 @@ contains
         m = m + 1
 
 !       ! Open output file
-        !write(*,*) 'm:',m
         if (mod(m - 1, romon) == 0) then
             call open_ofile(ivnm,ovnm)
         end if
 
 !       ! Read variable into buffer (average if necessary)
         rec = 0
-        !nrec = 0
-        !fldacc = 0.
-        !last = .false.
-        !do
-          !if (len_trim(pomon) == 0) call scan_files(reset=.false.)
-          call scan_files(reset=.false.)
-          !write(*,*) 'fnm:',trim(fnm)
-          !write(*,*) 'rec:',rec
-          if (rec == 0) exit
-          !write(*,*) 'rec:',rec
-          !if (rec == 0) then
-            !last = .true.
-            !exit
-          !end if
-          !nrec = nrec + 1
-          !write(*,*) 'nrec:',nrec
-          !write(*,*) 'fnm:',fnm
-          call read_tslice(rec, badrec, fnm)
-          !fldacc = fldacc + fld
-          !if (index(special, 'day2mon') > 0) then
-            !if (tbnd(2) + 0.5 >= mbnd(2)) exit
-          !else
-            !exit
-          !end if
-          !write(*,*) 'last:',last
-          !if (last) exit
-        !end do
-        !fld = fldacc / real(nrec)
+        call scan_files(reset=.false.)
+        if (rec == 0) exit
+        call read_tslice(rec, badrec, fnm)
 
-        !! for monthly
-      select case (frequency)
-      case('mon')
-        tbnds(:, 1) = mbnd
-        tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
-      case('day')
-        tbnds(1, 1) = tval(1) - 0.5
-        tbnds(2, 1) = tval(1) + 0.5
-      case('yr')
-         tbnds(1, 1) = tval(1) - 365. / 2.
-         tbnds(2, 1) = tval(1) + 365. / 2.
-      end select
-
-        !write(*,*) 'tval:',tval
-        !write(*,*) 'tbnds:',tbnds
+        !! calcluate tval and tbnds
+        select case (frequency)
+        case('mon')
+          tbnds(:, 1) = mbnd
+          tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
+        case('day')
+          tbnds(1, 1) = tval(1) - 0.5
+          tbnds(2, 1) = tval(1) + 0.5
+        case('yr')
+           tbnds(1, 1) = tval(1) - 365. / 2.
+           tbnds(2, 1) = tval(1) + 365. / 2.
+        end select
 
         ! Post processing
         call special_post
@@ -315,40 +206,39 @@ contains
       if (mod(m, romon) > 0) call close_ofile
 
 
-    if (allocated(sigma))          deallocate(sigma)
-    if (allocated(sigmahalf))      deallocate(sigmahalf)
-    if (allocated(sigma_bnds))     deallocate(sigma_bnds)
-    if (allocated(sigmahalf_bnds)) deallocate(sigmahalf_bnds)
+      if (allocated(sigma))          deallocate(sigma)
+      if (allocated(sigmahalf))      deallocate(sigmahalf)
+      if (allocated(sigma_bnds))     deallocate(sigma_bnds)
+      if (allocated(sigmahalf_bnds)) deallocate(sigmahalf_bnds)
 
-    if (allocated(depth))          deallocate(depth)
-    if (allocated(depth_bnds))      deallocate(depth_bnds)
+      if (allocated(depth))          deallocate(depth)
+      if (allocated(depth_bnds))     deallocate(depth_bnds)
 
-    if (allocated(slat))          deallocate(slat)
-    if (allocated(slat_bnds))      deallocate(slat_bnds)
+      if (allocated(slat))           deallocate(slat)
+      if (allocated(slat_bnds))      deallocate(slat_bnds)
 
-    if (allocated(section))          deallocate(section)
-    if (allocated(section1))          deallocate(section1)
+      if (allocated(section))        deallocate(section)
+      if (allocated(section1))       deallocate(section1)
 
-    if (allocated(region))          deallocate(region)
-    if (allocated(region1))          deallocate(region1)
+      if (allocated(region))         deallocate(region)
+      if (allocated(region1))        deallocate(region1)
 
-    deallocate(parea, pmask, pdepth, &
-      plon, plat, bpini, bpinit, &
-      ulon, ulat, vlon, vlat, &
-      plon_crns, plat_crns, &
-      ulon_crns, ulat_crns, &
-      vlon_crns, vlat_crns, &
-      plon_crnsp, plat_crnsp, &
-      ulon_crnsp, ulat_crnsp, &
-      vlon_crnsp, vlat_crnsp, &
-      sealv, xvec, yvec, kvec, pbot, &
-      dzini, sini, tini, &
-      kvechalf, uscaley, vscalex, &
-      udepth, vdepth, basin, stat=status)
+      deallocate(parea, pmask, pdepth, &
+        plon, plat, bpini, bpinit, &
+        ulon, ulat, vlon, vlat, &
+        plon_crns, plat_crns, &
+        ulon_crns, ulat_crns, &
+        vlon_crns, vlat_crns, &
+        plon_crnsp, plat_crnsp, &
+        ulon_crnsp, ulat_crnsp, &
+        vlon_crnsp, vlat_crnsp, &
+        sealv, xvec, yvec, kvec, pbot, &
+        dzini, sini, tini, &
+        kvechalf, uscaley, vscalex, &
+        udepth, vdepth, basin, stat=status)
 
-    if (allocated(vars)) deallocate(vars)
-    if (allocated(facs)) deallocate(facs)
-    if (allocated (preproc_keys)) deallocate(preproc_keys)
+      if (allocated(vars)) deallocate(vars)
+      if (allocated(facs)) deallocate(facs)
 
     end do main_loop
 
@@ -453,29 +343,15 @@ contains
     character(len=slenmax)        :: preproc_key, preproc_val
 
     lsumz = .false.
-    !str2 = special
-      !tabledir='/diagnostics/CMOR/esm2cmor/recipes/template/'
-    !table='variable_mapping_NorESM3_to_CMIP7.json'
-    !call json_get_keys(trim(tabledir_mapping)//trim(table_mapping),&
-        !'variable_entry:'//trim(cvnm)//':preproc',&
-        !preproc_keys,separator=':',lfound=found)
     call json_get_preproc_keys(trim(tabledir_mapping)//trim(table_mapping),&
         trim(cvnm), preproc_keys, lfound=found)
 
-    !write(*,*) 'preproc:'
-    !write(*,*) 'len_trim(preproc):',len_trim(preproc)
-    !write(*,*) 'size(preproc):',size(preproc)
-
     if (.not. found) return
-    !write(*,*) 'preproc_keys:', preproc_keys
 
     do n=1,size(preproc_keys)
       write(*,*) 'n:',n
       preproc_key = preproc_keys(n)
       write(*,*) 'preproc_key:', trim(preproc_key)
-      !call json_get_val_str(trim(tabledir_mapping)//trim(table_mapping),&
-          !'variable_entry:'//trim(cvnm)//':preproc:'//trim(preproc_key),&
-          !preproc_val,lfound=found)
       call json_get_preproc_val(trim(tabledir_mapping)//trim(table_mapping),&
           trim(cvnm),trim(preproc_key), preproc_val, lfound=found)
       if (found) then
@@ -484,14 +360,6 @@ contains
         cycle
       end if
 
-    !do
-      !if (index(str2, ';') > 0) then
-        !str1 = str2(1:index(str2, ';') - 1)
-        !str2 = str2(index(str2, ';') + 1:)
-      !else
-        !str1 = str2
-      !end if
-      !select case (str1)
       select case (preproc_val)
 
         ! atm to Pa
@@ -683,45 +551,23 @@ contains
     integer         :: i, j, k, n
     real(r8)    :: r, rd, p, ptoptmp, pbottmp, sref = 35.0
 
-    !character(len=slenmax), dimension(:), allocatable  :: preproc
-    !character(len=:), allocatable  :: preproc_key, preproc_val
     character(len=slenmax), dimension(:), allocatable  :: postproc_keys
-    !character(len=:), allocatable  :: preproc_key, preproc_val
     character(len=slenmax) :: postproc_key, postproc_val
 
-    !call json_get_keys(trim(tabledir_mapping)//trim(table_mapping),&
-        !'variable_entry:'//cvnm//':postproc',&
-        !postproc,separator=':',lfound=found)
     call json_get_postproc_keys(trim(tabledir_mapping)//trim(table_mapping),&
         trim(cvnm), postproc_keys, lfound=found)
-    !write(*,*) 'postproc:'
-    !write(*,*) 'len_trim(postproc):',len_trim(postproc)
-    !write(*,*) 'size(postproc):',size(postproc)
-
     if (.not. found) return
 
     do n=1,size(postproc_keys)
       postproc_key = postproc_keys(n)
-      !call json_get_val_str(trim(tabledir_mapping)//trim(table_mapping),&
-          !'variable_entry:'//cvnm//':postproc:'//postproc_key,&
-          !postproc_val,separator=':',lfound=found)
       call json_get_postproc_val(trim(tabledir_mapping)//trim(table_mapping),&
           trim(cvnm),trim(postproc_key), postproc_val, lfound=found)
       if (found) then
-      !if (len_trim(postproc_val) >0 ) then
         write(*,*) trim(postproc_key),":",trim(postproc_val)
       else
         cycle
       end if
 
-    !str2 = special
-    !do
-      !if (index(str2, ';') > 0) then
-        !str1 = str2(1:index(str2, ';') - 1)
-        !str2 = str2(index(str2, ';') + 1:)
-      !else
-        !str1 = str2
-      !end if
       select case (postproc_val)
 
         ! Compute depth below geoid from dz or pddpo
@@ -1684,17 +1530,6 @@ contains
     status = nf90_open(fnm, nf90_nowrite, ncid)
     call handle_ncerror(status)
 
-!   call resolve_vnm(slenmax, ivnm, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6, &
-!     fac1, fac2, fac3, fac4, fac5, fac6)
-!   if (verbose) then
-!     write(*, *) 'Resolve input variable term ', trim(ivnm), ' ='
-!     if (len_trim(ivnm1) > 0) write(*, *) ' ', trim(ivnm1), '*', fac1
-!     if (len_trim(ivnm2) > 0) write(*, *) ' + ', trim(ivnm2), '*', fac2
-!     if (len_trim(ivnm3) > 0) write(*, *) ' + ', trim(ivnm3), '*', fac3
-!     if (len_trim(ivnm4) > 0) write(*, *) ' + ', trim(ivnm4), '*', fac4
-!     if (len_trim(ivnm5) > 0) write(*, *) ' + ', trim(ivnm5), '*', fac5
-!     if (len_trim(ivnm6) > 0) write(*, *) ' + ', trim(ivnm6), '*', fac6
-!   end if
     status = nf90_inq_varid(ncid, trim(ivnm), rhid)
     if (status /= nf90_noerr) then
       write(*, *) 'cannot find input variable ', trim(ivnm)
@@ -1779,9 +1614,6 @@ contains
     tablepath = trim(tabledir)//trim(table)
 
     ! Inquire time dimension of output variable
-    !write(*, *) 'tablepath:', trim(tablepath)
-    !write(*, *) 'ovm:', trim(ovnm)
-    !write(*, *) 'vtype:', trim(vtype)
     if (.not. fxflag) call json_get_timecoord(trim(tablepath), ovnm, tcoord)
 
     ! Call CMOR setup
@@ -1845,14 +1677,12 @@ contains
     write(*, *) 'Define horizontal axes'
     if (vtype(1:3) /= 'mer' .and. vtype(1:3) /= 'sec') then
       iaxid = cmor_axis( &
-        !table=trim(tabledir)//trim(tgrids), &
         table=trim(tabledir)//'CMIP7_grids.json', &
         table_entry='i_index', &
         units='1', &
         length=idm, &
         coord_vals=xvec)
       jaxid = cmor_axis( &
-        !table=trim(tabledir)//trim(tgrids), &
         table=trim(tabledir)//'CMIP7_grids.json', &
         table_entry='j_index', &
         units='1', &
@@ -2169,9 +1999,7 @@ contains
 
     implicit none
 
-    !real                    :: fac1, fac2, fac3, fac4, fac5, fac6
     integer                 :: i, j, k
-    !character(len=slenmax)  :: coord, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
     character(len=slenmax)  :: coord
 
     ! Open input file
@@ -2196,8 +2024,6 @@ contains
       end do
     end if
 
-    !call resolve_vnm(slenmax, ivnm, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6, &
-      !fac1, fac2, fac3, fac4, fac5, fac6)
     fld = 0.
 
     if (allocated(vars)) then
@@ -2212,11 +2038,6 @@ contains
       fld2 = fld
       fld = 0.
     end if
-    !call add_fixed(ivnm2, fac2, ncid)
-    !call add_fixed(ivnm3, fac3, ncid)
-    !call add_fixed(ivnm4, fac4, ncid)
-    !call add_fixed(ivnm5, fac5, ncid)
-    !call add_fixed(ivnm6, fac6, ncid)
 
     status = nf90_close(ncid)
     call handle_ncerror(status)
@@ -2229,13 +2050,11 @@ contains
 
     implicit none
 
-    !real                            :: fac1, fac2, fac3, fac4, fac5, fac6
     integer, intent(in)             :: rec
     logical, intent(out)            :: badrec
     character(len=*), intent(in), optional  :: fname
     integer, save                   :: fid
     integer                         :: i, j, k, rec1
-    !character(len=slenmax)          :: ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6
 
     ! Exception for fill day
     rec1 = max(rec, 1)
@@ -2300,18 +2119,14 @@ contains
       end if
     end if
 
-    !call resolve_vnm(slenmax, ivnm, ivnm1, ivnm2, ivnm3, ivnm4, ivnm5, ivnm6, &
-      !fac1, fac2, fac3, fac4, fac5, fac6)
     if (index(special, '2rho') > 0 .or. index(special, '2zoss') > 0 .or. &
       index(special, 'strmf') > 0 .or. index(special, 'Xfield2') > 0 .or. &
       index(special, 'Dfield2') > 0 .or. index(special, 'dpint') > 0 .or. &
       index(special, 'dpavg') > 0) then
       fld = 0.
-      !call add_tslice(ivnm2, fac2, rec1, fid)
       call add_tslice(vars(2), facs(2), rec1, fid)
       fld2 = fld
       fld = 0.
-      !call add_tslice(ivnm1, fac1, rec1, fid)
       call add_tslice(vars(1), facs(1), rec1, fid)
       if (index(special, 'strmf') > 0) then
         fldtmp = 0.
@@ -2327,12 +2142,6 @@ contains
       else
           call add_tslice(ivnm, 1.0, rec1, fid)
       end if
-        !call add_tslice(ivnm1, fac1, rec1, fid)
-      !call add_tslice(ivnm2, fac2, rec1, fid)
-      !call add_tslice(ivnm3, fac3, rec1, fid)
-      !call add_tslice(ivnm4, fac4, rec1, fid)
-      !call add_tslice(ivnm5, fac5, rec1, fid)
-      !call add_tslice(ivnm6, fac6, rec1, fid)
     end if
 
     ! Read sea level height if necessary
@@ -2650,10 +2459,6 @@ contains
             time_vals=tval, &
             time_bnds=tbnds)
         else
-          !write(*,*) 'write tslice'
-          !write(*,*) 'tval:',tval
-          !write(*,*) 'tnbds:',tbnds
-          !write(*,*) 'shape fld:',shape(fld)
           error_flag = cmor_write( &
             var_id=varid, &
             data=fld, &
