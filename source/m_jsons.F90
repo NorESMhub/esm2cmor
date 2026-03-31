@@ -297,7 +297,7 @@ contains
     character(len=slenmax), dimension(:), allocatable, intent(out) :: keys
     logical, intent(out), optional :: lfound
 
-    call json_get_keys(trim(fnm),'variable_entry:'//trim(vnm)//':preproc', keys, &
+    call json_get_keys(trim(fnm),'variable_entry:'//trim(vnm)//':preprocs', keys, &
         separator=':',lfound=lfound)
 
   end subroutine json_get_preproc_keys
@@ -309,10 +309,34 @@ contains
     character(len=*), intent(out) :: val
     logical, intent(out), optional :: lfound
 
-    call json_get_val_str(tnm,'variable_entry:'//trim(vnm)//':preproc:'//trim(key), &
-        val, separator=':', lfound=lfound)
+    call json_get_val_str(tnm,'variable_entry:'//trim(vnm)//':preprocs:' &
+        //trim(key), val, separator=':', lfound=lfound)
 
   end subroutine json_get_preproc_val
+
+! -----------------------------------------------------------------
+  subroutine json_get_postproc_keys(fnm, vnm, keys, lfound)
+
+    character(len=*),                                  intent(in)  :: fnm, vnm
+    character(len=slenmax), dimension(:), allocatable, intent(out) :: keys
+    logical, intent(out), optional :: lfound
+
+    call json_get_keys(trim(fnm),'variable_entry:'//trim(vnm)//':postprocs', keys, &
+        separator=':',lfound=lfound)
+
+  end subroutine json_get_postproc_keys
+
+  ! -----------------------------------------------------------------
+  subroutine json_get_postproc_val(tnm, vnm, key, val, lfound)
+
+    character(len=*), intent(in)  :: tnm, vnm, key
+    character(len=*), intent(out) :: val
+    logical, intent(out), optional :: lfound
+
+    call json_get_val_str(tnm,'variable_entry:'//trim(vnm)//':postprocs:' &
+        //trim(key), val, separator=':', lfound=lfound)
+
+  end subroutine json_get_postproc_val
 
 ! ! -----------------------------------------------------------------
 

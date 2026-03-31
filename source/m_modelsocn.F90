@@ -703,31 +703,31 @@ contains
 
     !character(len=slenmax), dimension(:), allocatable  :: preproc
     !character(len=:), allocatable  :: preproc_key, preproc_val
-    character(len=slenmax), dimension(:), allocatable  :: preproc_keys
+    character(len=slenmax), dimension(:), allocatable  :: postproc_keys
     !character(len=:), allocatable  :: preproc_key, preproc_val
-    character(len=slenmax) :: preproc_key, preproc_val
+    character(len=slenmax) :: postproc_key, postproc_val
 
     !call json_get_keys(trim(tabledir_mapping)//trim(table_mapping),&
-        !'variable_entry:'//cvnm//':preproc',&
-        !preproc,separator=':',lfound=found)
-    call json_get_preproc_keys(trim(tabledir_mapping)//trim(table_mapping),&
-        trim(cvnm), preproc_keys, lfound=found)
-    !write(*,*) 'preproc:'
-    !write(*,*) 'len_trim(preproc):',len_trim(preproc)
-    !write(*,*) 'size(preproc):',size(preproc)
+        !'variable_entry:'//cvnm//':postproc',&
+        !postproc,separator=':',lfound=found)
+    call json_get_postproc_keys(trim(tabledir_mapping)//trim(table_mapping),&
+        trim(cvnm), postproc_keys, lfound=found)
+    !write(*,*) 'postproc:'
+    !write(*,*) 'len_trim(postproc):',len_trim(postproc)
+    !write(*,*) 'size(postproc):',size(postproc)
 
     if (.not. found) return
 
-    do n=1,size(preproc_keys)
-      preproc_key = preproc_keys(n)
+    do n=1,size(postproc_keys)
+      postproc_key = postproc_keys(n)
       !call json_get_val_str(trim(tabledir_mapping)//trim(table_mapping),&
-          !'variable_entry:'//cvnm//':preproc:'//preproc_key,&
-          !preproc_val,separator=':',lfound=found)
-      call json_get_preproc_val(trim(tabledir_mapping)//trim(table_mapping),&
-          trim(cvnm),trim(preproc_key), preproc_val, lfound=found)
+          !'variable_entry:'//cvnm//':postproc:'//postproc_key,&
+          !postproc_val,separator=':',lfound=found)
+      call json_get_postproc_val(trim(tabledir_mapping)//trim(table_mapping),&
+          trim(cvnm),trim(postproc_key), postproc_val, lfound=found)
       if (found) then
-      !if (len_trim(preproc_val) >0 ) then
-        write(*,*) trim(preproc_key),":",trim(preproc_val)
+      !if (len_trim(postproc_val) >0 ) then
+        write(*,*) trim(postproc_key),":",trim(postproc_val)
       else
         cycle
       end if
@@ -740,7 +740,7 @@ contains
       !else
         !str1 = str2
       !end if
-      select case (preproc_val)
+      select case (postproc_val)
 
         ! Compute depth below geoid from dz or pddpo
       case ('dz2zfull')

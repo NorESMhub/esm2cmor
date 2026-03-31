@@ -12,8 +12,8 @@
             "vars": "list of variables which are used to derive the requested CMIP7 variable",
             "facs": "factors that apply to each of the variable"
         },
-        "preproc": "special preprocess before model data ingestion",
-        "postproc": "special postprocess after model data is ingested and before written as NetCDF file"
+        "preprocs": "special preprocess before reading data from file",
+        "postprocs": "special postprocess beore writting data to file"
     },
     "variable_entry": {
         "atmos.ta.tavg-al-hxy-u.mon.glb": {
@@ -54,7 +54,7 @@
                     1.0
                 ]
             },
-            "preproc": {
+            "preprocs": {
                 "units": "kg m-2 s-1",
                 "comment": "sum of lip, sop, eva, rnf, rfi, fmltfz"
             },
@@ -73,7 +73,7 @@
                     0.024399999999999998
                 ]
             },
-            "preproc": {
+            "preprocs": {
                 "comment": "conversion from [mol P/m3] to [kg Chl/m3] using [60 gC/gChl]"
             }
         },
@@ -87,7 +87,7 @@
                     0.024399999999999998
                 ]
             },
-            "preproc": {
+            "preprocs": {
                 "comment": "conversion from [mol P/m3] to [kg Chl/m3] using [60 gC/gChl]"
             }
         },
@@ -106,7 +106,7 @@
                     -0.101325
                 ]
             },
-            "preproc": {
+            "preprocs": {
                 "comment": "dpco2=(pco2-atmco2)*muatm2pa, where muatm2pa=0.101325"
             }
         },
@@ -122,7 +122,7 @@
                     1.0
                 ]
             },
-            "preproc": {
+            "preprocs": {
                 "comment": "(how this is derived?)"
             }
         },
@@ -136,10 +136,10 @@
                     1.464
                 ]
             },
-            "preproc": {
+            "preprocs": {
                 "comment": "vertical integration of detoclvl*122*12/1000"
             },
-            "postproc": {
+            "postprocs": {
                 "sumz": true
             },
             "history": ""
@@ -154,7 +154,7 @@
                     0.101325
                 ]
             },
-            "preproc": {
+            "preprocs": {
                 "comment": "pco2*muatm2pa,where muatm2pa is 0.101325"
             }
         },
@@ -185,7 +185,7 @@
                     1.0
                 ]
             },
-            "postproc": {
+            "postprocs": {
                 "divided by": "aice"
             }
         },
