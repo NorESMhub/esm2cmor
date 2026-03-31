@@ -131,26 +131,8 @@ contains
       ovnm = bvnm
       table = 'CMIP7_'//trim(realm)//'.json'
 
-      select case (frequency)
-      case('mon')
-        if (realm == 'ocean') then
-          itag = tagomon
-        else
-          itag = tagomonbgc
-        end if
-      case('day')
-        if (realm == 'ocean') then
-          itag = tagoday
-        else
-          itag = tagodaybgc
-        endif
-      case('yr')
-        if (realm == 'ocean') then
-          itag = tagoyr
-        else
-          itag = tagoyrbgc
-        end if
-      end select
+      call select_ocn_ftag(realm, frequency, itag)
+
       write(*,*) 'realm:',trim(realm)
       write(*,*) 'cvnm:',trim(cvnm)
       write(*,*) 'frequency:',trim(frequency)
@@ -485,7 +467,7 @@ contains
     !write(*,*) 'size(preproc):',size(preproc)
 
     if (.not. found) return
-    write(*,*) 'preproc_keys:', preproc_keys
+    !write(*,*) 'preproc_keys:', preproc_keys
 
     do n=1,size(preproc_keys)
       write(*,*) 'n:',n
@@ -2683,5 +2665,26 @@ contains
     end if
 
   end subroutine write_tslice
+
+  ! -----------------------------------------------------------------
+
+  subroutine select_ocn_ftag(realm, frequency, itag)
+
+    character(len=*), intent(in) :: realm, frequency
+    character(len=*), intent(out) :: itag
+
+    select case (frequency)
+    case('mon')
+      if (realm == 'ocean') itag = tagomon
+      if (realm == 'oceBgchem') itag = tagomonbgc
+    case('day')
+      if (realm == 'ocean') itag = tagoday
+      if (realm == 'oceBgchem') itag = tagodaybgc
+    case('yr')
+      if (realm == 'ocean') itag = tagoyr
+      if (realm == 'oceBgchem') itag = tagoyrbgc
+    end select
+
+  end subroutine select_ocn_ftag
 
 end module m_modelsocn
