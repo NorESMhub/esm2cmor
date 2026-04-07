@@ -1004,9 +1004,9 @@ contains
     end if
 
     ! Define output dataset
-    call write_namelist_json(icegrid, icegrid_label, icegrid_resolution, ovnm)
-    error_flag = cmor_dataset_json(namelist_file_json)
-    call system('rm '//trim(namelist_file_json))
+    call json_write_attributes(icegrid, icegrid_label, icegrid_resolution, ovnm)
+    error_flag = cmor_dataset_json(json_file_attributes)
+    call system('rm '//trim(json_file_attributes))
 
     ! Define horizontal axes
     iaxid = cmor_axis( &

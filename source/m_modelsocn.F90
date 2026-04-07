@@ -153,7 +153,7 @@ contains
         call json_get_original_name(trim(tabledir_mapping)//trim(table_mapping), &
                 trim(cvnm), ivnm, lfound=found) 
         if (.not. found) then
-            write(*,*) "ERROR: //"trim(cvnm)//" not found in "//trim(table_mapping)
+            write(*,*) "ERROR: "//trim(cvnm)//" not found in "//trim(table_mapping)
             cycle
         end if
         if (.not. var_in_file(fnm, ivnm)) cycle
@@ -1150,7 +1150,7 @@ contains
       !if (str1 == str2) exit
     end do
 
-    if (allocated(preproc_keys)) deallocate(preproc_keys)
+    if (allocated(postproc_keys)) deallocate(postproc_keys)
 
   end subroutine special_post
 
@@ -1669,9 +1669,9 @@ contains
         end if
       end if
     end if
-    call write_namelist_json(grid, grid_label, ocngrid_resolution, ovnm)
-    error_flag = cmor_dataset_json(namelist_file_json)
-    !call system('rm '//trim(namelist_file_json))
+    call json_write_attributes(grid, grid_label, ocngrid_resolution, ovnm)
+    error_flag = cmor_dataset_json(json_file_attributes)
+    !call system('rm '//trim(json_file_attributes))
 
     ! Define horizontal axes
     write(*, *) 'Define horizontal axes'

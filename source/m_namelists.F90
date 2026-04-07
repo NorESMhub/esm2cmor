@@ -21,7 +21,7 @@ module m_namelists
     taga3hri, taglmon, taglday, tagl3hr, tagl3hri, taglyr
   character(len=slenmax), save :: secindexfile, ocngridfile, ocninitfile, ocnmertfile, &
     rhotablesuff, atmgridfile, ocnregnfile
-  character(len=slenmax), save  :: parent_source_id, coordtable, namelist_file_json, &
+  character(len=slenmax), save  :: parent_source_id, coordtable, json_file_attributes, &
     atmgrid, atmgrid_label, atmgrid_resolution, ocngrid, ocngrid_label, ocngrid_resolution, &
     icegrid, icegrid_label, icegrid_resolution, lndgrid, lndgrid_label, lndgrid_resolution
 
@@ -32,7 +32,7 @@ module m_namelists
                     taga3hri, taglmon, taglday, tagl3hr, tagl3hri, taglyr, &
                     secindexfile, ocngridfile, ocninitfile, ocnmertfile, &
                     rhotablesuff, atmgridfile, ocnregnfile, &
-                    parent_source_id, coordtable, namelist_file_json, &
+                    parent_source_id, coordtable, json_file_attributes, &
                     atmgrid, atmgrid_label, atmgrid_resolution, &
                     ocngrid, ocngrid_label, ocngrid_resolution, &
                     icegrid, icegrid_label, icegrid_resolution, &
@@ -409,101 +409,5 @@ contains
   end function get_free_unit
 
   ! -----------------------------------------------------------------
-
-  subroutine write_namelist_json(grid, grid_label, grid_resolution, varname)
-
-    use json_module
-
-    implicit none
-
-#ifdef MPI
-    include 'mpif.h'
-    integer :: mpirank, mpisize, mpierror
-#endif
-
-    character(len=*), intent(in) :: grid, grid_label, grid_resolution, varname
-    character :: yyyymm1*6, yyyymm2*6, c2*2, r3*3
-    type(json_core) :: json
-    type(json_value), pointer :: p
-
-
-    !write(*,*) 'varname:',trim(varname)
-    call json%initialize()
-    call json%create_object(p, '')
-
-    ! mapped from cmor2
-    call json%add(p, 'outpath', trim(obasedir))
-    call json%add(p, 'experiment_id', trim(experiment_id))
-    call json%add(p, 'institution_id', trim(institute_id))
-    call json%add(p, 'institution', trim(institution))
-    call json%add(p, 'source_id', trim(model_id))
-    call json%add(p, 'source', trim(source))
-    call json%add(p, 'calendar', trim(calendar))
-    call json%add(p, 'realization_index', trim(realization_index))
-    call json%add(p, 'physics_index', trim(physics_index))
-    call json%add(p, 'initialization_index', trim(initialization_index))
-    call json%add(p, 'contact', trim(contact))
-    call json%add(p, 'history', trim(history))
-    call json%add(p, 'comment', trim(comment))
-    call json%add(p, 'references', trim(references))
-    call json%add(p, 'model_id', trim(model_id))
-    call json%add(p, 'run_variant', trim(forcing))
-    call json%add(p, 'branch_time', branch_time)
-    call json%add(p, 'parent_experiment_id', trim(parent_experiment_id))
-    ! new for cmor3
-    call json%add(p, 'forcing_index', trim(forcing_index))
-    call json%add(p, 'parent_variant_label', trim(parent_variant_label))
-    call json%add(p, '_controlled_vocabulary_file', 'cmor-cvs.json')
-    call json%add(p, '_AXIS_ENTRY_FILE', 'CMIP7_coordinate.json')
-    call json%add(p, '_FORMULA_VAR_FILE', 'CMIP7_formula_terms.json')
-    call json%add(p, '_cmip7_option', 1)
-
-    ! required global atrtributes
-    call json%add(p, 'activity_id', trim(activity_id))
-    !!call json%add(p, 'area_label', trim(area_label))
-    call json%add(p, 'source_type', trim(source_type))
-    call json%add(p, 'sub_experiment_id', trim(sub_experiment_id))
-    call json%add(p, 'parent_sub_experiment_id', trim(parent_sub_experiment))
-    call json%add(p, 'parent_mip_era', trim(parent_mip_era))
-    call json%add(p, 'mip_era', trim(mip_era))
-    call json%add(p, 'parent_activity_id', trim(parent_activity_id))
-    call json%add(p, 'parent_source_id', trim(parent_source_id))
-    call json%add(p, 'grid', trim(grid))
-    call json%add(p, 'grid_label', trim(grid_label))
-    call json%add(p, 'nominal_resolution', trim(grid_resolution))
-    call json%add(p, 'branch_method', trim(branch_method))
-    call json%add(p, 'branch_time_in_child', branch_time_in_child)
-    call json%add(p, 'branch_time_in_parent', branch_time_in_parent)
-    call json%add(p, 'parent_time_units', trim(parent_time_units))
-    call json%add(p, 'tracking_prefix', trim(tracking_prefix))
-    call json%add(p, 'output_path_template', &
-      '<activity_id><institution_id><source_id><experiment_id><_member_id><table><variable_id><grid_label><version>')
-    call json%add(p, 'output_file_template', &
-      '<variable_id><table><source_id><experiment_id><_member_id><grid_label>')
-    call json%add(p, 'license_id', 'CC-BY-4.0')
-    call json%add(p, 'archive_id', 'WCRP')
-
-    call json%add(p, 'frequency', trim(frequency))
-    call json%add(p, 'region', 'glb')
-    call json%add(p, 'branded_variable', trim(varname))
-    call json%add(p, 'drs_specs', 'MIP-DRS7')
-
-    write(yyyymm1, '(I4.4,I2.2)') year1, month1
-    write(yyyymm2, '(I4.4,I2.2)') yearn, monthn
-    write(r3, '(I3.3)') realization
-#ifdef MPI
-    call mpi_comm_rank(mpi_comm_world, mpirank, mpierror)
-    write(c2, '(I2.2)') mpirank
-#else
-    c2 = '00'
-#endif
-
-    namelist_file_json = 'namelist_'//trim(casename)//'_'// &
-      trim(varname)//'_'//yyyymm1//'-'//yyyymm2//'_'//r3//'_'//c2//'.json'
-    call json%print(p, namelist_file_json)
-    call json%destroy(p)            ! cleanup
-    !write(*, *) 'json-namelist file: ', trim(namelist_file_json)
-
-  end subroutine write_namelist_json
 
 end module m_namelists

@@ -2274,13 +2274,13 @@ contains
 
     ! Define output dataset
     if (ndims == 1) then
-      call write_namelist_json('global mean or integral', 'gm', &
+      call json_write_attributes('global mean or integral', 'gm', &
         atmgrid_resolution, ovnm)
     else
-      call write_namelist_json(atmgrid, atmgrid_label, &
+      call json_write_attributes(atmgrid, atmgrid_label, &
         atmgrid_resolution, ovnm)
     end if
-    error_flag = cmor_dataset_json(namelist_file_json)
+    error_flag = cmor_dataset_json(json_file_attributes)
 
     ! Define horizontal axes
     write(*, *) 'define horizontal axes'
