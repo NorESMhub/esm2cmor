@@ -22,17 +22,272 @@
         "atmos.tas.tavg-h2m-hxy-u.mon.glb": {
             "original_name": "TREFHT"
         },
+        "ocean.agessc.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "idlagelvl"
+        },
+        "ocean.areacello.ti-u-hxy-u.fx.glb": {
+            "original_name": "parea"
+        },
+        "ocean.basin.ti-u-hxy-u.fx.glb": {
+            "original_name": "region,region_names"
+        },
+        "ocean.deptho.ti-u-hxy-sea.fx.glb": {
+            "original_name": "pdepth"
+        },
         "ocean.diftrblo.tavg-ol-hxy-sea.yr.glb": {
             "original_name": "difintlvl"
         },
+        "ocean.diftrelo.tavg-ol-hxy-sea.yr.glb": {
+            "original_name": "difisolvl"
+        },
+        "ocean.difvho.tavg-ol-hxy-sea.yr.glb": {
+            "original_name": "difvholvl"
+        },
+        "ocean.difvso.tavg-ol-hxy-sea.yr.glb": {
+            "original_name": "difvholvl"
+        },
+        "ocean.dxto.ti-u-hxy-u.fx.glb": {
+            "original_name": "pdx"
+        },
+        "ocean.dxuo.ti-u-hxy-u.fx.glb": {
+            "original_name": "udx"
+        },
+        "ocean.dxvo.ti-u-hxy-u.fx.glb": {
+            "original_name": "vdx"
+        },
+        "ocean.dyto.ti-u-hxy-u.fx.glb": {
+            "original_name": "pdy"
+        },
+        "ocean.dyuo.ti-u-hxy-u.fx.glb": {
+            "original_name": "udy"
+        },
+        "ocean.dyvo.ti-u-hxy-u.fx.glb": {
+            "original_name": "vdy"
+        },
+        "ocean.evspsbl.tavg-u-hxy-ifs.mon.glb": {
+            "original_name": "eva"
+        },
+        "ocean.ficeberg.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "rfi"
+        },
+        "ocean.friver.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "rnf"
+        },
+        "ocean.hfacrossline.tavg-u-ht-sea.mon.glb": {
+            "original_name": "heattr"
+        },
+        "ocean.hfbasin.tavg-u-hyb-sea.mon.glb": {
+            "original_name": "mhflx"
+        },
+        "ocean.hfbasinpadv.tavg-u-hyb-sea.mon.glb": {
+            "original_name": "mhftd,mhfsm"
+        },
+        "ocean.hfbasinpmadv.tavg-u-hyb-sea.mon.glb": {
+            "original_name": "mhftd"
+        },
+        "ocean.hfbasinpmdiff.tavg-u-hyb-sea.mon.glb": {
+            "original_name": "mhfld"
+        },
+        "ocean.hfbasinpsmadv.tavg-u-hyb-sea.mon.glb": {
+            "original_name": "mhfsm"
+        },
+        "ocean.hfds.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "hflx"
+        },
+        "ocean.hfx.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "uhflxlvl"
+        },
+        "ocean.hfx.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "uhflx"
+        },
+        "ocean.hfy.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "vhflxlvl"
+        },
+        "ocean.hfy.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "vhflx"
+        },
+        "ocean.masscello.ti-ol-hxy-sea.fx.glb": {
+            "original_name": "pdepth,depth_bnds,pbot,pdepth"
+        },
+        "ocean.masso.tavg-u-hm-sea.mon.glb": {
+            "original_name": "massgs"
+        },
+        "ocean.mfo.tavg-u-ht-sea.mon.glb": {
+            "original_name": "masstr"
+        },
+        "ocean.mlotst.tavg-u-hxy-sea.day.glb": {
+            "original_name": "mldb04"
+        },
+        "ocean.mlotst.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "mldb04"
+        },
+        "ocean.mlotst.tmax-u-hxy-sea.mon.glb": {
+            "original_name": "mldb04mx"
+        },
+        "ocean.mlotst.tmin-u-hxy-sea.mon.glb": {
+            "original_name": "mldb04mn"
+        },
+        "ocean.mlotstsq.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "mldb04sq"
+        },
+        "ocean.msftbarot.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "btmstr"
+        },
+        "ocean.msftm.tavg-ol-hyb-sea.mon.glb": {
+            "original_name": "mmflxd"
+        },
+        "ocean.msftm.tavg-rho-hyb-sea.mon.glb": {
+            "original_name": "mmflxl"
+        },
+        "ocean.msftmmpa.tavg-ol-hyb-sea.mon.glb": {
+            "original_name": "mmftdd"
+        },
+        "ocean.msftmmpa.tavg-rho-hyb-sea.mon.glb": {
+            "original_name": "mmftdl"
+        },
+        "ocean.msftmsmpa.tavg-ol-hyb-sea.mon.glb": {
+            "original_name": "mmfsmd"
+        },
+        "ocean.obvfsq.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "bfsqlvl"
+        },
+        "ocean.pbo.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "pbot"
+        },
+        "ocean.pso.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "psrf"
+        },
+        "ocean.sf6.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "sf6,sf6lvl"
+        },
+        "ocean.sfacrossline.tavg-u-ht-sea.mon.glb": {
+            "original_name": "salttr"
+        },
+        "ocean.sfdsi.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "sfl"
+        },
+        "ocean.sftof.ti-u-hxy-u.fx.glb": {
+            "original_name": "pmask"
+        },
+        "ocean.sfx.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "usflxlvl"
+        },
+        "ocean.sfx.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "usflx"
+        },
+        "ocean.sfy.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "vsflxlvl"
+        },
+        "ocean.sfy.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "vsflx"
+        },
+        "ocean.siflfwbot.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "fmltfz"
+        },
+        "ocean.so.tavg-ol-hm-sea.mon.glb": {
+            "original_name": "salnga"
+        },
+        "ocean.so.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "salnlvl"
+        },
+        "ocean.sob.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "sbot"
+        },
+        "ocean.sos.tavg-u-hm-sea.mon.glb": {
+            "original_name": "sssga"
+        },
+        "ocean.sos.tavg-u-hxy-sea.day.glb": {
+            "original_name": "sss"
+        },
+        "ocean.sos.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "sss"
+        },
+        "ocean.sossq.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "ssssq"
+        },
+        "ocean.t17d.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "t17d"
+        },
+        "ocean.t20d.tavg-u-hxy-sea.day.glb": {
+            "original_name": "t20d"
+        },
+        "ocean.t20d.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "t20d"
+        },
+        "ocean.tauuo.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "taux"
+        },
+        "ocean.tauvo.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "tauy"
+        },
+        "ocean.thetao.tavg-d2000m-hxy-sea.mon.glb": {
+            "original_name": "templvl;depth_bnds;pdepth;pbot"
+        },
+        "ocean.thetao.tavg-d300m-hxy-sea.mon.glb": {
+            "original_name": "templvl;depth_bnds;pdepth;pbot"
+        },
+        "ocean.thetao.tavg-d700m-hxy-sea.mon.glb": {
+            "original_name": "templvl;depth_bnds;pdepth;pbot"
+        },
+        "ocean.thetao.tavg-ol-hm-sea.mon.glb": {
+            "original_name": "tempga"
+        },
         "ocean.thetao.tavg-ol-hxy-sea.mon.glb": {
-            "original_name": "temp"
+            "original_name": "templvl"
+        },
+        "ocean.thetaot.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "temp;dp"
+        },
+        "ocean.thkcello.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "depth_bnds"
+        },
+        "ocean.thkcello.ti-ol-hxy-sea.fx.glb": {
+            "original_name": "pdepth,depth_bnds"
+        },
+        "ocean.tob.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "tbot"
+        },
+        "ocean.tos.tavg-u-hm-sea.mon.glb": {
+            "original_name": "sstga"
         },
         "ocean.tos.tavg-u-hxy-sea.day.glb": {
             "original_name": "sst"
         },
         "ocean.tos.tavg-u-hxy-sea.mon.glb": {
             "original_name": "sst"
+        },
+        "ocean.tossq.tavg-u-hxy-sea.day.glb": {
+            "original_name": "sstsq"
+        },
+        "ocean.tossq.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "sstsq"
+        },
+        "ocean.umo.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "uflxlvl"
+        },
+        "ocean.uo.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "uvellvl"
+        },
+        "ocean.vmo.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "vflxlvl"
+        },
+        "ocean.vo.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "vvellvl"
+        },
+        "ocean.volcello.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "depth_bnds,parea"
+        },
+        "ocean.volcello.tavg-ol-hxy-sea.yr.glb": {
+            "original_name": "depth_bnds,parea"
+        },
+        "ocean.volcello.ti-ol-hxy-sea.fx.glb": {
+            "original_name": "pdepth,depth_bnds,parea"
+        },
+        "ocean.volo.tavg-u-hm-sea.mon.glb": {
+            "original_name": "volgs"
+        },
+        "ocean.vsf.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "sflx"
         },
         "ocean.wfo.tavg-u-hxy-sea.mon.glb": {
             "original_name": "lip+sop+eva+rnf+rfi+fmltfz",
@@ -59,6 +314,27 @@
                 "comment": "sum of lip, sop, eva, rnf, rfi, fmltfz"
             },
             "history": "sum of lip, sop, eva, rnf, rfi, fmltfz"
+        },
+        "ocean.wmo.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "wflxlvl"
+        },
+        "ocean.wo.tavg-ol-hxy-sea.mon.glb": {
+            "original_name": "wflxlvl,parea"
+        },
+        "ocean.zfullo.tavg-ol-hxy-sea.yr.glb": {
+            "original_name": "dz,sealv"
+        },
+        "ocean.zos.tavg-u-hxy-sea.day.glb": {
+            "original_name": "sealv"
+        },
+        "ocean.zos.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "sealv"
+        },
+        "ocean.zossq.tavg-u-hxy-sea.mon.glb": {
+            "original_name": "slvsq"
+        },
+        "ocean.zostoga.tavg-u-hm-sea.mon.glb": {
+            "original_name": "temp,saln,dp,dz,parea"
         },
         "ocnBgchem.calc.tavg-ol-hxy-sea.mon.glb": {
             "original_name": "calclvl"
