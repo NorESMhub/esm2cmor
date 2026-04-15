@@ -122,6 +122,8 @@ contains
       ovnm = bvnm
       table = 'CMIP7_'//trim(realm)//'.json'
 
+      write(*,*) 'cvnm:',trim(cvnm)
+
       call select_ocn_ftag(realm, frequency, itag)
 
       !write(*, *) 'Read grid information from input files'
@@ -134,7 +136,6 @@ contains
             year1, '|', month1, '|', yearn, '|', monthn
           cycle
         end if
-      call read_gridinfo_ifile
 
       call json_get_units(trim(tabledir)//trim(table), trim(ovnm),vunits)
 
@@ -158,6 +159,8 @@ contains
         end if
         if (.not. var_in_file(fnm, ivnm)) cycle
       end if
+
+      call read_gridinfo_ifile
 
 !     ! Prepare output file
       call special_pre
@@ -206,10 +209,10 @@ contains
       if (mod(m, romon) > 0) call close_ofile
 
 
-      if (allocated(sigma))          deallocate(sigma)
-      if (allocated(sigmahalf))      deallocate(sigmahalf)
-      if (allocated(sigma_bnds))     deallocate(sigma_bnds)
-      if (allocated(sigmahalf_bnds)) deallocate(sigmahalf_bnds)
+!     if (allocated(sigma))          deallocate(sigma)
+!     if (allocated(sigmahalf))      deallocate(sigmahalf)
+!     if (allocated(sigma_bnds))     deallocate(sigma_bnds)
+!     if (allocated(sigmahalf_bnds)) deallocate(sigmahalf_bnds)
 
       if (allocated(depth))          deallocate(depth)
       if (allocated(depth_bnds))     deallocate(depth_bnds)
@@ -1182,32 +1185,32 @@ contains
     status = nf90_inquire_dimension(ncid, dimid, len=jdm)
     call handle_ncerror(status)
 
-    status = nf90_inq_dimid(ncid, 'layer', dimid)
-    if (status == nf90_noerr) then
-      status = nf90_inquire_dimension(ncid, dimid, len=kdm)
-      call handle_ncerror(status)
-      allocate(sigma(kdm), sigmahalf(kdm + 1), sigma_bnds(2, kdm), &
-        sigmahalf_bnds(2, kdm + 1), stat=status)
-      if (status /= 0) stop 'cannot ALLOCATE enough memory (1b)'
-      status = nf90_inq_varid(ncid, 'sigma', rhid)
-      call handle_ncerror(status)
-      status = nf90_get_var(ncid, rhid, sigma)
-      call handle_ncerror(status)
-      sigma_bnds(1, 1) = sigma(1) - 0.5 * (sigma(2) - sigma(1))
-      sigma_bnds(2, 1) = 0.5 * (sigma(2) + sigma(1))
-      do k = 2, kdm - 1
-        sigma_bnds(1, k) = 0.5 * (sigma(k) + sigma(k - 1))
-        sigma_bnds(2, k) = 0.5 * (sigma(k) + sigma(k + 1))
-      end do
-      sigma_bnds(1, kdm) = 0.5 * (sigma(kdm) + sigma(kdm - 1))
-      sigma_bnds(2, kdm) = sigma(kdm) + 0.5 * (sigma(kdm) - sigma(kdm - 1))
-      sigmahalf(1:kdm) = sigma_bnds(1, 1:kdm)
-      sigmahalf(kdm + 1) = sigma_bnds(2, kdm)
-      sigmahalf_bnds(1, 2:kdm + 1) = sigma
-      sigmahalf_bnds(2, 1:kdm) = sigma
-      sigmahalf_bnds(1, 1) = sigmahalf(1)
-      sigmahalf_bnds(2, kdm + 1) = sigmahalf(kdm + 1)
-    end if
+!   status = nf90_inq_dimid(ncid, 'layer', dimid)
+!   if (status == nf90_noerr) then
+!     status = nf90_inquire_dimension(ncid, dimid, len=kdm)
+!     call handle_ncerror(status)
+!     allocate(sigma(kdm), sigmahalf(kdm + 1), sigma_bnds(2, kdm), &
+!       sigmahalf_bnds(2, kdm + 1), stat=status)
+!     if (status /= 0) stop 'cannot ALLOCATE enough memory (1b)'
+!     status = nf90_inq_varid(ncid, 'sigma', rhid)
+!     call handle_ncerror(status)
+!     status = nf90_get_var(ncid, rhid, sigma)
+!     call handle_ncerror(status)
+!     sigma_bnds(1, 1) = sigma(1) - 0.5 * (sigma(2) - sigma(1))
+!     sigma_bnds(2, 1) = 0.5 * (sigma(2) + sigma(1))
+!     do k = 2, kdm - 1
+!       sigma_bnds(1, k) = 0.5 * (sigma(k) + sigma(k - 1))
+!       sigma_bnds(2, k) = 0.5 * (sigma(k) + sigma(k + 1))
+!     end do
+!     sigma_bnds(1, kdm) = 0.5 * (sigma(kdm) + sigma(kdm - 1))
+!     sigma_bnds(2, kdm) = sigma(kdm) + 0.5 * (sigma(kdm) - sigma(kdm - 1))
+!     sigmahalf(1:kdm) = sigma_bnds(1, 1:kdm)
+!     sigmahalf(kdm + 1) = sigma_bnds(2, kdm)
+!     sigmahalf_bnds(1, 2:kdm + 1) = sigma
+!     sigmahalf_bnds(2, 1:kdm) = sigma
+!     sigmahalf_bnds(1, 1) = sigmahalf(1)
+!     sigmahalf_bnds(2, kdm + 1) = sigmahalf(kdm + 1)
+!   end if
 
     status = nf90_inq_dimid(ncid, 'depth', dimid)
     if (status == nf90_noerr) then
@@ -1225,7 +1228,7 @@ contains
       call handle_ncerror(status)
     end if
 
-    write(*, *) 'read lat'
+    !write(*, *) 'read lat'
     status = nf90_inq_dimid(ncid, 'lat', dimid)
     if (status == nf90_noerr) then
       status = nf90_inquire_dimension(ncid, dimid, len=ldm)
@@ -1246,7 +1249,7 @@ contains
       slat_bnds(2, ldm) = min(90., slat(ldm) + 0.5 * (slat(ldm) - slat(ldm - 1)))
     end if
 
-    write(*, *) 'read region'
+    !write(*, *) 'read region'
     status = nf90_inq_varid(ncid, 'region', rhid)
     if (status == nf90_noerr) then
       status = nf90_inq_dimid(ncid, 'region', dimid)
@@ -1260,7 +1263,7 @@ contains
       if (status /= 0) stop 'cannot ALLOCATE enough memory (1d)'
       status = nf90_inq_varid(ncid, 'region', rhid)
       call handle_ncerror(status)
-      write(*, *) 'read region', slenmax2, rdm, shape(region)
+      !write(*, *) 'read region', slenmax2, rdm, shape(region)
       status = nf90_get_var(ncid, rhid, region, (/1, 1/), (/slenmax2, rdm/))
       call handle_ncerror(status)
       region1 = ' '
@@ -1381,7 +1384,7 @@ contains
     aoglb = sum(parea)
 
     ! Read coordinates
-    write(*, *) 'line1974'
+    !write(*, *) 'line1974'
     status = nf90_inq_varid(ncid, 'plon', rhid)
     call handle_ncerror(status)
     status = nf90_get_var(ncid, rhid, plon)
@@ -1432,7 +1435,7 @@ contains
     call handle_ncerror(status)
     status = nf90_get_var(ncid, rhid, vlat_crns)
     call handle_ncerror(status)
-    write(*, *) 'line2025'
+    !write(*, *) 'line2025'
 
     ! Permute to compensate for dimension bug in CMOR
     do j = 1, jdm
@@ -1549,6 +1552,7 @@ contains
     ii = idm
     jj = jdm
     kk = kdm
+    write(*, *) 'ivm:', trim(ivnm)
     write(*, *) 'dimlens(3):', dimlens(3)
     write(*, *) 'kdm:', kdm
     if (dimlens(3) == kdm .and. kdm > 0) then
@@ -1674,7 +1678,7 @@ contains
     !call system('rm '//trim(json_file_attributes))
 
     ! Define horizontal axes
-    write(*, *) 'Define horizontal axes'
+    !write(*, *) 'Define horizontal axes'
     if (vtype(1:3) /= 'mer' .and. vtype(1:3) /= 'sec') then
       iaxid = cmor_axis( &
         table=trim(tabledir)//'CMIP7_grids.json', &
@@ -1689,7 +1693,7 @@ contains
         length=jdm, &
         coord_vals=yvec)
 
-      write(*, *) 'Define horizontal grid '//coord(1:1)
+      !write(*, *) 'Define horizontal grid '//coord(1:1)
       if (coord(1:1) == 'p') then
         grdid = cmor_grid( &
           axis_ids=(/iaxid, jaxid/), &
@@ -1730,7 +1734,7 @@ contains
     end if
 
     ! Define vertical axis
-    write(*, *) "line 2428"
+    !write(*, *) "line 2428"
     write(*, *) 'vtype:', trim(vtype)
     if (trim(vtype) == 'layer' .and. .not. &
       (lsumz .or. index(special, 'glbave') > 0 &
@@ -1745,7 +1749,7 @@ contains
           coord_vals=1000. + sigmahalf, &
           cell_bounds=1000. + sigmahalf_bnds)
       else
-        write(*, *) "line 2451"
+        !write(*, *) "line 2451"
         kaxid = cmor_axis( &
           table=trim(tablepath), &
           table_entry='rho', &
@@ -1824,10 +1828,10 @@ contains
 
     ! Define time axis
     if (.not. fxflag) then
-      write(*, *) 'Define time axis '
-      write(*, *) 'tablepath:table_entry:', trim(tablepath),':',trim(tcoord)
+      !write(*, *) 'Define time axis '
+      !write(*, *) 'tablepath:table_entry:', trim(tablepath),':',trim(tcoord)
       write(*, *) 'tcoord:', trim(tcoord)
-      write(*, *) 'calunits:', trim(calunits)
+      !write(*, *) 'calunits:', trim(calunits)
       taxid = cmor_axis( &
         table=trim(tablepath), &
         table_entry=trim(tcoord), &
@@ -1836,7 +1840,7 @@ contains
     end if
 
     ! Define output variable
-    write(*, *) 'Define output variable'
+    !write(*, *) 'Define output variable'
     write(*, *) 'zcoord:', trim(zcoord)
     write(*, *) 'vunits:', trim(vunits)
     if (fxflag) then
@@ -1873,8 +1877,8 @@ contains
           original_name=trim(ivnm))
       end if
     else
-      write(*, *) 'vtype:', trim(vtype)
-      write(*, *) 'zcoord:', trim(zcoord)
+      !write(*, *) 'vtype:', trim(vtype)
+      !write(*, *) 'zcoord:', trim(zcoord)
       if ((trim(vtype) == '2d' .and. .not. (trim(zcoord) == 'ol' .or. &
         index(special, 'glbave') > 0 .or. index(special, '2zos') > 0. &
         )) .or. lsumz .and. .not. index(special, 'glbave') > 0 &
