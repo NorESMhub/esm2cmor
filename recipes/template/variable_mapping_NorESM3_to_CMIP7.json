@@ -67,7 +67,7 @@
         "ocean.evspsbl.tavg-u-hxy-ifs.mon.glb": {
             "original_name": "eva"
         },
-        "ocean.ficeberg.tavg-ol-hxy-sea.mon.glb": {
+        "ocean.ficeberg.tavg-u-hxy-sea.mon.glb": {
             "original_name": "rfi"
         },
         "ocean.friver.tavg-u-hxy-sea.mon.glb": {
@@ -92,7 +92,10 @@
             "original_name": "mhfsm"
         },
         "ocean.hfds.tavg-u-hxy-sea.mon.glb": {
-            "original_name": "hflx"
+            "original_name": "hflx",
+            "preprocs": {
+                "positive": "down"
+            }
         },
         "ocean.hfx.tavg-ol-hxy-sea.mon.glb": {
             "original_name": "uhflxlvl"
@@ -164,7 +167,10 @@
             "original_name": "salttr"
         },
         "ocean.sfdsi.tavg-u-hxy-sea.mon.glb": {
-            "original_name": "sfl"
+            "original_name": "sfl",
+            "preprocs": {
+                "positive": "down"
+            }
         },
         "ocean.sftof.ti-u-hxy-u.fx.glb": {
             "original_name": "pmask"
@@ -215,10 +221,16 @@
             "original_name": "t20d"
         },
         "ocean.tauuo.tavg-u-hxy-sea.mon.glb": {
-            "original_name": "taux"
+            "original_name": "taux",
+            "preprocs": {
+                "positive": "down"
+            }
         },
         "ocean.tauvo.tavg-u-hxy-sea.mon.glb": {
-            "original_name": "tauy"
+            "original_name": "tauy",
+            "preprocs": {
+                "positive": "down"
+            }
         },
         "ocean.thetao.tavg-d2000m-hxy-sea.mon.glb": {
             "original_name": "templvl;depth_bnds;pdepth;pbot"
@@ -236,7 +248,20 @@
             "original_name": "templvl"
         },
         "ocean.thetaot.tavg-u-hxy-sea.mon.glb": {
-            "original_name": "temp;dp"
+            "original_name": "sum(temp*dp)/sum(dp)",
+            "sources": {
+                "vars": [
+                    "temp",
+                    "dp"
+                ],
+                "facs": [
+                    1.0,
+                    1.0
+                ]
+            },
+            "postprocs": {
+                "dpavg": true
+            }
         },
         "ocean.thkcello.tavg-ol-hxy-sea.mon.glb": {
             "original_name": "depth_bnds"

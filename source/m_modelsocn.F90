@@ -123,6 +123,8 @@ contains
       table = 'CMIP7_'//trim(realm)//'.json'
 
       write(*,*) 'cvnm:',trim(cvnm)
+      vpositive = ''
+      special = ''
 
       call select_ocn_ftag(realm, frequency, itag)
 
@@ -160,6 +162,11 @@ contains
         if (.not. var_in_file(fnm, ivnm)) cycle
       end if
 
+      !special = 'test text'
+      call special_concatenate
+      write(*,*) 'special:'
+      write(*,*) trim(special)
+             
       call read_gridinfo_ifile
 
 !     ! Prepare output file
@@ -209,10 +216,10 @@ contains
       if (mod(m, romon) > 0) call close_ofile
 
 
-!     if (allocated(sigma))          deallocate(sigma)
-!     if (allocated(sigmahalf))      deallocate(sigmahalf)
-!     if (allocated(sigma_bnds))     deallocate(sigma_bnds)
-!     if (allocated(sigmahalf_bnds)) deallocate(sigmahalf_bnds)
+      if (allocated(sigma))          deallocate(sigma)
+      if (allocated(sigmahalf))      deallocate(sigmahalf)
+      if (allocated(sigma_bnds))     deallocate(sigma_bnds)
+      if (allocated(sigmahalf_bnds)) deallocate(sigmahalf_bnds)
 
       if (allocated(depth))          deallocate(depth)
       if (allocated(depth_bnds))     deallocate(depth_bnds)
@@ -335,7 +342,53 @@ contains
   end subroutine ocn2cmor
 
   ! -----------------------------------------------------------------
+  subroutine special_concatenate
 
+    implicit none
+
+    integer :: n
+
+    character(len=slenmax), dimension(:), allocatable  :: keys
+    character(len=slenmax)        :: key, val
+    logical       :: found
+
+      call json_get_preproc_keys(trim(tabledir_mapping)//trim(table_mapping),&
+          trim(cvnm), keys, lfound=found)
+      if (found) then
+        do n=1,size(keys)
+          key = keys(n)
+          call json_get_preproc_val(trim(tabledir_mapping)//trim(table_mapping),&
+              trim(cvnm),trim(key), val, lfound=found)
+          if (found .and. val /= 'false') then
+            special = trim(special)//trim(key)//";"
+          else
+            cycle
+          end if
+        end do
+      end if
+      if (allocated(keys)) deallocate(keys)
+
+      call json_get_postproc_keys(trim(tabledir_mapping)//trim(table_mapping),&
+          trim(cvnm), keys, lfound=found)
+      if (found) then
+        do n=1,size(keys)
+          key = keys(n)
+          call json_get_postproc_val(trim(tabledir_mapping)//trim(table_mapping),&
+              trim(cvnm),trim(key), val, lfound=found)
+          if (found .and. val /= 'false') then
+            write(*,*) trim(key),":",trim(val)
+            special = trim(special)//trim(key)//";"
+          else
+            cycle
+          end if
+        end do
+      end if
+      if (allocated(keys)) deallocate(keys)
+
+  end subroutine special_concatenate
+
+
+  ! -----------------------------------------------------------------
   subroutine special_pre
 
     implicit none
@@ -363,7 +416,7 @@ contains
         cycle
       end if
 
-      select case (preproc_val)
+      select case (preproc_key)
 
         ! atm to Pa
       case ('atm2Pa')
@@ -484,10 +537,10 @@ contains
         lsumz = .true.
 
         ! Set positive attribute
-      case ('positiveup')
-        vpositive = 'up'
-      case ('positivedo')
-        vpositive = 'down'
+      case ('positive')
+        vpositive = trim(preproc_val)
+      !case ('positivedo')
+        !vpositive = 'down'
 
         ! Compute vertical sum
       case ('sumz')
@@ -571,7 +624,7 @@ contains
         cycle
       end if
 
-      select case (postproc_val)
+      select case (postproc_key)
 
         ! Compute depth below geoid from dz or pddpo
       case ('dz2zfull')
@@ -630,6 +683,23 @@ contains
             end do
           end do
         end do
+
+        ! Compute vertical average
+!     case ('avez')
+!       if (postproc_val /= 'true') cycle
+!       do j = 1, jj
+!         do i = 1, ii
+!           if (abs(fld(i, j, 1)) < 1e20) &
+!             fld(i, j, 1) = fld(i, j, 1) * dp(i, j, 1)
+!           do k = 2, kk
+!             if (abs(fld(i, j, k)) < 1e20) then
+!               fld(i, j, 1) = fld(i, j, 1) + fld(i, j, k) * dp(i, j, k)
+!               dp(i, j, 1) = dp(i, j, 1) + dp(i, j, k)
+!             end if
+!           end do
+!         end do
+!       end do
+!       fld(i, j, 1) = fld(i, j, 1)/dp(i, j, 1)
 
         ! Compute local minima
       case ('locmin')
@@ -1185,32 +1255,32 @@ contains
     status = nf90_inquire_dimension(ncid, dimid, len=jdm)
     call handle_ncerror(status)
 
-!   status = nf90_inq_dimid(ncid, 'layer', dimid)
-!   if (status == nf90_noerr) then
-!     status = nf90_inquire_dimension(ncid, dimid, len=kdm)
-!     call handle_ncerror(status)
-!     allocate(sigma(kdm), sigmahalf(kdm + 1), sigma_bnds(2, kdm), &
-!       sigmahalf_bnds(2, kdm + 1), stat=status)
-!     if (status /= 0) stop 'cannot ALLOCATE enough memory (1b)'
-!     status = nf90_inq_varid(ncid, 'sigma', rhid)
-!     call handle_ncerror(status)
-!     status = nf90_get_var(ncid, rhid, sigma)
-!     call handle_ncerror(status)
-!     sigma_bnds(1, 1) = sigma(1) - 0.5 * (sigma(2) - sigma(1))
-!     sigma_bnds(2, 1) = 0.5 * (sigma(2) + sigma(1))
-!     do k = 2, kdm - 1
-!       sigma_bnds(1, k) = 0.5 * (sigma(k) + sigma(k - 1))
-!       sigma_bnds(2, k) = 0.5 * (sigma(k) + sigma(k + 1))
-!     end do
-!     sigma_bnds(1, kdm) = 0.5 * (sigma(kdm) + sigma(kdm - 1))
-!     sigma_bnds(2, kdm) = sigma(kdm) + 0.5 * (sigma(kdm) - sigma(kdm - 1))
-!     sigmahalf(1:kdm) = sigma_bnds(1, 1:kdm)
-!     sigmahalf(kdm + 1) = sigma_bnds(2, kdm)
-!     sigmahalf_bnds(1, 2:kdm + 1) = sigma
-!     sigmahalf_bnds(2, 1:kdm) = sigma
-!     sigmahalf_bnds(1, 1) = sigmahalf(1)
-!     sigmahalf_bnds(2, kdm + 1) = sigmahalf(kdm + 1)
-!   end if
+    status = nf90_inq_dimid(ncid, 'layer', dimid)
+    if (status == nf90_noerr) then
+      status = nf90_inquire_dimension(ncid, dimid, len=kdm)
+      call handle_ncerror(status)
+      allocate(sigma(kdm), sigmahalf(kdm + 1), sigma_bnds(2, kdm), &
+        sigmahalf_bnds(2, kdm + 1), stat=status)
+      if (status /= 0) stop 'cannot ALLOCATE enough memory (1b)'
+      status = nf90_inq_varid(ncid, 'sigma', rhid)
+      call handle_ncerror(status)
+      status = nf90_get_var(ncid, rhid, sigma)
+      call handle_ncerror(status)
+      sigma_bnds(1, 1) = sigma(1) - 0.5 * (sigma(2) - sigma(1))
+      sigma_bnds(2, 1) = 0.5 * (sigma(2) + sigma(1))
+      do k = 2, kdm - 1
+        sigma_bnds(1, k) = 0.5 * (sigma(k) + sigma(k - 1))
+        sigma_bnds(2, k) = 0.5 * (sigma(k) + sigma(k + 1))
+      end do
+      sigma_bnds(1, kdm) = 0.5 * (sigma(kdm) + sigma(kdm - 1))
+      sigma_bnds(2, kdm) = sigma(kdm) + 0.5 * (sigma(kdm) - sigma(kdm - 1))
+      sigmahalf(1:kdm) = sigma_bnds(1, 1:kdm)
+      sigmahalf(kdm + 1) = sigma_bnds(2, kdm)
+      sigmahalf_bnds(1, 2:kdm + 1) = sigma
+      sigmahalf_bnds(2, 1:kdm) = sigma
+      sigmahalf_bnds(1, 1) = sigmahalf(1)
+      sigmahalf_bnds(2, kdm + 1) = sigmahalf(kdm + 1)
+    end if
 
     status = nf90_inq_dimid(ncid, 'depth', dimid)
     if (status == nf90_noerr) then
@@ -2393,7 +2463,8 @@ contains
     end if
 
     ! Set missing on land grid cells
-    if (index(special, 'glbave') <= 0) then
+    !if (index(special, 'glbave') <= 0) then
+    if (index(special, 'glbave') > 0) then
       do k = 1, kk
         do j = 1, jj
           do i = 1, ii
@@ -2434,6 +2505,10 @@ contains
           .or. index(special, 'dpavg') > 0 &
           .or. index(special, 'locmin') > 0 &
           .or. index(special, 'omega2z') > 0) then
+
+          print *, shape(fld)           ! Add before cmor_write
+          print *, lbound(fld), ubound(fld)
+
           error_flag = cmor_write( &
             var_id=varid, &
             data=fld(:, :, 1), &
