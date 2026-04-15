@@ -101,7 +101,7 @@ compound_names    =
 !   'ocean.vsf.tavg-u-hxy-sea.mon.glb'              ! done
 !   'ocean.wfo.tavg-u-hxy-sea.mon.glb'              ! done
 !   'ocean.wmo.tavg-ol-hxy-sea.mon.glb'             ! n/a
-!   'ocean.wo.tavg-ol-hxy-sea.mon.glb'
+!   'ocean.wo.tavg-ol-hxy-sea.mon.glb'              ! n/a
 !   'ocean.zfullo.tavg-ol-hxy-sea.yr.glb'
 !   'ocean.zos.tavg-u-hxy-sea.day.glb'              ! done
 !   'ocean.zos.tavg-u-hxy-sea.mon.glb'              ! done

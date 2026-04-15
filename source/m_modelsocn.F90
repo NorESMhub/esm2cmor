@@ -395,28 +395,28 @@ contains
 
     integer :: i, j, k, n
 
-    character(len=slenmax), dimension(:), allocatable  :: preproc_keys
-    character(len=slenmax)        :: preproc_key, preproc_val
+    character(len=slenmax), dimension(:), allocatable  :: keys
+    character(len=slenmax)        :: key, val
 
     lsumz = .false.
     call json_get_preproc_keys(trim(tabledir_mapping)//trim(table_mapping),&
-        trim(cvnm), preproc_keys, lfound=found)
+        trim(cvnm), keys, lfound=found)
 
     if (.not. found) return
 
-    do n=1,size(preproc_keys)
+    do n=1,size(keys)
       write(*,*) 'n:',n
-      preproc_key = preproc_keys(n)
-      write(*,*) 'preproc_key:', trim(preproc_key)
+      key = keys(n)
+      write(*,*) 'key:', trim(key)
       call json_get_preproc_val(trim(tabledir_mapping)//trim(table_mapping),&
-          trim(cvnm),trim(preproc_key), preproc_val, lfound=found)
+          trim(cvnm),trim(key), val, lfound=found)
       if (found) then
-        write(*,*) trim(preproc_key),":",trim(preproc_val)
+        write(*,*) trim(key),":",trim(val)
       else
         cycle
       end if
 
-      select case (preproc_key)
+      select case (key)
 
         ! atm to Pa
       case ('atm2Pa')
@@ -538,7 +538,7 @@ contains
 
         ! Set positive attribute
       case ('positive')
-        vpositive = trim(preproc_val)
+        vpositive = trim(val)
       !case ('positivedo')
         !vpositive = 'down'
 
@@ -594,7 +594,7 @@ contains
       !if (str1 == str2) exit
     end do
 
-    if (allocated(preproc_keys)) deallocate(preproc_keys)
+    if (allocated(keys)) deallocate(keys)
 
   end subroutine special_pre
 
@@ -607,24 +607,24 @@ contains
     integer         :: i, j, k, n
     real(r8)    :: r, rd, p, ptoptmp, pbottmp, sref = 35.0
 
-    character(len=slenmax), dimension(:), allocatable  :: postproc_keys
-    character(len=slenmax) :: postproc_key, postproc_val
+    character(len=slenmax), dimension(:), allocatable  :: keys
+    character(len=slenmax) :: key, val
 
     call json_get_postproc_keys(trim(tabledir_mapping)//trim(table_mapping),&
-        trim(cvnm), postproc_keys, lfound=found)
+        trim(cvnm), keys, lfound=found)
     if (.not. found) return
 
-    do n=1,size(postproc_keys)
-      postproc_key = postproc_keys(n)
+    do n=1,size(keys)
+      key = keys(n)
       call json_get_postproc_val(trim(tabledir_mapping)//trim(table_mapping),&
-          trim(cvnm),trim(postproc_key), postproc_val, lfound=found)
+          trim(cvnm),trim(key), val, lfound=found)
       if (found) then
-        write(*,*) trim(postproc_key),":",trim(postproc_val)
+        write(*,*) trim(key),":",trim(val)
       else
         cycle
       end if
 
-      select case (postproc_key)
+      select case (key)
 
         ! Compute depth below geoid from dz or pddpo
       case ('dz2zfull')
@@ -686,7 +686,7 @@ contains
 
         ! Compute vertical average
 !     case ('avez')
-!       if (postproc_val /= 'true') cycle
+!       if (val == 'false') cycle
 !       do j = 1, jj
 !         do i = 1, ii
 !           if (abs(fld(i, j, 1)) < 1e20) &
@@ -881,6 +881,7 @@ contains
 
         ! Compute vertical velocity form vertical mass flux
       case ('wflx2wo')
+        if (val == 'false') cycle
         do j = 1, jj
           do i = 1, ii
             do k = 1, kk
@@ -1223,7 +1224,7 @@ contains
       !if (str1 == str2) exit
     end do
 
-    if (allocated(postproc_keys)) deallocate(postproc_keys)
+    if (allocated(keys)) deallocate(keys)
 
   end subroutine special_post
 

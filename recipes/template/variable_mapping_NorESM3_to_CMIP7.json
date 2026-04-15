@@ -344,7 +344,18 @@
             "original_name": "wflxlvl"
         },
         "ocean.wo.tavg-ol-hxy-sea.mon.glb": {
-            "original_name": "wflxlvl,parea"
+            "original_name": "wflxlvl/(1035.*parea)",
+            "sources": {
+                "vars": [
+                    "wflxlvl"
+                ],
+                "facs": [
+                    1.0
+                ]
+            },
+            "postprocs": {
+              "wflx2wo": true
+            }
         },
         "ocean.zfullo.tavg-ol-hxy-sea.yr.glb": {
             "original_name": "dz,sealv"
