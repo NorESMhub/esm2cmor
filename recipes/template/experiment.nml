@@ -1,6 +1,6 @@
 &experiment
  casename               = 'NOIIAJRARYF8485OC_TL319_tn14_CMIP7_diag_20260204',
- osubdir                = 'DUMMY-MODEL/piControl/v20260415'
+ osubdir                = 'DUMMY-MODEL/piControl/v20260417'
  experiment_id          = 'piControl'
  sub_experiment_id      = 'none',
  parent_experiment_id   = 'piControl-spinup',
@@ -18,7 +18,7 @@
  year1                  = 051,
  yearn                  = 051,
  month1                 = 1,
- monthn                 = 2,
+ monthn                 = 12,
  exprefyear             = 1,
  activity_id            = 'CMIP',
  parent_activity_id     = 'CMIP',

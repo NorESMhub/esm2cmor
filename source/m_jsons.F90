@@ -76,9 +76,10 @@ contains
     call json%add(p, 'parent_time_units', trim(parent_time_units))
     call json%add(p, 'tracking_prefix', trim(tracking_prefix))
     call json%add(p, 'output_path_template', &
-      '<activity_id><institution_id><source_id><experiment_id><_member_id><table><variable_id><grid_label><version>')
+      '<mip_era><activity_id><source_id><region><frequency><experiment_id><variant_label>'// &
+      '<variable_id><branding_suffix><grid_label><version>')
     call json%add(p, 'output_file_template', &
-      '<variable_id><table><source_id><experiment_id><_member_id><grid_label>')
+      '<variable_id><branding_suffix><frequency><region><grid_label><source_id><experiment_id><variant_label>')
     call json%add(p, 'license_id', 'CC-BY-4.0')
     call json%add(p, 'archive_id', 'WCRP')
 

@@ -93,7 +93,7 @@ contains
     implicit none
 
     logical, intent(in), optional :: reset
-    logical :: isloop, isflag
+    logical :: isloop
 
     isloop = .true.
 
