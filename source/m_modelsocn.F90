@@ -128,17 +128,6 @@ contains
 
       call select_ocn_ftag(realm, frequency, itag)
 
-      !write(*, *) 'Read grid information from input files'
-      call scan_files(reset=.true.)
-
-      if (len_trim(fnm) == 0) then
-          if (verbose) write(*, *) &
-            'WARNING: no file found for case dir|tag|year1|month1|yearn|monthn: ', &
-            trim(ibasedir) // '/' // trim(casename), '|', trim(itag), '|', &
-            year1, '|', month1, '|', yearn, '|', monthn
-          cycle
-        end if
-
       call json_get_units(trim(tabledir)//trim(table), trim(ovnm),vunits)
 
       call json_get_vertcoord(trim(tabledir)//trim(table), bvnm, zcoord,lfound=found)
@@ -148,25 +137,48 @@ contains
       if (found) then
         call json_get_facs(trim(tabledir_mapping)//trim(table_mapping),&
                             trim(cvnm), facs, lfound=found) 
-        do k =1, size(vars)
-          if (.not. var_in_file(fnm, vars(k))) cycle main_loop
-        end do
-        ivnm = vars(1)
+        if (.not. found .or. size(vars) /= size(facs)) then
+          write(*,*) "ERROR: facs not found or sizes of vars and facs are not equal"
+          cycle
+        end if
       else
+        allocate(vars(1),facs(1))
         call json_get_original_name(trim(tabledir_mapping)//trim(table_mapping), &
-                trim(cvnm), ivnm, lfound=found) 
+                trim(cvnm), vars(1), lfound=found) 
         if (.not. found) then
             write(*,*) "ERROR: "//trim(cvnm)//" not found in "//trim(table_mapping)
             cycle
+        else
+          facs(1) = 1.0
         end if
-        if (.not. var_in_file(fnm, ivnm)) cycle
       end if
+
+      call scan_files(reset=.true.)
+
+      if (len_trim(fnm) == 0) then
+          if (verbose) write(*, *) &
+            'WARNING: no file found for case dir|tag|year1|month1|yearn|monthn: ', &
+            trim(ibasedir) // '/' // trim(casename), '|', trim(itag), '|', &
+            year1, '|', month1, '|', yearn, '|', monthn
+          cycle
+      end if
+
+      ! check if variable(s) in file
+      do k =1, size(vars)
+        if (.not. var_in_file(fnm, vars(k))) cycle main_loop
+      end do
+      ivnm = vars(1)
+
+      !else
+        !if (.not. var_in_file(fnm, ivnm)) cycle main_loop
+      !end if
 
       !special = 'test text'
       call special_concatenate
       write(*,*) 'special:'
       write(*,*) trim(special)
              
+      !write(*, *) 'Read grid information from input files'
       call read_gridinfo_ifile
 
 !     ! Prepare output file
@@ -2210,13 +2222,13 @@ contains
       end if
     else
       fld = 0.
-      if (allocated(vars)) then
+      !if (allocated(vars)) then
         do k = 1, size(vars)
           call add_tslice(vars(k), facs(k), rec1, fid)
         end do
-      else
-          call add_tslice(ivnm, 1.0, rec1, fid)
-      end if
+      !else
+          !call add_tslice(ivnm, 1.0, rec1, fid)
+      !end if
     end if
 
     ! Read sea level height if necessary
