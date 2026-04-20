@@ -41,8 +41,7 @@ module m_modelsocn
   logical       :: found
 
   ! Table related variables
-  character(len=slenmax), save          :: table, tablepath
-  character(len=slenmax), save          :: tabledir_mapping, table_mapping
+  character(len=slenmax), save          :: table, tablepath, mapping_file
 
   ! Cmor parameters
   character(len=1024)   :: fnmo
@@ -92,13 +91,27 @@ contains
       write(*, *)
     end if
 
+    itag = tagomon
+    call scan_files(reset=.true.)
+           
+    if (len_trim(fnm) == 0) then
+        if (verbose) write(*, *) &
+          'WARNING: no file found for case dir|tag|year1|month1|yearn|monthn: ', &
+          trim(ibasedir) // '/' // trim(casename), '|', trim(itag), '|', &
+          year1, '|', month1, '|', yearn, '|', monthn
+        !cycle
+    end if
+
+    !write(*, *) 'Read grid information from input files'
+    call read_gridinfo_ifile
+
 !   ! Process table Omon
 !   write(*, *) 'Process table Omon'
     pomon = ''
     fnm = pomon
 
-    tabledir_mapping='/diagnostics/CMOR/esm2cmor/recipes/template/'
-    table_mapping='variable_mapping_NorESM3_to_CMIP7.json'
+    !tabledir_mapping_file='/diagnostics/CMOR/esm2cmor/recipes/template/'
+    mapping_file='/diagnostics/CMOR/esm2cmor/recipes/template/variable_mapping_NorESM3_to_CMIP7.json'
 
     ! filter only ocean variables, facilitate parallisation
     n = count(realms == 'ocean' .or. realms == 'ocnBgchem')
@@ -125,17 +138,19 @@ contains
       write(*,*) 'cvnm:',trim(cvnm)
       vpositive = ''
       special = ''
+      tcoord = ''
+      zcoord = ''
 
       call select_ocn_ftag(realm, frequency, itag)
 
-      call json_get_units(trim(tabledir)//trim(table), trim(ovnm),vunits)
+      call json_get_units(trim(tabledir)//trim(table), trim(ovnm), vunits)
 
-      call json_get_vertcoord(trim(tabledir)//trim(table), bvnm, zcoord,lfound=found)
+      call json_get_vertcoord(trim(tabledir)//trim(table), bvnm, zcoord, lfound=found)
 
-      call json_get_vars(trim(tabledir_mapping)//trim(table_mapping),&
+      call json_get_vars(trim(mapping_file),&
                             trim(cvnm), vars, lfound=found) 
       if (found) then
-        call json_get_facs(trim(tabledir_mapping)//trim(table_mapping),&
+        call json_get_facs(trim(mapping_file),&
                             trim(cvnm), facs, lfound=found) 
         if (.not. found .or. size(vars) /= size(facs)) then
           write(*,*) "ERROR: facs not found or sizes of vars and facs are not equal"
@@ -143,25 +158,58 @@ contains
         end if
       else
         allocate(vars(1),facs(1))
-        call json_get_original_name(trim(tabledir_mapping)//trim(table_mapping), &
+        call json_get_original_name(trim(mapping_file), &
                 trim(cvnm), vars(1), lfound=found) 
         if (.not. found) then
-            write(*,*) "ERROR: "//trim(cvnm)//" not found in "//trim(table_mapping)
+            write(*,*) "ERROR: "//trim(cvnm)//" not found in "//trim(mapping_file)
             cycle
         else
           facs(1) = 1.0
         end if
       end if
 
-      call scan_files(reset=.true.)
+      !special = 'test text'
+      call special_concatenate
+      write(*,*) 'special:'
+      write(*,*) trim(special)
 
-      if (len_trim(fnm) == 0) then
-          if (verbose) write(*, *) &
-            'WARNING: no file found for case dir|tag|year1|month1|yearn|monthn: ', &
-            trim(ibasedir) // '/' // trim(casename), '|', trim(itag), '|', &
-            year1, '|', month1, '|', yearn, '|', monthn
-          cycle
-      end if
+!     ! Prepare output file
+      call special_pre
+
+! time independpent
+      if (frequency == 'fx' ) then
+        fnm=TRIM(griddata)//TRIM(ocngridfile)
+        do k =1, size(vars)
+         if (.not. var_in_file(fnm, vars(k))) cycle main_loop
+        end do
+        ivnm = vars(1)
+
+        CALL open_ofile(ivnm,ovnm,fx=.TRUE.)
+
+! --- - Read field
+        CALL read_field
+!
+! --- - Post Processing
+        CALL special_post
+!
+! --- - Write field
+        CALL write_field
+! --- - Close output file 
+        CALL close_ofile
+
+
+      else
+! time dependpent
+
+    call scan_files(reset=.true.)
+           
+    if (len_trim(fnm) == 0) then
+        if (verbose) write(*, *) &
+          'WARNING: no file found for case dir|tag|year1|month1|yearn|monthn: ', &
+          trim(ibasedir) // '/' // trim(casename), '|', trim(itag), '|', &
+          year1, '|', month1, '|', yearn, '|', monthn
+        !cycle
+    end if
 
       ! check if variable(s) in file
       do k =1, size(vars)
@@ -172,17 +220,6 @@ contains
       !else
         !if (.not. var_in_file(fnm, ivnm)) cycle main_loop
       !end if
-
-      !special = 'test text'
-      call special_concatenate
-      write(*,*) 'special:'
-      write(*,*) trim(special)
-             
-      !write(*, *) 'Read grid information from input files'
-      call read_gridinfo_ifile
-
-!     ! Prepare output file
-      call special_pre
 
 !     ! Loop over input files
       m = 0
@@ -227,6 +264,7 @@ contains
 !     ! Close output file if still open
       if (mod(m, romon) > 0) call close_ofile
 
+      end if
 
       if (allocated(sigma))          deallocate(sigma)
       if (allocated(sigmahalf))      deallocate(sigmahalf)
@@ -245,6 +283,10 @@ contains
       if (allocated(region))         deallocate(region)
       if (allocated(region1))        deallocate(region1)
 
+      if (allocated(vars)) deallocate(vars)
+      if (allocated(facs)) deallocate(facs)
+
+    end do main_loop
       deallocate(parea, pmask, pdepth, &
         plon, plat, bpini, bpinit, &
         ulon, ulat, vlon, vlat, &
@@ -259,10 +301,6 @@ contains
         kvechalf, uscaley, vscalex, &
         udepth, vdepth, basin, stat=status)
 
-      if (allocated(vars)) deallocate(vars)
-      if (allocated(facs)) deallocate(facs)
-
-    end do main_loop
 
     if (allocated(idx)) deallocate(idx)
 
@@ -364,12 +402,12 @@ contains
     character(len=slenmax)        :: key, val
     logical       :: found
 
-      call json_get_preproc_keys(trim(tabledir_mapping)//trim(table_mapping),&
+      call json_get_preproc_keys(trim(mapping_file),&
           trim(cvnm), keys, lfound=found)
       if (found) then
         do n=1,size(keys)
           key = keys(n)
-          call json_get_preproc_val(trim(tabledir_mapping)//trim(table_mapping),&
+          call json_get_preproc_val(trim(mapping_file),&
               trim(cvnm),trim(key), val, lfound=found)
           if (found .and. val /= 'false') then
             special = trim(special)//trim(key)//";"
@@ -380,12 +418,12 @@ contains
       end if
       if (allocated(keys)) deallocate(keys)
 
-      call json_get_postproc_keys(trim(tabledir_mapping)//trim(table_mapping),&
+      call json_get_postproc_keys(trim(mapping_file),&
           trim(cvnm), keys, lfound=found)
       if (found) then
         do n=1,size(keys)
           key = keys(n)
-          call json_get_postproc_val(trim(tabledir_mapping)//trim(table_mapping),&
+          call json_get_postproc_val(trim(mapping_file),&
               trim(cvnm),trim(key), val, lfound=found)
           if (found .and. val /= 'false') then
             write(*,*) trim(key),":",trim(val)
@@ -411,7 +449,7 @@ contains
     character(len=slenmax)        :: key, val
 
     lsumz = .false.
-    call json_get_preproc_keys(trim(tabledir_mapping)//trim(table_mapping),&
+    call json_get_preproc_keys(trim(mapping_file),&
         trim(cvnm), keys, lfound=found)
 
     if (.not. found) return
@@ -420,7 +458,7 @@ contains
       write(*,*) 'n:',n
       key = keys(n)
       write(*,*) 'key:', trim(key)
-      call json_get_preproc_val(trim(tabledir_mapping)//trim(table_mapping),&
+      call json_get_preproc_val(trim(mapping_file),&
           trim(cvnm),trim(key), val, lfound=found)
       if (found) then
         write(*,*) trim(key),":",trim(val)
@@ -622,13 +660,13 @@ contains
     character(len=slenmax), dimension(:), allocatable  :: keys
     character(len=slenmax) :: key, val
 
-    call json_get_postproc_keys(trim(tabledir_mapping)//trim(table_mapping),&
+    call json_get_postproc_keys(trim(mapping_file),&
         trim(cvnm), keys, lfound=found)
     if (.not. found) return
 
     do n=1,size(keys)
       key = keys(n)
-      call json_get_postproc_val(trim(tabledir_mapping)//trim(table_mapping),&
+      call json_get_postproc_val(trim(mapping_file),&
           trim(cvnm),trim(key), val, lfound=found)
       if (found) then
         write(*,*) trim(key),":",trim(val)
