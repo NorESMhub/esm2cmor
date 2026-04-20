@@ -198,71 +198,71 @@ contains
         CALL close_ofile
 
 
-      else
 ! time dependpent
+      else
 
-    call scan_files(reset=.true.)
-           
-    if (len_trim(fnm) == 0) then
-        if (verbose) write(*, *) &
-          'WARNING: no file found for case dir|tag|year1|month1|yearn|monthn: ', &
-          trim(ibasedir) // '/' // trim(casename), '|', trim(itag), '|', &
-          year1, '|', month1, '|', yearn, '|', monthn
-        !cycle
-    end if
-
-      ! check if variable(s) in file
-      do k =1, size(vars)
-        if (.not. var_in_file(fnm, vars(k))) cycle main_loop
-      end do
-      ivnm = vars(1)
-
-      !else
-        !if (.not. var_in_file(fnm, ivnm)) cycle main_loop
-      !end if
-
-!     ! Loop over input files
-      m = 0
-      do
-        m = m + 1
-
-!       ! Open output file
-        if (mod(m - 1, romon) == 0) then
-            call open_ofile(ivnm,ovnm)
+        call scan_files(reset=.true.)
+               
+        if (len_trim(fnm) == 0) then
+            if (verbose) write(*, *) &
+              'WARNING: no file found for case dir|tag|year1|month1|yearn|monthn: ', &
+              trim(ibasedir) // '/' // trim(casename), '|', trim(itag), '|', &
+              year1, '|', month1, '|', yearn, '|', monthn
+            !cycle
         end if
 
-!       ! Read variable into buffer (average if necessary)
-        rec = 0
-        call scan_files(reset=.false.)
-        if (rec == 0) exit
-        call read_tslice(rec, badrec, fnm)
+        ! check if variable(s) in file
+        do k =1, size(vars)
+          if (.not. var_in_file(fnm, vars(k))) cycle main_loop
+        end do
+        ivnm = vars(1)
 
-        !! calcluate tval and tbnds
-        select case (frequency)
-        case('mon')
-          tbnds(:, 1) = mbnd
-          tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
-        case('day')
-          tbnds(1, 1) = tval(1) - 0.5
-          tbnds(2, 1) = tval(1) + 0.5
-        case('yr')
-           tbnds(1, 1) = tval(1) - 365. / 2.
-           tbnds(2, 1) = tval(1) + 365. / 2.
-        end select
+        !else
+          !if (.not. var_in_file(fnm, ivnm)) cycle main_loop
+        !end if
 
-        ! Post processing
-        call special_post
+!       ! Loop over input files
+        m = 0
+        do
+          m = m + 1
 
-!       ! Write time slice to output file
-        call write_tslice
+!         ! Open output file
+          if (mod(m - 1, romon) == 0) then
+              call open_ofile(ivnm,ovnm)
+          end if
 
-!       ! Close output file if max rec has been reached
-        if (mod(m, romon) == 0) call close_ofile
+!         ! Read variable into buffer (average if necessary)
+          rec = 0
+          call scan_files(reset=.false.)
+          if (rec == 0) exit
+          call read_tslice(rec, badrec, fnm)
 
-      end do
+          !! calcluate tval and tbnds
+          select case (frequency)
+          case('mon')
+            tbnds(:, 1) = mbnd
+            tval = 0.5 * (tbnds(1, 1) + tbnds(2, 1))
+          case('day')
+            tbnds(1, 1) = tval(1) - 0.5
+            tbnds(2, 1) = tval(1) + 0.5
+          case('yr')
+             tbnds(1, 1) = tval(1) - 365. / 2.
+             tbnds(2, 1) = tval(1) + 365. / 2.
+          end select
 
-!     ! Close output file if still open
-      if (mod(m, romon) > 0) call close_ofile
+          ! Post processing
+          call special_post
+
+!         ! Write time slice to output file
+          call write_tslice
+
+!         ! Close output file if max rec has been reached
+          if (mod(m, romon) == 0) call close_ofile
+
+        end do
+
+!       ! Close output file if still open
+        if (mod(m, romon) > 0) call close_ofile
 
       end if
 
@@ -287,107 +287,22 @@ contains
       if (allocated(facs)) deallocate(facs)
 
     end do main_loop
-      deallocate(parea, pmask, pdepth, &
-        plon, plat, bpini, bpinit, &
-        ulon, ulat, vlon, vlat, &
-        plon_crns, plat_crns, &
-        ulon_crns, ulat_crns, &
-        vlon_crns, vlat_crns, &
-        plon_crnsp, plat_crnsp, &
-        ulon_crnsp, ulat_crnsp, &
-        vlon_crnsp, vlat_crnsp, &
-        sealv, xvec, yvec, kvec, pbot, &
-        dzini, sini, tini, &
-        kvechalf, uscaley, vscalex, &
-        udepth, vdepth, basin, stat=status)
 
+    deallocate(parea, pmask, pdepth, &
+    plon, plat, bpini, bpinit, &
+    ulon, ulat, vlon, vlat, &
+    plon_crns, plat_crns, &
+    ulon_crns, ulat_crns, &
+    vlon_crns, vlat_crns, &
+    plon_crnsp, plat_crnsp, &
+    ulon_crnsp, ulat_crnsp, &
+    vlon_crnsp, vlat_crnsp, &
+    sealv, xvec, yvec, kvec, pbot, &
+    dzini, sini, tini, &
+    kvechalf, uscaley, vscalex, &
+    udepth, vdepth, basin, stat=status)
 
     if (allocated(idx)) deallocate(idx)
-
-!   ! Process table fx
-!   write(*, *) 'Process table fx'
-!   fnm = trim(griddata)//trim(ocngridfile)
-!   table = tfx
-!   do n = 1, nfx
-!     if (skip_variable(n, nfx, dfx)) cycle
-
-!     ! Map namelist variables
-!     ovnm = vfx(ovnmpos, n)
-!     ivnm = vfx(ivnmpos, n)
-!     special = vfx(3, n)
-!     vunits = ' '
-!     vpositive = ' '
-!     vcomment = ' '
-
-!     ! Check if input variable is present
-!     if (.not. var_in_file(fnm, ivnm)) cycle
-
-!     ! Check if vertical coordinate required
-!     call json_get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-
-!     ! Prepare output file
-!     call special_pre
-!     call open_ofile(fx=.true.)
-
-!     ! Read field
-!     call read_field
-
-!     ! Post Processing
-!     call special_post
-
-!     ! Write field
-!     call write_field
-
-!     ! Close output file
-!     call close_ofile
-
-!   end do
-
-!   ! Process table Ofx
-!   write(*, *) 'Process table Ofx'
-!   fnm = trim(griddata)//trim(ocngridfile)
-!   table = tofx
-!   do n = 1, nofx
-!     if (skip_variable(n, nofx, dofx)) cycle
-
-!     ! Map namelist variables
-!     ovnm = vofx(ovnmpos, n)
-!     ivnm = vofx(ivnmpos, n)
-!     special = vofx(3, n)
-!     vunits = ' '
-!     vpositive = ' '
-!     vcomment = ' '
-
-!     ! Use oceanregnfile for region
-!     if (ovnm == 'basin') then
-!       fnm = trim(griddata)//trim(ocnregnfile)
-!     else
-!       fnm = trim(griddata)//trim(ocngridfile)
-!     end if
-
-!     ! Check if input variable is present
-!     if (.not. var_in_file(fnm, ivnm)) cycle
-
-!     ! Check if vertical coordinate required
-!     call json_get_vertcoord(trim(tabledir)//trim(table), ovnm, zcoord)
-
-!     ! Prepare output file
-!     call special_pre
-!     call open_ofile(fx=.true.)
-
-!     ! Read field
-!     call read_field
-
-!     ! Post Processing
-!     call special_post
-
-!     ! Write field
-!     call write_field
-
-!     ! Close output file
-!     call close_ofile
-
-!   end do
 
   end subroutine ocn2cmor
 
