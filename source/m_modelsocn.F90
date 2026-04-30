@@ -178,7 +178,14 @@ contains
 
 ! time independpent
       if (frequency == 'fx' ) then
-        fnm=TRIM(griddata)//TRIM(ocngridfile)
+
+        write(*,*) 'ovnm: ', trim(ovnm)
+        IF (ovnm.EQ.'basin_ti-u-hxy-u') THEN
+          fnm=TRIM(griddata)//TRIM(ocnregnfile)
+        else
+          fnm=TRIM(griddata)//TRIM(ocngridfile)
+        end if
+
         do k =1, size(vars)
          if (.not. var_in_file(fnm, vars(k))) cycle main_loop
         end do
@@ -1590,7 +1597,7 @@ contains
     kk = kdm
     write(*, *) 'ivm:', trim(ivnm)
     write(*, *) 'dimlens(3):', dimlens(3)
-    write(*, *) 'kdm:', kdm
+    !write(*, *) 'kdm:', kdm
     if (dimlens(3) == kdm .and. kdm > 0) then
       vtype = 'layer'
     else if (dimlens(3) == ddm .and. ddm > 0 .or. &
